@@ -1,8 +1,16 @@
 # Day 13 — Docker & Container Fundamentals
 
+**Goal:** Understand what a container actually is — an isolated Linux process started from a layered image — well enough that Kubernetes, ECS, registries, and container security all become extensions of the same model.
+
 ## What you will learn
 
-Containers are one of the most common ways applications are packaged and delivered in modern DevOps environments. A Senior/Lead DevOps engineer should understand not only Docker commands, but what is happening underneath them: how Linux isolates a process, how an image is built from layers, how networking and storage work, how a container starts and stops, and how the same image moves through CI/CD into production. The goal is to understand the runtime model well enough that Kubernetes, ECS, Azure Container Apps, container registries, and container security become natural extensions of the same mental model.
+Containers are one of the most common ways applications are packaged and delivered in modern DevOps environments. A Senior/Lead DevOps engineer should understand not only Docker commands, but what is happening underneath them. This lesson builds that understanding in order:
+
+- how Linux isolates a process
+- how an image is built from layers
+- how container networking and storage work
+- how a container starts, stops, and fails
+- how the same image moves through CI/CD into production
 
 ---
 
@@ -229,7 +237,20 @@ Java process
 
 9. What do the common Dockerfile instructions actually do?
 
-The most important instructions are `FROM`, `WORKDIR`, `COPY`, `RUN`, `ENV`, `EXPOSE`, `USER`, `CMD`, and `ENTRYPOINT`. `FROM` chooses the starting image, `WORKDIR` establishes the directory used by later commands, `COPY` adds files from the build context, and `RUN` executes commands while the image is being built. `ENV` provides image-level environment defaults, `EXPOSE` documents the port the application listens on, `USER` selects the runtime user, and `CMD`/`ENTRYPOINT` define startup behavior. Understanding these instructions lets you read an unfamiliar Dockerfile and immediately understand what gets installed, what gets copied, and what process eventually runs.
+Nine instructions cover almost every Dockerfile you will read:
+
+| Instruction | What it does |
+|:--|:--|
+| `FROM` | Chooses the starting image |
+| `WORKDIR` | Sets the directory used by later commands |
+| `COPY` | Adds files from the build context |
+| `RUN` | Executes a command while the image is being built |
+| `ENV` | Sets image-level environment defaults |
+| `EXPOSE` | Documents the port the application listens on |
+| `USER` | Selects the user the container runs as |
+| `CMD` / `ENTRYPOINT` | Define what runs when the container starts |
+
+Knowing these lets you read an unfamiliar Dockerfile and immediately see what gets installed, what gets copied, and what process eventually runs.
 
 **Example:**
 
