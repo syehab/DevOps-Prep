@@ -45,8 +45,8 @@ Agentic AI in DevOps, the newest JD theme, had no home in any Day at all; the pa
 | 19 | edited | Second pass: goal line, six-stage chain as a diagram, mega-sentences split, jargon defined at first use, scanner table. |
 | 20 | edited | No goal line, sticky alerting rule missing; fixed, added card link. |
 | 21 | edited | Excellent capstone; one-line Lead-vs-Senior card link only. |
-| 22-25 (Azure track) | strong | Model-first openings, hierarchy diagrams, recall. Duplicate Day-24 files on watch list. |
-| 26-29 (AWS track) | strong | Explicit Azure-mapping openings, tables. Left alone. |
+| 22-25 (Azure track) | edited | Third pass: full line audit. Goal lines added to 22 and 23; jargon defined in plain English at first use across all four (service principal, blast radius, SKU, PaaS, revision, cold start, CIDR, stateful, Layer 4, NVA, SAST/SCA, drift). Structure was already strong and left alone. |
+| 26-29 (AWS track) | edited | Third pass: full line audit. Jargon defined at first use (ARN, instance profile, stateful, Transit Gateway, OIDC, AMI, CNI, ephemeral, EBS/EFS/S3, ENI, Elastic IP, PrivateLink, hosted zone, STS). Day-29 also had seven broken machine citation artifacts rendering as garbage mid-sentence; removed. |
 | 30 | strong | Assessment format fits progressive difficulty. Left alone. |
 | 31-41 (projects) | strong | Consistent build-verify-break-recover loop. Second pass: Day-32 and Day-35 now have explicit recall sections matching their siblings. |
 
@@ -75,3 +75,11 @@ Fully line-reviewed, no change needed: Days 1, 2, 3, 5, 7, 15, 17, 18 (all open 
 Everything else was left alone on purpose. Clear enough is a valid audit result, and the cap of six touched Day files was kept. Each edited Day ships in its own small PR so every change stays easy to review on its own.
 
 > **Remember:** The repo's bottleneck is not missing content. It is how fast a learner can load the one model each lesson is built on.
+
+## Cloud-track language pass (third pass, 2026-10-01)
+
+The third pass read Days 22 to 29 line by line — the Azure and AWS overlay tracks the first two passes had only reviewed at structure level. The structural verdict from pass one held up: every one of these files opens with a goal or model, uses diagrams next to prose, and ends with a real recall section. What the line-level read exposed was a consistent jargon gap: these lessons introduce the most provider-specific vocabulary in the whole course, and roughly two dozen terms were used without a plain-English definition at first use. Some of those terms (CIDR, CNI, SAST/SCA) are load-bearing across many Days yet were never defined anywhere in the curriculum, so each got one short definition at the point a learner first needs it, reusing Day-19 wording where it already existed.
+
+Each Day shipped as its own small PR: Day-22 (goal line; service principal, blast radius, SKU), Day-23 (goal line; PaaS, revision, cold start), Day-24 Expanded only per the README canonical-file note (CIDR, stateful, Layer 4, NVA), Day-25 (SAST/SCA reminder reusing Day-19 wording, drift), Day-26 (ARN, instance profile, stateful, Transit Gateway linked back to Day-24 hub-and-spoke, OIDC linked back to Day-25 federation), Day-27 (AMI forward-gloss, CNI, ephemeral, plain EBS/EFS/S3 intuition, ENI), Day-28 (Elastic IP, PrivateLink, hosted zone), Day-29 (removed seven broken citation artifacts, defined STS). Day-29's November 2025 CodeCommit general-availability note was fact-checked against the AWS announcement and kept as written.
+
+The optional project Days (30, 31, 33, 34, 36 to 41) were scanned for the same issues and showed none: clear goal openings, recall present, no artifacts. They remain untouched, and "reviewed, no change" stays a valid audit result.
