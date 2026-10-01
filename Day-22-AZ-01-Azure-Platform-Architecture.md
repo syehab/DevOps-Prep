@@ -1,5 +1,7 @@
 # Day 22 — Azure Overlay 01: Azure Platform Architecture
 
+**Goal of today:** learn where everything in Azure lives — the boundary hierarchy from tenant down to resource — and who controls each layer, before studying any individual service.
+
 ## Part 1 — Why an Azure Overlay Exists
 
 The first 21 days focused on concepts that apply across cloud providers: networking, identity, infrastructure as code, CI/CD, containers, Kubernetes, security, observability, reliability, and cost. Now the goal is to map those concepts deeply onto Azure without relearning the fundamentals. Think of Azure as a concrete implementation of the architecture patterns you already understand: a VNet provides cloud networking, Azure RBAC provides authorization, subscriptions provide an important governance and billing boundary, and services such as AKS provide managed compute capabilities.
@@ -40,7 +42,7 @@ Practice: Take a familiar AWS architecture and translate only its organizational
 
 ## Part 2 — Microsoft Entra ID, Tenant and Azure Resource Management
 
-Microsoft Entra ID is Azure's cloud identity and access-management system. It contains identities such as users, groups, applications, and service principals and provides authentication and identity-related capabilities for Azure and other applications. The **tenant** is the identity boundary associated with an Entra directory; it is not the same thing as a subscription. A subscription is an Azure resource-management and billing boundary that trusts identities from the tenant.
+Microsoft Entra ID is Azure's cloud identity and access-management system. It contains identities such as users, groups, applications, and service principals (a service principal is the identity a piece of software uses — like a user account, but for an application or automation instead of a person) and provides authentication and identity-related capabilities for Azure and other applications. The **tenant** is the identity boundary associated with an Entra directory; it is not the same thing as a subscription. A subscription is an Azure resource-management and billing boundary that trusts identities from the tenant.
 
 A simplified relationship is:
 
@@ -170,6 +172,8 @@ Security
 Blast radius
 Ownership
 ```
+
+Blast radius means: when something goes wrong inside a boundary — a bad deployment, a deleted resource, a leaked credential — how much can it damage? A smaller boundary limits the damage.
 
 Do not make “one subscription per environment” a universal rule. It is a design choice. A Senior/Lead engineer should be able to explain why the chosen subscription boundary is useful.
 
@@ -468,7 +472,7 @@ az provider show \
   --query registrationState
 ```
 
-A resource provider being registered does not mean every possible resource configuration is supported in every region or subscription. Service capabilities can depend on region, SKU, API version, quota, and other constraints.
+A resource provider being registered does not mean every possible resource configuration is supported in every region or subscription. Service capabilities can depend on region, SKU (the size or pricing tier of a service, such as a VM size or a storage performance level), API version, quota, and other constraints.
 
 Practice: Pick three resources in your Azure lab and identify:
 
