@@ -2,7 +2,9 @@
 
 **Goal:** Understand why Helm exists, how Helm charts package Kubernetes applications, and how GitOps changes the way Kubernetes deployments are managed.
 
-**Core idea:** Kubernetes gives you the objects needed to run an application, but a real application quickly needs many YAML files, environment-specific values, versioning, upgrades and rollbacks. Helm helps package and parameterize those Kubernetes resources. GitOps adds another layer: instead of a pipeline directly changing the cluster and becoming the source of truth, Git contains the desired state and a controller continuously reconciles the cluster toward that state.
+**Core idea:** A real application quickly needs many YAML files, different values per environment, and a safe way to upgrade and roll back. Helm solves the packaging half of that problem: one chart, many values files, so the design is written once and only the environment values change. GitOps solves the deployment half: Git holds the desired state and a controller continuously corrects the cluster toward it, instead of a pipeline pushing changes and the cluster slowly drifting away from what anyone wrote down.
+
+> **JD note:** GitOps plus paved roads is the core ask in Platform and Lead roles. See the [GitOps pattern card](jd-insights/patterns/gitops-platform.md).
 
 ## Part 1 — Why Helm Exists
 
@@ -432,6 +434,8 @@ Kubernetes
 ```
 
 The CI pipeline may build and publish the image, while a GitOps controller handles deployment by observing the desired state stored in Git.
+
+> **Remember:** Two loops. The CI loop builds things (code → image). The CD loop applies things (Git state → cluster). GitOps means nobody pushes to the cluster: the cluster pulls from Git, so every change has a diff, an author, and an undo.
 
 4. The controller continuously performs reconciliation:
 
