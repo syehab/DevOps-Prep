@@ -1269,7 +1269,27 @@ If the answer is “no,” identify the missing observability capability.
 
 ---
 
-## Part 32 — Day 35 Completion Criteria
+## Part 32 — Senior/Lead Interview Recall
+
+Answer these without looking at the lesson. If you cannot answer one, reread only that part, then try again.
+
+1. What question does each telemetry signal answer: metrics, logs, traces?
+2. What are the four golden signals?
+3. Why can an acceptable average latency hide a real problem, and which percentiles do you watch instead?
+4. Why should an incident investigation start from user impact rather than CPU graphs?
+5. What is the difference between an SLI, an SLO, and an SLA?
+6. What operational decision does an error budget support?
+7. What makes an alert actionable, and what has happened operationally when engineers start ignoring alerts?
+8. What problem does a correlation ID solve, and what does distributed tracing add on top of it?
+9. Why is a 99.9% HTTP success rate not proof that the business is healthy?
+10. During an active incident, what comes first: full root-cause analysis or service recovery? Why?
+11. Deployment at 14:00, errors at 14:03 — what does that correlation give you, and what does it not give you?
+12. Besides the root cause, what should an RCA contain?
+13. Why is high-cardinality telemetry (such as `user_id` as a metric label) a problem?
+
+---
+
+## Part 33 — Day 35 Completion Criteria
 
 Complete Day 35 when you can demonstrate:
 
@@ -1309,7 +1329,7 @@ The most important completion criterion is:
 
 ---
 
-## Part 33 — What Comes Next
+## Part 34 — What Comes Next
 
 Day 35 gives ShopSphere operational visibility.
 
