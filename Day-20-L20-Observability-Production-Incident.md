@@ -1,5 +1,9 @@
 # Day 20 — Observability + Production Incident
 
+**Goal:** Learn the three telemetry signals (metrics, logs, traces), define what "healthy" means with numbers (SLIs and SLOs), and run a production incident calmly: mitigate first, explain later.
+
+> **JD note:** This is the core lesson behind every SRE-titled JD. See the [SRE pattern card](jd-insights/patterns/sre-slos-observability.md).
+
 ## Part 1 — Why Observability Exists
 
 A production system is not healthy simply because the application process is running or Kubernetes reports that Pods are `Running`. A system can be technically “up” while users experience slow requests, failed payments, database timeouts, incorrect responses, or intermittent errors. Observability gives the operations team enough evidence to understand what the system is doing internally by looking at externally visible signals. The three core signals are **metrics, logs, and traces**, while alerting, dashboards, and incident processes turn those signals into operational action.
@@ -330,6 +334,8 @@ ALERT: CPU = 81%
 
 The second may be less useful by itself because high CPU does not necessarily mean users are affected.
 
+> **Remember:** Alert on symptoms users feel (errors, latency), not on causes (CPU). Causes belong on dashboards; symptoms are what page a human.
+
 Better alerting often combines technical symptoms with service-level impact. For example, elevated request failures sustained for a period may be more actionable than a short CPU spike.
 
 Practice: Design three alerts:
@@ -376,6 +382,17 @@ SLO: 99.9% success over a defined window
 Then ask what latency SLI would also matter.
 
 A useful Senior-level concept is **error budget**. If the SLO allows a small amount of failure, that allowed failure becomes the error budget. Teams can use it to balance reliability work against feature delivery. The exact policy is an organizational decision.
+
+```text
+SLI = what you measure
+        ↓
+SLO = the target
+        ↓
+Error budget = 100% minus SLO
+        ↓
+Budget burning fast? → page a human
+Budget healthy?      → ship features
+```
 
 ---
 
