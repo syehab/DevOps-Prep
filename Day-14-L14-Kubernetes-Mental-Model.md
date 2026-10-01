@@ -1,8 +1,17 @@
 # Day 14 — Kubernetes Mental Model
 
+**Goal:** Build the one mental model behind all of Kubernetes — you declare the state you want, and Kubernetes continuously works to make reality match it — and see how Pods, Deployments, and Services each serve that model.
+
 ## What you will learn
 
-Docker taught us how to package and run a container. Kubernetes becomes important when we need to run many containers reliably across multiple machines. A Senior/Lead DevOps engineer should understand what Kubernetes is actually managing, why Pods exist, how Deployments maintain desired state, how Services provide stable networking, how configuration and secrets reach workloads, and what happens when a Pod fails. The goal today is not to memorize YAML; it is to build the mental model that makes Kubernetes YAML understandable.
+Docker taught us how to package and run a container. Kubernetes becomes important when we need to run many containers reliably across multiple machines. The goal today is not to memorize YAML; it is to build the mental model that makes Kubernetes YAML understandable. By the end you should be able to explain:
+
+- what Kubernetes is actually managing
+- why Pods exist
+- how Deployments maintain desired state
+- how Services provide stable networking
+- how configuration and secrets reach workloads
+- what happens when a Pod fails
 
 ---
 
@@ -10,7 +19,16 @@ Docker taught us how to package and run a container. Kubernetes becomes importan
 
 1. What problem does Kubernetes solve?
 
-Running one container with Docker is simple. Running hundreds of containers across many servers introduces problems such as deciding where containers should run, replacing failed containers, scaling applications, exposing them through stable network endpoints, performing rolling deployments, and keeping the actual system aligned with the desired configuration. Kubernetes provides a control system that continuously manages these concerns. Instead of manually telling individual servers what to do, you describe the state you want and Kubernetes works toward maintaining that state.
+Running one container with Docker is simple. Running hundreds of containers across many servers introduces a new set of problems:
+
+- deciding where each container should run
+- replacing containers that fail
+- scaling applications up and down
+- giving workloads stable network endpoints
+- rolling out new versions safely
+- keeping the running system aligned with the intended configuration
+
+Kubernetes answers all of these with one control system. Instead of manually telling individual servers what to do, you describe the state you want, and Kubernetes continuously works toward maintaining that state.
 
 **Example**
 
