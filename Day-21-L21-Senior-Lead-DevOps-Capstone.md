@@ -12,6 +12,8 @@ Do not start by choosing Azure services. Start with the application, business re
 
 **Remember:** Senior-level DevOps is not knowing the most services. It is making sound engineering decisions and being able to explain them.
 
+> **JD note:** What separates Lead from Senior in real JDs is scope, not tools. See the [Lead vs Senior pattern card](jd-insights/patterns/lead-vs-senior-signals.md).
+
 ---
 
 ## Part 2 — The Business Scenario
