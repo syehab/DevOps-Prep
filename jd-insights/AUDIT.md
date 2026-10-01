@@ -34,27 +34,35 @@ Agentic AI in DevOps, the newest JD theme, had no home in any Day at all; the pa
 | 8 | strong | Goal line, engine model, recently updated. Left alone. |
 | 9 | strong | Module model up front, recently updated. Left alone. |
 | 10 | strong | 7 Remember anchors, state workflow clear. Left alone. |
-| 11 | edited | Model was buried at file end; moved up, added Azure to AWS table and card link. |
-| 12 | strong | Path model first, Remember anchors present. Left alone. |
-| 13 | strong | Long but well staged, practice throughout. Left alone. |
-| 14 | strong | Desired-state model, break-and-fix practice, big recall list. Left alone. |
+| 11 | edited | Model was buried at file end; moved up, added Azure to AWS table and card link. Second pass: unpacked the five-level hierarchy sentence into a level map. |
+| 12 | edited | Second pass: goal line added, request-path model moved first, Azure to AWS mapping prose turned into a table. |
+| 13 | edited | Second pass: goal line added, intro wall split into a list, Dockerfile instructions turned into a lookup table. |
+| 14 | edited | Second pass: goal line stating the desired-state model, packed problem sentence unpacked into a list. |
 | 15 | strong | Layered failure-boundary model. Left alone. |
 | 16 | edited | Dense opening, Remember anchors arrived too late; fixed, added card link. |
 | 17 | strong | Ownership-boundary model, AKS to EKS tables. Left alone. |
 | 18 | strong | Identity chain model up front. Left alone. |
-| 19 | needs clarity | No goal line; opening paragraph very dense. Deferred, on watch list. |
+| 19 | edited | Second pass: goal line, six-stage chain as a diagram, mega-sentences split, jargon defined at first use, scanner table. |
 | 20 | edited | No goal line, sticky alerting rule missing; fixed, added card link. |
 | 21 | edited | Excellent capstone; one-line Lead-vs-Senior card link only. |
 | 22-25 (Azure track) | strong | Model-first openings, hierarchy diagrams, recall. Duplicate Day-24 files on watch list. |
 | 26-29 (AWS track) | strong | Explicit Azure-mapping openings, tables. Left alone. |
 | 30 | strong | Assessment format fits progressive difficulty. Left alone. |
-| 31-41 (projects) | strong | Consistent build-verify-break-recover loop. Day-32 and Day-35 lack an explicit exit-check section, on watch list. |
+| 31-41 (projects) | strong | Consistent build-verify-break-recover loop. Second pass: Day-32 and Day-35 now have explicit recall sections matching their siblings. |
 
-## What confuses a new learner (watch list, not fixed now)
+## What confuses a new learner (watch list)
 
-Duplicate files are the biggest remaining source of doubt. Day 8, 9, and 10 each exist twice (a lesson version and an Interview-Ready v2 version) and Day 24 exists twice (plain and Expanded), so a new learner cannot tell which file to open first. The INDEX already points at the right ones, but a one-line "start with this file" note in the README would remove the doubt entirely. This was deferred because resolving it properly involves rename or merge decisions the repo owner should make.
+Duplicate files were the biggest remaining source of doubt. Day 8, 9, and 10 each exist twice (a lesson version and an Interview-Ready v2 version) and Day 24 exists twice (plain and Expanded), so a new learner could not tell which file to open first. The second pass added a one-line "which file to open" note to the README pointing at the INDEX-canonical files, which removes the doubt without any rename. Actually renaming or merging the duplicate files is still deferred, because that is a destructive decision the repo owner should make.
 
-Two smaller items stay on the list. Day-19 would benefit from the same goal-line treatment Day-20 received, and Day-32 and Day-35 are the only project Days without an explicit recall section, which breaks the retrieval-practice habit the rest of the repo teaches. All three are small, mechanical fixes for a future pass; they were left out of this one to keep the change set reviewable.
+The two smaller items from the first pass are now closed: Day-19 received the same goal-line and model-first treatment Day-20 got, and Day-32 and Day-35 received explicit recall sections, so retrieval practice is now universal across the project Days.
+
+## Deeper language and learning pass (second pass, 2026-10-01)
+
+After the JD-theme pass landed, every Day in the 1 to 21 core plus the watch-list project Days was re-read line by line for ease of learning: dense openings, jargon walls, packed mega-sentences, choppy one-line paragraphs, and missing model-first placement. Each change shipped as its own small PR, one Day per PR.
+
+Fully line-audited and edited: Day-19 (goal line, six-stage chain diagram, split mega-sentences, jargon defined, scanner table), Day-32 (explicit recall framing, choppy one-liners merged), Day-35 (new recall section before completion criteria), Day-12 (goal line, path model first, Azure to AWS table), Day-13 (goal line, list opening, Dockerfile instruction table), Day-14 (goal line, problem list unpacked), Day-11 (hierarchy sentence unpacked).
+
+Fully line-reviewed, no change needed: Days 1, 2, 3, 5, 7, 15, 17, 18 (all open with a goal or core-idea line, model before detail, short sentences), and Days 4, 6, 16, 20, 21 (prior-pass edits hold up; remaining long paragraphs are one idea per sentence and match each file's voice). Clear enough remains a valid audit result.
 
 ## Priority fixes applied in this pass
 
