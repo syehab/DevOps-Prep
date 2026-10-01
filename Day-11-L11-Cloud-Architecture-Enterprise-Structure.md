@@ -1,8 +1,32 @@
 # Day 11 — Cloud Architecture & Enterprise Structure
 
+**Goal:** Understand the structure above individual resources (tenant, governance, subscriptions or accounts, resource groups) and why each boundary exists, so you can explain an enterprise cloud design instead of only building inside one.
+
+**Core mental model:** Hold this one picture before any detail. Every numbered question in this lesson explains one level of it, so if you get lost, come back here.
+
+```text
+Tenant / Organization         → Who are we?
+        ↓
+Governance layer              → What rules apply to everyone?
+        ↓
+Subscription / Account        → Who owns and pays for this?
+        ↓
+Resource group / container    → Which resources live and die together?
+        ↓
+Resource                      → The actual VM, VNet, database
+```
+
+| Concept | Azure | AWS |
+|:--|:--|:--|
+| Isolation unit | Subscription | Account |
+| Grouping for governance | Management groups | Organizations / OUs |
+| Guardrails | Azure Policy | SCPs |
+
+> **JD note:** Lead cloud roles grade exactly this design thinking. See the [landing zone pattern card](jd-insights/patterns/landing-zone-multi-account.md).
+
 ## What you will learn
 
-Cloud infrastructure becomes difficult to manage when an organization grows from a few resources to many teams, applications, environments, and subscriptions or accounts. A Senior/Lead DevOps engineer needs to understand how the cloud is structured above the individual resource level and why organizations create management groups, subscriptions/accounts, resource groups, regions, environments, and ownership boundaries. The goal of this lesson is to understand the architecture behind the resources you deploy, not just how to create the resources themselves.
+A few cloud resources are easy to manage. Hundreds of resources across many teams, applications, and environments are not, and the thing that keeps them manageable is structure: management groups, subscriptions or accounts, resource groups, regions, and clear ownership. This lesson is about why each of those boundaries exists and what control it gives you, not about how to click resources into existence.
 
 ---
 
@@ -185,6 +209,8 @@ Imagine an engineer accidentally deletes an application resource. Compare the po
 18. How does a typical enterprise cloud structure fit together?
 
 A practical enterprise design starts with the identity and governance layer, then creates strong boundaries for subscriptions or accounts, environments, shared platforms, and workloads. Inside those boundaries, resource groups or similar logical containers organize resources according to lifecycle and ownership. Individual resources are then deployed into appropriate regions and availability zones. The important point is that each layer answers a different question: **Who are we? What rules apply? Who owns this environment? Where does it run? Which resources belong together?**
+
+> **Remember:** This ready-to-use foundation is what JDs call a **landing zone**. Think of it as a paved parking lot: each workload parks in its own numbered spot, and the lights, gates, and cameras are already there.
 
 **Practice**
 
