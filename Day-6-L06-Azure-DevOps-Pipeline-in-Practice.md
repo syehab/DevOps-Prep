@@ -16,6 +16,8 @@ description: "Build a simple multi-stage pipeline and understand how code become
 
 > *The lab is designed to use existing/free resources where possible. Azure DevOps usage and hosted-agent availability can depend on your account and organization.*
 
+> **JD note:** This pipeline flow is the most common ask in Azure senior JDs. See the [Azure IaC + pipelines pattern card](jd-insights/patterns/azure-iac-pipelines.md).
+
 ---
 
 ## 01 · What Are We Building? · 6 min
