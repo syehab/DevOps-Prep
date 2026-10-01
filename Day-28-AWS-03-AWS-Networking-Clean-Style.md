@@ -285,6 +285,8 @@ aws ec2 allocate-address \
   --domain vpc
 ```
 
+This allocates an Elastic IP — AWS's name for a static public IP address that remains yours until you release it.
+
 Create the NAT Gateway:
 
 ```bash
@@ -425,7 +427,7 @@ DNS
 IP address
 ```
 
-AWS Route 53 provides DNS services including public hosted zones and private hosted zones.
+AWS Route 53 provides DNS services including public hosted zones and private hosted zones. A hosted zone is simply the container that holds the DNS records for one domain.
 
 A private hosted zone can provide internal names such as:
 
@@ -476,7 +478,7 @@ Gateway endpoint
 Interface endpoint
 ```
 
-Gateway endpoints are commonly used for services such as S3 and DynamoDB. Interface endpoints use private network interfaces and are powered by AWS PrivateLink for supported services.
+Gateway endpoints are commonly used for services such as S3 and DynamoDB. Interface endpoints use private network interfaces and are powered by AWS PrivateLink, the AWS technology that exposes a service through a private IP in your VPC instead of a public address.
 
 A simplified architecture is:
 
