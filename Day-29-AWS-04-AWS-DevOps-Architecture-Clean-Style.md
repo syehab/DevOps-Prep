@@ -38,7 +38,7 @@ The senior question is not “Which AWS service do I use?” It is “What trust
 
 ## Part 2 — AWS CI/CD Services
 
-CodePipeline is the orchestration layer. It defines stages and actions and coordinates source, build, test, approval, and deployment activities. CodeBuild is the managed execution environment for compiling code, running tests, producing artifacts, and running custom build commands. CodeDeploy focuses on application deployment and supports deployment models such as in-place and blue/green for supported targets. In a container platform, you may use CodePipeline + CodeBuild + ECR + ECS/EKS deployment mechanisms rather than assuming CodeDeploy is required for every workload. AWS also provides integrations with external source providers such as GitHub, so the AWS DevOps model does not require your source repository to be hosted inside AWS. citeturn0search4turn0search6turn0search3
+CodePipeline is the orchestration layer. It defines stages and actions and coordinates source, build, test, approval, and deployment activities. CodeBuild is the managed execution environment for compiling code, running tests, producing artifacts, and running custom build commands. CodeDeploy focuses on application deployment and supports deployment models such as in-place and blue/green for supported targets. In a container platform, you may use CodePipeline + CodeBuild + ECR + ECS/EKS deployment mechanisms rather than assuming CodeDeploy is required for every workload. AWS also provides integrations with external source providers such as GitHub, so the AWS DevOps model does not require your source repository to be hosted inside AWS.
 
 A useful mapping from the Azure DevOps model you already know is:
 
@@ -58,7 +58,7 @@ A useful mapping from the Azure DevOps model you already know is:
 
 Do not memorize this as a list of equivalent products. The more useful mental model is **orchestration, execution, storage, deployment, identity, secrets, and observability**.
 
-AWS CodeCommit deserves one current-status note: AWS announced that CodeCommit returned to general availability for new customers in November 2025 after the 2024 change, so it is again a valid AWS-native repository option. In an interview, however, the important architectural point is that CodePipeline can work with multiple source providers rather than being coupled to one Git service. citeturn0search7turn0search17
+AWS CodeCommit deserves one current-status note: AWS announced that CodeCommit returned to general availability for new customers in November 2025 after the 2024 change, so it is again a valid AWS-native repository option. In an interview, however, the important architectural point is that CodePipeline can work with multiple source providers rather than being coupled to one Git service.
 
 ---
 
@@ -108,7 +108,7 @@ Runtime role → application resources
 
 Notice the distinction between **pipeline identity** and **application runtime identity**. The application should not inherit the permissions needed by the deployment system. If the Spring Boot application only needs to read objects from one S3 bucket, its runtime role should not also be able to modify ECS services or production infrastructure.
 
-For multi-account AWS environments, the pipeline can assume a role in the target account through AWS STS. This allows a central delivery platform to deploy into separate Dev, UAT, and Production accounts without giving the central identity permanent administrator permissions everywhere.
+For multi-account AWS environments, the pipeline can assume a role in the target account through AWS STS (Security Token Service, the AWS service that issues short-lived credentials when an identity assumes a role). This allows a central delivery platform to deploy into separate Dev, UAT, and Production accounts without giving the central identity permanent administrator permissions everywhere.
 
 The Senior/Lead question is: **If this pipeline identity is compromised, what is the largest thing the attacker can change?**
 
@@ -136,7 +136,7 @@ A useful failure scenario is: **the deployment succeeds, but the application can
 
 ## Part 6 — Container Delivery with ECR + ECS
 
-For a containerized Spring Boot application, a common AWS flow is **Git → CodePipeline → CodeBuild → ECR → ECS**. CodeBuild builds the Docker image, authenticates to ECR, pushes the image, and produces the metadata required for deployment. ECS then updates the service so the desired task definition points to the new image. AWS provides an example of a CodePipeline-based ECS deployment using CodeBuild and ECR. citeturn0search9
+For a containerized Spring Boot application, a common AWS flow is **Git → CodePipeline → CodeBuild → ECR → ECS**. CodeBuild builds the Docker image, authenticates to ECR, pushes the image, and produces the metadata required for deployment. ECS then updates the service so the desired task definition points to the new image. AWS provides an example of a CodePipeline-based ECS deployment using CodeBuild and ECR.
 
 The important distinction is between the image and the running service. ECR stores the image; ECS decides how many tasks should run and where they should run; the load balancer controls traffic; the task role controls what the application can access. A successful image push therefore does not mean a successful deployment. The new task may fail to start, fail its health check, fail to pull the image, fail to obtain secrets, or start successfully but return application errors.
 
@@ -168,7 +168,7 @@ Application
 
 Deployment strategy determines how new software reaches users and how quickly you can recover when the release is bad. Rolling deployment replaces or updates capacity progressively, while blue/green runs old and new environments alongside each other and shifts traffic after validation. Canary-style approaches expose the new version to a controlled portion of traffic before broader rollout. The exact mechanics depend on the compute platform and deployment service, so first identify the runtime before choosing the deployment mechanism.
 
-CodeDeploy explicitly supports in-place and blue/green deployment types for its EC2/On-Premises platform, and AWS also documents ECS blue/green deployments using CodePipeline and CodeDeploy. citeturn0search16turn0search15
+CodeDeploy explicitly supports in-place and blue/green deployment types for its EC2/On-Premises platform, and AWS also documents ECS blue/green deployments using CodePipeline and CodeDeploy.
 
 The Senior/Lead question is not “Which strategy is best?” It is:
 
@@ -198,7 +198,7 @@ terraform apply
 verification
 ```
 
-The Terraform state should be stored remotely so the team is not sharing local state files. The current Terraform S3 backend supports S3-based state locking with `use_lockfile = true`; DynamoDB-based locking is now deprecated in current Terraform documentation. S3 bucket versioning is strongly recommended for recovery from accidental state deletion or human error. citeturn0search0
+The Terraform state should be stored remotely so the team is not sharing local state files. The current Terraform S3 backend supports S3-based state locking with `use_lockfile = true`; DynamoDB-based locking is now deprecated in current Terraform documentation. S3 bucket versioning is strongly recommended for recovery from accidental state deletion or human error.
 
 A current backend example is:
 
@@ -261,7 +261,7 @@ This also creates a useful separation of duties: the team that manages the deliv
 
 ## Part 11 — Pipeline Governance and Production Controls
 
-A production pipeline needs more than automated commands. It needs controls around who can change the pipeline, who can approve production deployment, what artifact is being deployed, what infrastructure change is being applied, and how the deployment can be stopped or reversed. CodePipeline supports stages and actions, including approval-style workflow controls, while IAM controls who can modify or execute the pipeline. citeturn0search4
+A production pipeline needs more than automated commands. It needs controls around who can change the pipeline, who can approve production deployment, what artifact is being deployed, what infrastructure change is being applied, and how the deployment can be stopped or reversed. CodePipeline supports stages and actions, including approval-style workflow controls, while IAM controls who can modify or execute the pipeline.
 
 A useful production release sequence is:
 
@@ -409,11 +409,11 @@ Create a small AWS DevOps lab using a simple Spring Boot or equivalent applicati
 
 Start with a Git repository containing the application and a Dockerfile. Create an ECR repository and push an image manually first so you understand the image path before automating it. Then create a CodeBuild project that builds the application, runs tests, builds the Docker image, and publishes it to ECR.
 
-Next, create a simple CodePipeline flow that retrieves the source, invokes CodeBuild, and deploys the application to an ECS service. Keep the first version intentionally simple. Your goal is to understand the complete movement of the artifact rather than creating a complicated enterprise pipeline on the first attempt. AWS provides an end-to-end ECS CodePipeline example using CodeBuild and ECR that can be used as a reference. citeturn0search9
+Next, create a simple CodePipeline flow that retrieves the source, invokes CodeBuild, and deploys the application to an ECS service. Keep the first version intentionally simple. Your goal is to understand the complete movement of the artifact rather than creating a complicated enterprise pipeline on the first attempt. AWS provides an end-to-end ECS CodePipeline example using CodeBuild and ECR that can be used as a reference.
 
 Then deliberately break one part of the system. Examples include removing the ECR permission from the CodeBuild role, changing the ECS image reference to an invalid image, removing access to a required secret, or causing the health check to fail. Do not immediately repair it. Identify the failing stage, collect evidence, identify the identity involved, find the permission or runtime problem, and then recover the system.
 
-Finally, add Terraform for the infrastructure and move its state into an S3 backend with state locking. Treat the state bucket as production infrastructure: restrict access, enable versioning, and keep it separate from ordinary application data. citeturn0search0
+Finally, add Terraform for the infrastructure and move its state into an S3 backend with state locking. Treat the state bucket as production infrastructure: restrict access, enable versioning, and keep it separate from ordinary application data.
 
 ---
 
