@@ -342,6 +342,14 @@ Code → Build → Test → Artifact → Deploy → Verify
 
 The pipeline should create a **repeatable path** from code to running software. A good pipeline reduces manual work and makes failures easier to see and investigate.
 
+### Where AI tools fit
+
+Newer senior JDs expect you to use AI assistants inside this exact loop: drafting pipeline YAML, scripts and IaC on the writing side, and summarising logs or drafting incident timelines on the operating side. Notice that the loop itself does not change when AI joins it. AI shortens the writing, while the checking stays where it always was: review, tests and an approval gate before production.
+
+> **Remember:** Treat AI output like a fast junior engineer: great first drafts, zero accountability. Review stays human, gates stay in the pipeline.
+
+More on this theme in the [agentic DevOps pattern card](jd-insights/patterns/agentic-devops.md).
+
 ---
 
 ## 09 · Mini Exercise · 10–15 min
