@@ -1,10 +1,25 @@
 # Day 19 — Secure CI/CD & Software Supply Chain
 
+**Goal:** Understand the software supply chain — the full path that turns source code into running production software — and learn how to secure each step of it: code, dependencies, build, artifacts, registry, deployment, and runtime identity.
+
 ## Part 1 — Why CI/CD Security Is Different
 
-A CI/CD pipeline is not just a tool that builds software; it is a trusted path into your environments, so compromising the pipeline can be as serious as compromising production directly. A normal application may have access to a database or API, while a deployment pipeline may have permission to create infrastructure, publish images, deploy workloads, and access production secrets. That makes the pipeline itself part of the production security boundary. Senior DevOps engineers therefore secure the entire chain: source code → dependency resolution → build → tests → security checks → artifact/image → registry → deployment → runtime identity. The key question is not only “is the application secure?” but also “can an attacker change what we build or where we deploy it?”
+A CI/CD pipeline is not just a tool that builds software. It is a trusted path into your environments. It can often create infrastructure, publish images, deploy workloads, and read production secrets — more power than most applications have. So compromising the pipeline can be as serious as compromising production directly, and the pipeline itself is part of the production security boundary. The key question is not only "is the application secure?" but also "can an attacker change what we build or where we deploy it?"
 
-A useful mental model is **Trust → Build → Verify → Sign/Store → Deploy → Run**. Trust covers identities, branch protections, repository permissions, and pipeline authorization; Build covers the compiler, package manager, Docker build, and build agent; Verify covers tests and security scans; Sign/Store covers artifact integrity and registry controls; Deploy covers environment permissions and approvals; Run covers runtime identity, secrets, network controls, and monitoring. A weakness anywhere in this chain can undermine the controls after it.
+The mental model for the whole lesson is one chain with six stages:
+
+```text
+Trust → Build → Verify → Sign/Store → Deploy → Run
+
+Trust      → identities, branch protection, repo and pipeline permissions
+Build      → compiler, package manager, Docker build, build agent
+Verify     → tests and security scans
+Sign/Store → artifact integrity and registry controls
+Deploy     → environment permissions and approvals
+Run        → runtime identity, secrets, network, monitoring
+```
+
+Every part of this lesson secures one of these stages. A weakness anywhere in the chain can undermine the controls after it: if an attacker can change what gets built, it does not matter how carefully you deploy it.
 
 **Remember:** securing the application without securing the delivery path leaves a major attack path open.
 
@@ -14,7 +29,7 @@ Practice: Take a Spring Boot application deployed to AKS. List everything the pi
 
 ## Part 2 — Source Code Security and Branch Protection
 
-Source control is the starting point of the software supply chain because the pipeline normally trusts code from a repository. A secure workflow protects important branches such as `main` and requires pull requests, review, successful checks, and controlled merge permissions before production-bound code can enter the branch. This reduces the chance that one compromised developer account, leaked token, or malicious commit can directly change production code or pipeline definitions. Pipeline YAML is especially sensitive because changing it can change what the pipeline is allowed to execute.
+Source control is the starting point of the supply chain because the pipeline trusts whatever code the repository gives it. A secure workflow protects important branches such as `main`: changes must arrive through a pull request, pass review and automated checks, and merge only with controlled permissions. This reduces the chance that one compromised developer account, leaked token, or malicious commit can directly change production code. Pipeline YAML deserves extra care, because changing it changes what the pipeline is allowed to execute.
 
 For example, a repository may use this flow:
 
@@ -64,7 +79,7 @@ Senior scenario: A developer opens a pull request that changes only `azure-pipel
 
 ## Part 3 — Secrets in CI/CD
 
-Secrets are one of the most common places where CI/CD security fails because pipelines frequently need credentials for registries, cloud APIs, databases, signing systems, and deployment targets. The secure principle is that a secret should be supplied at runtime to the smallest possible scope rather than committed to Git, embedded in source code, written into Docker images, or printed into logs. Secret storage and secret usage are separate concerns: a vault protects the value at rest, while the pipeline identity determines whether the pipeline is allowed to retrieve it.
+Secrets are one of the most common places where CI/CD security fails, because pipelines need credentials for registries, cloud APIs, databases, and deployment targets. The rule is simple: supply a secret at runtime, to the smallest scope that needs it, for the shortest time possible. Never commit it to Git, bake it into source code or Docker images, or print it into logs. Also keep two concerns separate: a vault protects the secret's value at rest, while the pipeline's identity decides whether the pipeline may retrieve it at all.
 
 A strong pattern is:
 
@@ -122,7 +137,7 @@ Then inspect pipeline logs and ask: “Could this value appear in logs, artifact
 
 ## Part 4 — Dependency and Software Composition Security
 
-Modern applications rarely consist only of code written by the development team. A Spring Boot application may pull hundreds of direct and transitive dependencies from Maven Central, npm packages may pull additional packages, and container images may contain operating-system libraries. This creates a software supply chain in which a vulnerability or compromised package can enter the application without anyone intentionally writing the vulnerable code.
+Modern applications rarely consist only of code written by the development team. A Spring Boot application may pull hundreds of dependencies from Maven Central — both direct ones you chose and transitive ones (the dependencies of your dependencies). Container images add operating-system libraries on top. This means a vulnerability or compromised package can enter your application without anyone on the team writing the vulnerable code.
 
 For a Java application, inspect dependencies with:
 
@@ -136,9 +151,9 @@ You can also inspect outdated dependencies:
 mvn versions:display-dependency-updates
 ```
 
-The pipeline should ideally perform dependency analysis before an artifact is promoted. Typical controls include Software Composition Analysis (SCA), dependency vulnerability scanning, license checks where required, and policies that prevent critical known vulnerabilities from reaching production without an approved exception.
+The pipeline should check dependencies before an artifact is promoted. The standard control is Software Composition Analysis (SCA) — a scan that lists your third-party dependencies and reports known vulnerabilities in them. Add license checks where required, and a policy that stops critical known vulnerabilities from reaching production without an approved exception.
 
-The important distinction is between **finding** a vulnerability and **controlling** it. A scanner may report that a library has a CVE, but the organization still needs a policy such as “critical vulnerabilities block production” or “high severity requires documented exception.” Severity alone also does not tell the complete operational risk; exploitability, exposure, compensating controls, and whether the vulnerable code path is actually reachable may matter.
+The important distinction is between **finding** a vulnerability and **controlling** it. A scanner may report that a library has a CVE (a publicly catalogued known vulnerability), but the organization still needs a policy such as “critical vulnerabilities block production” or “high severity requires a documented exception.” Severity alone does not tell the complete operational risk. Whether the vulnerable code path is actually reachable, how exposed the system is, and what compensating controls exist all change the real-world risk.
 
 Practice: Add a dependency scan to your pipeline after compilation/tests and before publishing the release artifact. Record what happened when the scanner found a vulnerability: Did the pipeline fail? Did it warn? Who could approve an exception?
 
@@ -148,7 +163,15 @@ Senior interview question: “If your dependency scanner reports a critical CVE,
 
 ## Part 5 — Container Image Security
 
-A container image is another software artifact and must be treated as part of the supply chain. Building an image successfully does not mean the image is secure: the base image may contain vulnerable packages, the application may contain vulnerable dependencies, the image may run as root, unnecessary tools may be installed, or secrets may have been copied into image layers. Security therefore needs to happen both during image construction and before deployment.
+A container image is another software artifact and must be treated as part of the supply chain. Building an image successfully does not mean the image is secure. Common problems hide inside a "working" image:
+
+- the base image contains vulnerable OS packages
+- the application contains vulnerable dependencies
+- the image runs as root
+- unnecessary tools are installed
+- secrets were copied into image layers
+
+Security therefore needs to happen twice: while the image is being constructed, and again before it is deployed.
 
 Start with the image:
 
@@ -194,7 +217,7 @@ Practice: Deliberately add an unnecessary package or run the image as root, scan
 
 ## Part 6 — Artifact Integrity and Image Provenance
 
-A secure pipeline should be able to answer a basic production question: **“Exactly what source code produced this artifact?”** This is why immutable build artifacts, versioning, checksums/digests, build metadata, and provenance matter. If an artifact can be silently replaced after testing, the security checks may no longer describe what actually reached production.
+A secure pipeline should be able to answer a basic production question: **“Exactly what source code produced this artifact?”** The record of where an artifact came from and how it was built is called its provenance. Immutable artifacts, versioning, checksums, and build metadata all exist to make that record trustworthy. If an artifact can be silently replaced after testing, your security checks no longer describe what actually reached production.
 
 For container images, tags are human-friendly references:
 
@@ -242,7 +265,7 @@ Practice: Build an image from a known Git commit and record the commit SHA, imag
 
 ## Part 7 — Container Registry Security
 
-The registry is not simply a file server for Docker images. It is a trusted distribution point for software that will run in your environments, so access control, encryption, vulnerability scanning, retention, and image immutability are important controls. Azure Container Registry (ACR) and Amazon Elastic Container Registry (ECR) integrate with their respective cloud identity systems, allowing access to be controlled through cloud IAM rather than distributing registry passwords everywhere.
+The registry is not simply a file server for Docker images. It is a trusted distribution point: whatever it serves will run in your environments. That is why access control, encryption, vulnerability scanning, retention, and image immutability matter here. Azure Container Registry (ACR) and Amazon Elastic Container Registry (ECR) integrate with their cloud identity systems, so access is controlled through cloud IAM instead of registry passwords handed out everywhere.
 
 The deployment path should look like:
 
@@ -293,7 +316,7 @@ For each, list the minimum operations it needs. This is a practical least-privil
 
 ## Part 8 — Pipeline Identity and Federated Authentication
 
-A pipeline needs an identity when it talks to Azure, AWS, a registry, Key Vault, Terraform backend, or another protected service. The dangerous pattern is a permanent credential stored in a pipeline variable and reused everywhere. A stronger architecture uses short-lived, federated authentication where supported, so the pipeline establishes trust with the cloud provider without maintaining a long-lived secret.
+A pipeline needs an identity when it talks to Azure, AWS, a registry, Key Vault, a Terraform backend, or any other protected service. The dangerous pattern is a permanent credential stored in a pipeline variable and reused everywhere. A stronger architecture uses federated authentication where supported: the pipeline proves who it is to the cloud provider and receives a short-lived token in return, so no long-lived password ever has to be stored.
 
 Conceptually:
 
@@ -359,7 +382,16 @@ Approval / Policy
 Production
 ```
 
-Different controls answer different questions. SAST examines source or compiled code for certain classes of coding weaknesses. SCA examines third-party dependencies. Image scanning examines container contents. Secrets scanning looks for credentials and sensitive material. DAST tests a running application from the outside. Infrastructure-as-code scanning checks Terraform, Bicep, Kubernetes manifests, or other configuration before deployment.
+Each control answers a different question:
+
+| Control | What it examines |
+|:--|:--|
+| SAST (static analysis) | Your source or compiled code, for coding weaknesses |
+| SCA | Your third-party dependencies, for known vulnerabilities |
+| Image scanning | Container contents: OS packages, app dependencies, config |
+| Secrets scanning | Code, config, and history, for exposed credentials |
+| DAST (dynamic analysis) | The running application, tested from the outside |
+| IaC scanning | Terraform, Bicep, and Kubernetes manifests, before deployment |
 
 Do not blindly add every possible scanner. Each control has cost, execution time, false positives, and maintenance overhead. A senior engineer designs gates around risk and defines what blocks a release, what produces a warning, and what requires an exception.
 
@@ -489,7 +521,7 @@ This is the kind of reasoning expected at Senior/Lead level: do not focus only o
 
 ## Part 12 — Secure Build Agents and Pipeline Isolation
 
-The build agent is part of the trust boundary because it executes source code, dependency installation, scripts, Docker builds, and deployment commands. If a malicious build can access credentials or files left by another job, one compromised repository may affect other workloads. Hosted agents provide useful isolation characteristics, while self-hosted agents require careful patching, hardening, access control, cleanup, and job isolation.
+The build agent is the machine that actually runs your builds, so it executes source code, installs dependencies, runs scripts, builds Docker images, and issues deployment commands. That makes it part of the trust boundary. If a malicious build can read credentials or files left behind by another job, one compromised repository may affect every workload that shares the agent. Hosted agents give you fresh, isolated machines per run; self-hosted agents put patching, hardening, cleanup, and job isolation on your shoulders.
 
 A common operational mistake is to install powerful credentials permanently on a self-hosted agent. If that machine is compromised, the attacker may inherit every permission available to the agent.
 
