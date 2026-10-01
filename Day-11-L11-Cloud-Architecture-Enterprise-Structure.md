@@ -42,7 +42,17 @@ Think about a company running 50 applications across Dev, UAT, and Production. L
 
 2. What is the basic Azure hierarchy?
 
-In Azure, the broad hierarchy is **Tenant → Management Groups → Subscriptions → Resource Groups → Resources**. The Microsoft Entra tenant represents the organization's identity boundary, management groups provide governance across subscriptions, subscriptions provide important billing and access boundaries, resource groups organize related resources, and the resources are the actual services such as VMs, VNets, databases, and storage accounts. Not every organization needs every management-group level, but the hierarchy gives you a way to apply control at the appropriate scope.
+In Azure, the broad hierarchy is **Tenant → Management Groups → Subscriptions → Resource Groups → Resources**. Each level has one job:
+
+```text
+Tenant           → the organization's identity boundary (Microsoft Entra)
+Management group → governance applied across subscriptions
+Subscription     → billing and access boundary
+Resource group   → organizes resources that belong together
+Resource         → the actual VM, VNet, database, storage account
+```
+
+Not every organization needs every management-group level, but the hierarchy gives you a way to apply control at the appropriate scope.
 
 **Practice**
 
