@@ -1,8 +1,10 @@
 # Day 12 — Cloud Networking: Azure & AWS
 
+**Goal:** Build one cloud networking model — how traffic moves, where it is allowed, and how private resources reach other services — and then map that same model between Azure and AWS.
+
 ## What you will learn
 
-Cloud networking is the foundation that allows applications, databases, users, and cloud services to communicate securely. For a Senior/Lead DevOps engineer, knowing how to create a VNet or VPC is not enough; you need to understand how traffic moves, where it is allowed, how private resources reach other services, and how enterprise networks are structured. This lesson builds one networking model and then maps it between Azure and AWS.
+Cloud networking is the foundation that allows applications, databases, users, and cloud services to communicate securely. For a Senior/Lead DevOps engineer, knowing how to create a VNet or VPC is not enough. You need to understand the path a request takes, which component makes each decision along that path, and how enterprise networks are structured. This lesson builds that model once, then shows that Azure and AWS are two vocabularies for the same ideas.
 
 ---
 
@@ -10,17 +12,17 @@ Cloud networking is the foundation that allows applications, databases, users, a
 
 1. What happens when an application communicates with another service?
 
-A network request usually passes through several decisions before it reaches its destination: the application resolves a name to an IP address, the source decides where to send the packet, routing determines the next hop, and network security controls whether the traffic is allowed. The destination may then be reached directly, through a load balancer, through a private endpoint, or through another network. When troubleshooting cloud connectivity, think about the complete path rather than checking only one firewall rule.
+Every request walks the same path, and this path is the model for the whole lesson:
+
+```text
+Application → DNS → Route → Security → Destination
+```
+
+The application resolves a name to an IP address, routing decides where the packet goes next, and network security decides whether the traffic is allowed. The destination may then be reached directly, through a load balancer, through a private endpoint, or through another network. When troubleshooting cloud connectivity, walk this complete path instead of checking only one firewall rule.
 
 **Practice**
 
-For a Spring Boot application connecting to a database, write the expected path:
-
-```text
-Application → DNS → Route → Security → Database
-```
-
-Then identify what could fail at each step.
+For a Spring Boot application connecting to a database, write out the expected path ending at the database. Then identify what could fail at each step.
 
 2. What is a VNet or VPC?
 
@@ -345,22 +347,22 @@ List the next checks you would perform in order.
 
 24. How do the core Azure and AWS networking concepts map?
 
-The underlying networking ideas are largely the same even though the service names differ. Azure VNet maps conceptually to AWS VPC, Azure subnet to AWS subnet, Azure NSG to AWS Security Group, Azure Route Table to AWS Route Table, Azure NAT Gateway to AWS NAT Gateway, and Azure VNet Peering to AWS VPC Peering. Azure ExpressRoute and AWS Direct Connect provide comparable dedicated connectivity patterns, while Azure hub-and-spoke architectures can be mapped conceptually to AWS centralized transit designs such as Transit Gateway.
+The underlying networking ideas are the same even though the service names differ.
+
+| Concept | Azure | AWS |
+|:--|:--|:--|
+| Private network boundary | VNet | VPC |
+| Network segment | Subnet | Subnet |
+| Traffic filtering | NSG | Security Group |
+| Traffic direction | Route Table | Route Table |
+| Private outbound internet | NAT Gateway | NAT Gateway |
+| Network-to-network link | VNet Peering | VPC Peering |
+| Dedicated on-premises link | ExpressRoute | Direct Connect |
+| Centralized network hub | Hub-and-spoke VNet | Transit Gateway design |
 
 **Practice**
 
-Memorize the concepts rather than the names:
-
-```text
-VNet        ↔ VPC
-Subnet      ↔ Subnet
-NSG         ↔ Security Group
-Route Table ↔ Route Table
-NAT Gateway ↔ NAT Gateway
-Peering     ↔ Peering
-```
-
-Then explain where the mapping is approximate rather than identical.
+Memorize the concepts in the left column rather than the service names. Then explain where the mapping is approximate rather than identical — the last two rows are patterns, not one-to-one products.
 
 ---
 
