@@ -90,11 +90,7 @@ Do not confuse “two subnets” with high availability. If both are in one AZ, 
 
 ## Part 3 — Public and Private Subnets
 
-A subnet is not inherently public or private because of its name.
-
-Its effective behavior comes from routing.
-
-A subnet with a route to an Internet Gateway can support resources with appropriate public addressing for internet connectivity. A private subnet does not have a direct route to the Internet Gateway for ordinary outbound internet access.
+A subnet is not inherently public or private because of its name. Its effective behavior comes from routing. A subnet with a route to an Internet Gateway can support resources with appropriate public addressing for internet connectivity, while a private subnet has no direct route to the Internet Gateway for ordinary outbound internet access.
 
 A common architecture is:
 
@@ -276,13 +272,7 @@ This is a much stronger design because the rule expresses **who should be allowe
 
 ## Part 8 — Security Group Reasoning
 
-Security groups are stateful.
-
-If an allowed connection is established, the return traffic is automatically handled by the stateful behavior of the security group.
-
-Do not interpret this as “security groups allow everything back.”
-
-They still determine which new connections are permitted.
+Security groups are stateful, which means that once an allowed connection is established, the return traffic for that same connection is handled automatically. Do not interpret this as "security groups allow everything back." They still determine which new connections are permitted; statefulness only spares you from writing a separate rule for each reply.
 
 For troubleshooting, ask:
 
@@ -322,11 +312,7 @@ A successful DNS lookup alone proves very little.
 
 ## Part 9 — Network ACLs
 
-Network ACLs operate at the subnet boundary and are stateless.
-
-That means return traffic needs to be explicitly allowed.
-
-For this project, do not add complicated NACL rules merely to demonstrate the feature.
+Network ACLs operate at the subnet boundary and are stateless, so return traffic needs to be explicitly allowed by a rule of its own. For this project, do not add complicated NACL rules merely to demonstrate the feature.
 
 First understand:
 
@@ -819,13 +805,7 @@ The goal is **controlled blast radius**.
 
 ## Part 22 — Environment Isolation
 
-Dev, UAT, and Production should not simply differ by a variable called `ENV=prod`.
-
-They should have meaningful isolation.
-
-For AWS, separate accounts provide a strong boundary.
-
-Within an account, separate VPCs or other resource boundaries can provide additional isolation.
+Dev, UAT, and Production should not simply differ by a variable called `ENV=prod`; they should have meaningful isolation. For AWS, separate accounts provide the strongest boundary, and within an account, separate VPCs or other resource boundaries can provide additional isolation.
 
 Conceptually:
 
@@ -944,9 +924,9 @@ This document should be understandable to another engineer without opening your 
 
 ---
 
-## Part 25 — Senior/Lead Architecture Questions
+## Part 25 — Senior/Lead Interview Recall
 
-Answer these in your own words.
+Answer these without looking at the lesson or your Terraform code. If you cannot answer one, reread only that part, then try again.
 
 1. Why is the database in a private subnet?
 2. What makes a subnet public?
