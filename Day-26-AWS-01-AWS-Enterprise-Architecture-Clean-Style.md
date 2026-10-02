@@ -254,6 +254,8 @@ Example policy allowing an application to read objects from a specific S3 path:
 }
 ```
 
+The `Resource` line uses an ARN (Amazon Resource Name), AWS's unique identifier format for every resource.
+
 This is much narrower than:
 
 ```json
@@ -287,7 +289,7 @@ An IAM policy says what an identity can do. A trust policy says **who is allowed
 This is a very important AWS distinction.
 
 
-For example, an EC2 instance can assume an IAM role through an instance profile, and the role can then allow access to S3.
+For example, an EC2 instance can assume an IAM role through an instance profile (the instance profile is simply the wrapper that attaches an IAM role to an EC2 instance), and the role can then allow access to S3.
 
 The application does not need an access key embedded in its configuration.
 
@@ -554,7 +556,7 @@ Does the workload have a public IP?
 
 ## Part 11 — Security Groups and Network ACLs
 
-AWS Security Groups are stateful virtual firewalls associated with resources such as network interfaces. They control inbound and outbound traffic using rules.
+AWS Security Groups are stateful virtual firewalls associated with resources such as network interfaces. They control inbound and outbound traffic using rules. Stateful means the firewall remembers each allowed connection, so return traffic for that connection is permitted automatically.
 
 Network ACLs operate at the subnet level and are stateless, meaning return traffic must also be explicitly allowed.
 
@@ -930,7 +932,7 @@ AWS Organization
     └── Sandbox
 ```
 
-Networking can then be organized independently:
+Networking can then be organized independently. A Transit Gateway is AWS's central network hub: VPCs attach to it once instead of peering with each other one by one, the same hub idea you saw in Azure hub-and-spoke on Day 24.
 
 ```text
 Network Account
@@ -1319,6 +1321,8 @@ Resource policy
        ↓
 SCP
 ```
+
+OIDC (OpenID Connect) is the open standard that lets a pipeline prove its identity to AWS with short-lived tokens instead of stored access keys — the AWS counterpart of the workload identity federation you saw on Day 25.
 
 This is particularly important in enterprise environments because permissions can exist at multiple layers.
 
