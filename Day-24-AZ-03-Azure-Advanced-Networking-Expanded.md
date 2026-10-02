@@ -93,7 +93,7 @@ Do not start with the firewall. Start with the complete traffic path.
 
 ## Part 2 — VNet and Subnet Design
 
-A VNet defines an IP address space using CIDR notation. Subnets divide that address space into smaller ranges and provide logical placement boundaries. Subnet design matters because changing the address space later can be difficult, while overlapping networks create serious problems for peering and hybrid connectivity.
+A VNet defines an IP address space using CIDR notation. CIDR is simply a compact way to write an IP range: in `10.20.0.0/16`, the number after the slash says how much of the address is fixed, so a smaller number means a bigger range (`/16` holds 65,536 addresses, `/24` holds 256). Subnets divide that address space into smaller ranges and provide logical placement boundaries. Subnet design matters because changing the address space later can be difficult, while overlapping networks create serious problems for peering and hybrid connectivity.
 
 Example:
 
@@ -370,7 +370,7 @@ Imagine an application suddenly cannot reach an on-premises network after a rout
 
 ## Part 6 — Azure Firewall
 
-Azure Firewall provides centralized, stateful network security and traffic inspection. It is different from an NSG because it is designed as a centralized security service rather than simply filtering traffic at a subnet/NIC boundary.
+Azure Firewall provides centralized, stateful network security and traffic inspection. Stateful means the firewall remembers each connection it allows, so the reply traffic for an allowed connection is permitted automatically instead of needing its own rule. It is different from an NSG because it is designed as a centralized security service rather than simply filtering traffic at a subnet/NIC boundary.
 
 A common architecture is:
 
@@ -742,7 +742,7 @@ Identify what belongs in the hub and what belongs in spokes.
 
 ## Part 12 — Azure Load Balancer
 
-Azure Load Balancer operates at Layer 4 and distributes TCP/UDP traffic across backend resources.
+Azure Load Balancer operates at Layer 4 and distributes TCP/UDP traffic across backend resources. Layer 4 means it only sees IP addresses and ports; it cannot read the HTTP request inside the traffic.
 
 Conceptually:
 
@@ -1476,7 +1476,7 @@ Investigate:
 2. Which route matches it?
 3. What is the next hop?
 4. Was the route table recently changed?
-5. Is traffic now being sent to a firewall/NVA?
+5. Is traffic now being sent to a firewall/NVA (network virtual appliance)?
 6. Does that device allow the traffic?
 7. Is return traffic also routed correctly?
 ```
