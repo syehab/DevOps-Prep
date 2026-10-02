@@ -718,7 +718,7 @@ terraform apply
 terraform state list
 ```
 
-Then make a controlled change outside Terraform and run another plan to observe drift.
+Then make a controlled change outside Terraform and run another plan to observe drift (drift means the real infrastructure no longer matches what the code describes).
 
 ---
 
@@ -1087,6 +1087,8 @@ Production
    +--> Smoke Test
    +--> Monitoring
 ```
+
+SAST and SCA are the scans from Day 19: SAST examines your own source code for coding weaknesses, while SCA examines your third-party dependencies for known vulnerabilities.
 
 Identity should also be separated:
 
