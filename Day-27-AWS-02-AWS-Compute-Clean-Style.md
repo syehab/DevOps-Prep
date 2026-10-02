@@ -106,7 +106,7 @@ aws ec2 run-instances \
   --iam-instance-profile Name=<INSTANCE-PROFILE>
 ```
 
-The exact AMI and instance type depend on the Region and workload.
+The exact AMI and instance type depend on the Region and workload. The AMI (Amazon Machine Image) is the template the instance boots from; Part 3 covers it in detail.
 
 Once running, inspect it:
 
@@ -677,7 +677,7 @@ AWS VPC
 RDS / AWS service
 ```
 
-Depending on the EKS networking configuration, Pods can receive VPC-routable IP addresses through the AWS VPC CNI model.
+Depending on the EKS networking configuration, Pods can receive VPC-routable IP addresses through the AWS VPC CNI model. The CNI (container network interface) is the plugin that gives each Pod its IP address; the AWS version hands Pods real VPC addresses.
 
 This means an EKS connectivity failure may involve both layers:
 
@@ -990,7 +990,7 @@ The application should receive only the permission it needs to perform its busin
 
 Compute and storage should be treated as separate architectural concerns.
 
-EC2 has instance storage and can attach EBS volumes. Containers are generally ephemeral, so persistent application data should normally live outside the container filesystem.
+EC2 has instance storage and can attach EBS volumes. Containers are generally ephemeral — their filesystem disappears when the container is replaced — so persistent application data should normally live outside the container filesystem.
 
 Common AWS choices include:
 
@@ -1022,6 +1022,8 @@ EFS
 Block storage:
 EBS
 ```
+
+In plain terms: EBS is a virtual disk attached to one instance, EFS is a shared network filesystem that many workloads can mount at once, and S3 stores files as objects accessed through an API rather than as a mounted disk.
 
 Do not put a production database inside an ephemeral container simply because the application itself is containerized.
 
@@ -1578,7 +1580,7 @@ aws ecr batch-delete-image \
   --image-ids imageTag=1.0.0
 ```
 
-Before deleting networking resources, inspect dependencies. NAT Gateways, load balancers, ENIs, and security groups can keep other resources alive or continue generating charges.
+Before deleting networking resources, inspect dependencies. NAT Gateways, load balancers, ENIs (elastic network interfaces), and security groups can keep other resources alive or continue generating charges.
 
 For cost-sensitive labs, verify the account after cleanup:
 
