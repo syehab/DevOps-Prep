@@ -1,8 +1,10 @@
 # Day 23 — Azure Overlay 02: Azure Compute & PaaS
 
+**Goal of today:** learn to choose between Azure's compute services by asking one question — how much infrastructure responsibility does this workload require us to keep?
+
 ## Part 1 — The Azure Compute Decision
 
-Azure provides several ways to run application workloads, and the Senior/Lead challenge is not memorizing their names. The important question is **how much of the infrastructure you want Azure to manage versus how much control your team needs to retain**. Azure Virtual Machines give you the most operating-system-level control, while services such as App Service, Container Apps, Functions, and AKS progressively move more operational responsibility to the platform. The right choice depends on workload shape, runtime requirements, networking, scaling, operational complexity, security, and cost.
+Azure provides several ways to run application workloads, and the Senior/Lead challenge is not memorizing their names. The important question is **how much of the infrastructure you want Azure to manage versus how much control your team needs to retain**. Azure Virtual Machines give you the most operating-system-level control, while services such as App Service, Container Apps, Functions, and AKS progressively move more operational responsibility to the platform. This is what **PaaS** (platform as a service) means in plain terms: Azure runs the servers, operating system, and much of the plumbing, and you bring only the application. The right choice depends on workload shape, runtime requirements, networking, scaling, operational complexity, security, and cost.
 
 A useful spectrum is:
 
@@ -239,7 +241,7 @@ Deployment / Service / Ingress / Pods / Nodes
 
 With Container Apps, Azure abstracts much of the Kubernetes infrastructure and operational machinery.
 
-Container Apps supports revisions, allowing multiple application revisions to exist and enabling traffic-management patterns.
+Container Apps supports revisions — a revision is an immutable snapshot of one version of your application and its settings. Multiple revisions can exist at the same time, which enables traffic-management patterns.
 
 A conceptual flow is:
 
@@ -259,7 +261,7 @@ Practice: Take your Spring Boot container and explain what you would need to ope
 
 ## Part 7 — Azure Container Apps Scaling and the “Always Running” Question
 
-Container Apps can scale based on configured rules and workload behavior. Depending on configuration, an application can scale down substantially or potentially to zero for supported scenarios. However, “scale to zero” is not automatically appropriate for every backend because cold-start behavior, startup time, minimum replicas, ingress configuration, workload characteristics, and availability requirements affect the result.
+Container Apps can scale based on configured rules and workload behavior. Depending on configuration, an application can scale down substantially or potentially to zero for supported scenarios. However, “scale to zero” is not automatically appropriate for every backend because cold-start behavior, startup time, minimum replicas, ingress configuration, workload characteristics, and availability requirements affect the result. A **cold start** is the delay a scaled-to-zero application adds to its first request, because the platform must start the container before it can respond.
 
 The decision is:
 
