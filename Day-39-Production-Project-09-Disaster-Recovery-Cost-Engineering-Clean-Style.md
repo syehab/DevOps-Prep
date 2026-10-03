@@ -8,6 +8,8 @@ It is:
 
 Disaster Recovery (DR) and cost engineering are connected. A highly resilient architecture usually requires additional capacity, replicas, backups, networking, storage, monitoring, and operational effort. A very cheap architecture may recover slowly or lose more data.
 
+> **JD note:** Lead JDs put "cost-effective" next to "secure and scalable". This lesson trains exactly that trade-off. See the [FinOps pattern card](jd-insights/patterns/finops-cost.md).
+
 Today you will design the recovery strategy for ShopSphere and then connect every resilience decision to its financial impact.
 
 ---
