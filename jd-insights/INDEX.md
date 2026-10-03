@@ -14,6 +14,6 @@ Pick a pattern, read the card, then study the linked Day lessons.
 | [Agentic AI in DevOps](patterns/agentic-devops.md) | [Day-4](../Day-4-L04-CICD-Mental-Model.md) · [Day-19](../Day-19-L19-Secure-CICD-Software-Supply-Chain.md) · [Day-20](../Day-20-L20-Observability-Production-Incident.md) | 2026-10-01 |
 | [Lead vs Senior Signals](patterns/lead-vs-senior-signals.md) | [Day-21](../Day-21-L21-Senior-Lead-DevOps-Capstone.md) · [Day-30](../Day-30-Senior-Lead-DevOps-Final-Assessment-Architecture-Challenge.md) · [Day-40](../Day-40-Production-Project-10-Lead-DevOps-Architecture-Review-Clean-Style.md) | 2026-10-01 |
 
-Day lessons last audited: 2026-10-01. See [AUDIT.md](AUDIT.md) for the Day-by-Day status table.
+Day lessons last audited: 2026-10-03 (JD-insights coverage pass). See [AUDIT.md](AUDIT.md) for the Day-by-Day status table.
 
 > **Remember:** One card, one pattern, five minutes. Depth lives in the Day lessons.

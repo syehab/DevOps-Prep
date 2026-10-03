@@ -37,7 +37,7 @@ Agentic AI in DevOps, the newest JD theme, had no home in any Day at all; the pa
 | 11 | edited | Model was buried at file end; moved up, added Azure to AWS table and card link. Second pass: unpacked the five-level hierarchy sentence into a level map. |
 | 12 | edited | Second pass: goal line added, request-path model moved first, Azure to AWS mapping prose turned into a table. |
 | 13 | edited | Second pass: goal line added, intro wall split into a list, Dockerfile instructions turned into a lookup table. |
-| 14 | edited | Second pass: goal line stating the desired-state model, packed problem sentence unpacked into a list. Fourth pass: OOM defined in plain English at its first use in the course. |
+| 14 | edited | Second pass: goal line stating the desired-state model, packed problem sentence unpacked into a list. Fourth pass: OOM defined in plain English at its first use in the course. Fifth pass: one-line link to the Kubernetes production card. |
 | 15 | strong | Layered failure-boundary model. Left alone. |
 | 16 | edited | Dense opening, Remember anchors arrived too late; fixed, added card link. |
 | 17 | strong | Ownership-boundary model, AKS to EKS tables. Left alone. |
@@ -46,9 +46,9 @@ Agentic AI in DevOps, the newest JD theme, had no home in any Day at all; the pa
 | 20 | edited | No goal line, sticky alerting rule missing; fixed, added card link. |
 | 21 | edited | Excellent capstone; one-line Lead-vs-Senior card link only. |
 | 22-25 (Azure track) | edited | Third pass: full line audit. Goal lines added to 22 and 23; jargon defined in plain English at first use across all four (service principal, blast radius, SKU, PaaS, revision, cold start, CIDR, stateful, Layer 4, NVA, SAST/SCA, drift). Structure was already strong and left alone. |
-| 26-29 (AWS track) | edited | Third pass: full line audit. Jargon defined at first use (ARN, instance profile, stateful, Transit Gateway, OIDC, AMI, CNI, ephemeral, EBS/EFS/S3, ENI, Elastic IP, PrivateLink, hosted zone, STS). Day-29 also had seven broken machine citation artifacts rendering as garbage mid-sentence; removed. |
+| 26-29 (AWS track) | edited | Third pass: full line audit. Jargon defined at first use (ARN, instance profile, stateful, Transit Gateway, OIDC, AMI, CNI, ephemeral, EBS/EFS/S3, ENI, Elastic IP, PrivateLink, hosted zone, STS). Day-29 also had seven broken machine citation artifacts rendering as garbage mid-sentence; removed. Fifth pass: Day-26 gained a one-line link to the AWS + EKS + Terraform card. |
 | 30 | strong | Assessment format fits progressive difficulty. Fourth pass: full line read confirmed it. Left alone. |
-| 31-41 (projects) | strong | Consistent build-verify-break-recover loop. Second pass: Day-32 and Day-35 now have explicit recall sections matching their siblings. Fourth pass: full line read of 30, 31, 33, 34, 36 to 41; only two one-line jargon gaps found (bulkhead in Day-34, cold OOM in Day-37), both fixed. |
+| 31-41 (projects) | strong | Consistent build-verify-break-recover loop. Second pass: Day-32 and Day-35 now have explicit recall sections matching their siblings. Fourth pass: full line read of 30, 31, 33, 34, 36 to 41; only two one-line jargon gaps found (bulkhead in Day-34, cold OOM in Day-37), both fixed. Fifth pass: Day-39 gained a one-line link to the FinOps card. |
 
 ## What confuses a new learner (watch list)
 
@@ -91,3 +91,25 @@ The fourth pass finished the two areas earlier passes had only scanned. First, t
 The one real gap the line read exposed was cross-lesson term consistency, so each defined term a later Day uses was traced back to its first definition. Most were already safe: RCA is spelled out in Day-19 and taught in Day-20 before any project Day uses it, SLO/SLI/error budget, saturation, and p95 are defined in Day-20, high-cardinality is explained with the unbounded-label example in Day-35 before Day-39 reuses it, blast radius in Day-10, STS in Day-29, SAST/SCA in Day-19 and Day-25, and expand-and-contract is defined at its own first use in Day-34. Three gaps were fixed, one tiny PR each: OOM was never spelled out anywhere, so its first use in Day-14 now reads "OOM (out-of-memory) kills" with a half-line explanation; Day-37's cold reuse of OOM in a failure diagram got the same three-word reminder; and bulkhead, the one failure-containment term in Day-34 that no lesson ever defined, got a two-sentence plain-English gloss (separate resource pools per dependency, like ship compartments). JWT appears only inside a secrets list and an environment-variable name, where a learner is not blocked, so it was left alone.
 
 The jd-insights section was also re-read against the Day voice: the nine pattern cards, README, INDEX, and HOW-WE-UPDATE are all short, plain, and no denser than the lessons they point at, so none were touched. The round's conclusion matches the first pass: the curriculum's content and structure are done; the remaining work, when any appears, is single-term first-use glosses, and "reviewed, no change" is now the normal outcome.
+
+## JD-insights coverage pass (fifth pass, 2026-10-03)
+
+The fifth pass reversed the audit direction. Earlier passes read the Days and checked language; this pass started from each of the nine pattern cards and asked whether the Days carrying that market theme actually deliver the card's JD-critical idea: the model arrives before detail, no jargon wall blocks the core idea, and the sticky anchor the card plants is either reused or stated in compatible words. Every card's "study these days first" list was walked file by file, and every relative link in the cards, INDEX, README, and this file was re-verified against real filenames (all resolve).
+
+The coverage result, card by card:
+
+| Pattern card | Days that teach it | Verdict |
+|:--|:--|:--|
+| Azure IaC + pipelines | 6, 8, 9, 10, 22, 25 | Covered, no change. Day-6 carries the card link; the plan-review-approve-apply loop is the spine of all six files. |
+| AWS + EKS + Terraform | 26, 27, 28, 29, 17, 14, 15 | Covered. Day-26's opening already states the card's names-change-shape-stays idea in prose; it only lacked the card link (fixed, one line). |
+| Kubernetes in production | 13, 14, 15, 17, 34, 37 | Covered. Day-15's failure-boundary walk is the card's evidence drill; Day-14 only lacked the card link (fixed, one line). |
+| GitOps + platform paved roads | 5, 16, 19, 33 | Covered, no change. Day-16 carries the card link and the two-loop anchor; Day-33 teaches same-artifact promotion. |
+| SRE, SLOs, observability | 20, 34, 35, 41 | Covered, no change. Day-20 carries the card link; Day-41's incident loop contains the mitigate-before-root-cause order the card anchors. |
+| Landing zones + multi-account | 11, 12, 18, 22, 38 | Covered, no change. Day-11 carries the card link and the parking-lot anchor; Day-38 opens on the boundary question itself. |
+| FinOps + cost awareness | 39, 11, 30 | Covered. Day-39 teaches the full loop including attribution (Part 27) and unit cost; it only lacked the card link (fixed, one line). |
+| Agentic AI in DevOps | 4, 19, 20 | Covered, no change. Day-4's AI-in-the-loop note with the fast-junior anchor remains the right-sized home. |
+| Lead vs Senior signals | 21, 30, 40 | Covered, no change. Day-21 carries the card link; Day-40 grades exactly the defend-every-decision behaviour the card describes. |
+
+The instructional verdict is that no Day needed a content fix. Every theme lands on Days that open with the model, define jargon at first use (the third and fourth passes already closed those gaps), and end with recall. The one real gap this direction of reading exposed was navigational: six cards were reachable from their lead Day through the one-line JD note introduced in the first pass, but three (Kubernetes in production, AWS + EKS + Terraform, FinOps) were not, so a learner inside Day-14, Day-26, or Day-39 had no way to discover that a market pattern card existed for exactly what they were studying. Each of those three Days gained one JD-note line in its own small PR, matching the existing format, and nothing else was touched.
+
+Remaining watch-list items carry over unchanged: the duplicate Day-8/9/10 and Day-24 files still await an owner decision on rename or merge (the README note keeps learners on the canonical files meanwhile), and JWT remains undefined but unblocking. New normal from here: when fresh JDs arrive, update the card first per HOW-WE-UPDATE, and only touch a Day if the card exposes a missing model or anchor, not to add length.
