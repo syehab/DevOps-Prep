@@ -37,7 +37,7 @@ Agentic AI in DevOps, the newest JD theme, had no home in any Day at all; the pa
 | 11 | edited | Model was buried at file end; moved up, added Azure to AWS table and card link. Second pass: unpacked the five-level hierarchy sentence into a level map. |
 | 12 | edited | Second pass: goal line added, request-path model moved first, Azure to AWS mapping prose turned into a table. |
 | 13 | edited | Second pass: goal line added, intro wall split into a list, Dockerfile instructions turned into a lookup table. |
-| 14 | edited | Second pass: goal line stating the desired-state model, packed problem sentence unpacked into a list. |
+| 14 | edited | Second pass: goal line stating the desired-state model, packed problem sentence unpacked into a list. Fourth pass: OOM defined in plain English at its first use in the course. |
 | 15 | strong | Layered failure-boundary model. Left alone. |
 | 16 | edited | Dense opening, Remember anchors arrived too late; fixed, added card link. |
 | 17 | strong | Ownership-boundary model, AKS to EKS tables. Left alone. |
@@ -47,8 +47,8 @@ Agentic AI in DevOps, the newest JD theme, had no home in any Day at all; the pa
 | 21 | edited | Excellent capstone; one-line Lead-vs-Senior card link only. |
 | 22-25 (Azure track) | edited | Third pass: full line audit. Goal lines added to 22 and 23; jargon defined in plain English at first use across all four (service principal, blast radius, SKU, PaaS, revision, cold start, CIDR, stateful, Layer 4, NVA, SAST/SCA, drift). Structure was already strong and left alone. |
 | 26-29 (AWS track) | edited | Third pass: full line audit. Jargon defined at first use (ARN, instance profile, stateful, Transit Gateway, OIDC, AMI, CNI, ephemeral, EBS/EFS/S3, ENI, Elastic IP, PrivateLink, hosted zone, STS). Day-29 also had seven broken machine citation artifacts rendering as garbage mid-sentence; removed. |
-| 30 | strong | Assessment format fits progressive difficulty. Left alone. |
-| 31-41 (projects) | strong | Consistent build-verify-break-recover loop. Second pass: Day-32 and Day-35 now have explicit recall sections matching their siblings. |
+| 30 | strong | Assessment format fits progressive difficulty. Fourth pass: full line read confirmed it. Left alone. |
+| 31-41 (projects) | strong | Consistent build-verify-break-recover loop. Second pass: Day-32 and Day-35 now have explicit recall sections matching their siblings. Fourth pass: full line read of 30, 31, 33, 34, 36 to 41; only two one-line jargon gaps found (bulkhead in Day-34, cold OOM in Day-37), both fixed. |
 
 ## What confuses a new learner (watch list)
 
@@ -83,3 +83,11 @@ The third pass read Days 22 to 29 line by line — the Azure and AWS overlay tra
 Each Day shipped as its own small PR: Day-22 (goal line; service principal, blast radius, SKU), Day-23 (goal line; PaaS, revision, cold start), Day-24 Expanded only per the README canonical-file note (CIDR, stateful, Layer 4, NVA), Day-25 (SAST/SCA reminder reusing Day-19 wording, drift), Day-26 (ARN, instance profile, stateful, Transit Gateway linked back to Day-24 hub-and-spoke, OIDC linked back to Day-25 federation), Day-27 (AMI forward-gloss, CNI, ephemeral, plain EBS/EFS/S3 intuition, ENI), Day-28 (Elastic IP, PrivateLink, hosted zone), Day-29 (removed seven broken citation artifacts, defined STS). Day-29's November 2025 CodeCommit general-availability note was fact-checked against the AWS announcement and kept as written.
 
 The optional project Days (30, 31, 33, 34, 36 to 41) were scanned for the same issues and showed none: clear goal openings, recall present, no artifacts. They remain untouched, and "reviewed, no change" stays a valid audit result.
+
+## Deep project-Day and consistency pass (fourth pass, 2026-10-03)
+
+The fourth pass finished the two areas earlier passes had only scanned. First, the canonical Day-8, Day-9, and Day-10 files (the ones the README and INDEX point at) got a full line read: all three open with a goal, put one model before detail, keep short sections, and end with real recall, so all three stay "reviewed, no change". Second, the project Days 30, 31, 33, 34, and 36 to 41 got the deeper line pass the previous round deferred. The earlier structural verdict held up completely: every file opens with a purpose and a central question, limits new ideas per part, uses diagrams beside prose, drills failures with evidence-first reasoning, and closes with recall plus completion criteria. No mega-sentences, buried models, or choppy prose were found; the short-line Clean-Style voice matches the already-audited Day-32.
+
+The one real gap the line read exposed was cross-lesson term consistency, so each defined term a later Day uses was traced back to its first definition. Most were already safe: RCA is spelled out in Day-19 and taught in Day-20 before any project Day uses it, SLO/SLI/error budget, saturation, and p95 are defined in Day-20, high-cardinality is explained with the unbounded-label example in Day-35 before Day-39 reuses it, blast radius in Day-10, STS in Day-29, SAST/SCA in Day-19 and Day-25, and expand-and-contract is defined at its own first use in Day-34. Three gaps were fixed, one tiny PR each: OOM was never spelled out anywhere, so its first use in Day-14 now reads "OOM (out-of-memory) kills" with a half-line explanation; Day-37's cold reuse of OOM in a failure diagram got the same three-word reminder; and bulkhead, the one failure-containment term in Day-34 that no lesson ever defined, got a two-sentence plain-English gloss (separate resource pools per dependency, like ship compartments). JWT appears only inside a secrets list and an environment-variable name, where a learner is not blocked, so it was left alone.
+
+The jd-insights section was also re-read against the Day voice: the nine pattern cards, README, INDEX, and HOW-WE-UPDATE are all short, plain, and no denser than the lessons they point at, so none were touched. The round's conclusion matches the first pass: the curriculum's content and structure are done; the remaining work, when any appears, is single-term first-use glosses, and "reviewed, no change" is now the normal outcome.
