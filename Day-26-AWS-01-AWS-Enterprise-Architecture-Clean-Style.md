@@ -4,6 +4,8 @@ The goal of this day is to understand how AWS organizes enterprise environments 
 
 The core mental model is **AWS Organization → Organizational Units → Accounts → Regions/AZs → VPCs → Subnets → Resources**, with identity, governance, security, networking, logging, monitoring, cost and automation supporting the hierarchy.
 
+> **JD note:** AWS senior JDs ask for the same shape you learned on Azure, with new names. See the [AWS + EKS + Terraform pattern card](jd-insights/patterns/aws-eks-terraform.md).
+
 ---
 
 ## Part 1 — Why AWS Enterprise Architecture Exists
