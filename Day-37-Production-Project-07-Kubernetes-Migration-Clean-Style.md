@@ -187,7 +187,7 @@ Pod scheduled successfully
       ↓
 Application consumes more resources
       ↓
-Node pressure / throttling / OOM
+Node pressure / throttling / OOM (out-of-memory) kills
 ```
 
 Good resource settings require observation rather than guessing.
