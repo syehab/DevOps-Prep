@@ -2,6 +2,8 @@
 
 **Goal:** Build the one mental model behind all of Kubernetes — you declare the state you want, and Kubernetes continuously works to make reality match it — and see how Pods, Deployments, and Services each serve that model.
 
+> **JD note:** Nearly every Senior and Lead DevOps JD expects production Kubernetes, and this model is the base for all of it. See the [Kubernetes in production pattern card](jd-insights/patterns/kubernetes-production.md).
+
 ## What you will learn
 
 Docker taught us how to package and run a container. Kubernetes becomes important when we need to run many containers reliably across multiple machines. The goal today is not to memorize YAML; it is to build the mental model that makes Kubernetes YAML understandable. By the end you should be able to explain:
