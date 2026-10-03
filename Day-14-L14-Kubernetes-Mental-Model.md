@@ -705,7 +705,7 @@ This does not mean the container is permanently consuming exactly that amount; i
 
 32. What are CPU and memory limits?
 
-Limits place an upper boundary on how much of a resource a container can consume, subject to Kubernetes and runtime behavior. Memory limits are particularly important because uncontrolled memory growth can affect other workloads on the node. Poorly chosen limits can also cause problems, such as container OOM kills or CPU throttling, so resource values should be based on observed application behavior rather than arbitrary numbers.
+Limits place an upper boundary on how much of a resource a container can consume, subject to Kubernetes and runtime behavior. Memory limits are particularly important because uncontrolled memory growth can affect other workloads on the node. Poorly chosen limits can also cause problems, such as container OOM (out-of-memory) kills, where a container is stopped for using more memory than its limit allows, or CPU throttling. Resource values should therefore be based on observed application behavior rather than arbitrary numbers.
 
 **Example:**
 
