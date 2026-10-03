@@ -539,6 +539,8 @@ Least privilege
 Network segmentation
 ```
 
+Most of these appeared in earlier lessons. A bulkhead is the one new term: borrowed from ship design, it means giving each dependency or workload its own separate pool of resources (threads, connections, instances) so one failing part cannot drain what everything else needs.
+
 These mechanisms solve different problems, but they share one idea:
 
 **Prevent one failure from becoming a larger failure.**
