@@ -986,6 +986,17 @@ Controlled Traffic Shift
 Retire Old Runtime
 ```
 
+This kind of move has a name, and recent job descriptions use the vocabulary directly. Migration teams commonly describe three types. A rehost (also called lift and shift) moves a system as it is, for example the same VM moved from an on-prem datacentre to a cloud VM. A re-platform keeps the application and its code the same but runs it on a new runtime platform with small changes, which is exactly what Day 37 does: the same ShopSphere image moves from the managed container runtime to Kubernetes. A refactor changes the application's design or code to fit the cloud. The trade-off runs in one direction: the more you change, the more benefit you can unlock, but the more risk and effort the migration carries.
+
+```text
+Type          What changes                       Example                               Risk / effort
+Rehost        Nothing in the app                 On-prem VM → cloud VM                 Lowest
+Re-platform   Runtime platform, small changes    Same image → Kubernetes (Day 37)      Medium
+Refactor      Application design or code         Redesign app for cloud services       Highest
+```
+
+Whatever the type, real programmes that migrate many applications do not move everything at once. They move in small batches, often called waves, with a rollback boundary defined for each batch. That is the incremental path above plus the Part 36 rollback boundary, applied at scale.
+
 ---
 
 ## Part 27 — Failure Drill: Service Has No Backends
@@ -1495,6 +1506,7 @@ Without looking at the lesson, explain:
 
 ```text
 Why Kubernetes?
+Rehost vs re-platform vs refactor (which one is this project?)
 Managed Kubernetes vs Kubernetes
 Control plane vs worker nodes
 Pod
