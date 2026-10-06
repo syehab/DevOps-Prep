@@ -9,7 +9,9 @@ Platform and Lead roles want Git to be the source of truth for deployments (GitO
 - GitOps delivery: desired state in Git, a controller (Argo CD) syncs the cluster
 - Helm charts or templates that teams reuse
 - Golden paths: a new service gets repo, pipeline, deploy, and monitoring by default
-- Internal Developer Platform thinking, sometimes Backstage by name
+- Internal Developer Platform thinking, sometimes Backstage by name, down to its pieces: Software Catalog, Scaffolder templates, TechDocs
+- Multi-tenancy: granular RBAC plus a repeatable way to onboard a new tenant or namespace
+- Golden paths you can trust: generated infrastructure is tested end to end and watched for drift
 - Promotion flow: the same artifact moves dev → test → prod via Git changes
 
 ## Mental model
@@ -64,4 +66,4 @@ Backstage appears in EPAM platform JDs. If you have not run Backstage, do not cl
 
 ## Source tags
 
-EPAM Lead Platform / Unified Automation (Backstage) · EPAM Senior DevOps Azure · RedCloud Platform
+EPAM Lead Platform / Unified Automation (Backstage) · EPAM Lead Cloud (IDP) · EPAM Senior DevOps Azure · RedCloud Platform
