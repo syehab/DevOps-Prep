@@ -827,6 +827,24 @@ Rollback Frequency
 Deployment Duration
 ```
 
+The first four of these are the **DORA metrics**, named after DORA (DevOps Research and Assessment), a research program that studied thousands of software teams to find which numbers actually predict delivery performance. The mental model is simple: two of the metrics measure **speed** (Deployment Frequency, Lead Time for Changes) and two measure **stability** (Change Failure Rate, Time to Restore). The research finding worth remembering is that in healthy teams speed and stability move together, because the same habits that make releases fast, such as small changes and automated verification, also make failures rarer and recovery quicker.
+
+| Metric | Plain-language definition | Example |
+|---|---|---|
+| Deployment Frequency (speed) | How often you deploy to Production | "We release to Production several times per week." |
+| Lead Time for Changes (speed) | Time from a commit being merged to that change running in Production | "A merged change usually reaches Production within one day." |
+| Change Failure Rate (stability) | Percentage of Production deployments that cause a failure requiring a fix or rollback | "About 1 in 20 of our releases needs a rollback or hotfix." |
+| Time to Restore (stability) | How long it takes to recover Production service after a failed change (recent DORA reports call this failed deployment recovery time) | "When a release breaks checkout, users are served again within 30 minutes." |
+
+A short worked example shows how the four numbers move together. Imagine a ShopSphere team that releases once a month in one large batch, with mostly manual testing. Their numbers might look like: Deployment Frequency of once per month, Lead Time of about three weeks, Change Failure Rate around 40% because each release contains dozens of untested interacting changes, and Time to Restore measured in hours because nobody is sure which change broke Production. The team then adds automated tests to the pipeline and switches to small, frequent releases. Six months later: several deployments per week, Lead Time under one day, Change Failure Rate near 5%, and Time to Restore of minutes, because a small release is easy to identify and roll back to the previous known-good artifact. Nothing was traded away; speed and stability improved together.
+
+**Remember:** DORA = two speed numbers (Deployment Frequency, Lead Time for Changes) and two stability numbers (Change Failure Rate, Time to Restore). In healthy teams you do not buy speed by sacrificing stability; small batches and automated verification improve all four at once.
+
+Exit check, answered without looking back:
+
+1. Which two DORA metrics measure speed, which two measure stability, and why do they tend to improve together?
+2. A team's Change Failure Rate is high and its Time to Restore is measured in hours. What two delivery practices from this Day would you introduce first, and why?
+
 For ShopSphere, also inspect:
 
 ```text
