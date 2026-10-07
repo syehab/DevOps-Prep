@@ -11,6 +11,8 @@ SRE titles (and most Lead roles) want you to define what "healthy" means with nu
 - Dashboards: metrics, logs, traces in one story
 - Incident response: detect, mitigate, communicate, write the RCA
 - Error budgets: use the data to decide features vs reliability work
+- Safe releases: progressive delivery with health gates and automatic rollback (Day-34 below covers this)
+- Synthetic checks (scripted probes that act like a user) and runbooks for known failures
 
 ## Mental model
 
@@ -42,6 +44,7 @@ Mitigate before root cause. Roll back first, understand later.
 | Metrics + alerts | Azure Monitor | CloudWatch / Prometheus |
 | Dashboards | Azure Monitor / Grafana | Grafana / Datadog |
 | Logs | Log Analytics | CloudWatch Logs / Loki |
+| Traces | Application Insights | Tempo / OpenTelemetry |
 
 ## Remember
 
@@ -51,7 +54,7 @@ Mitigate before root cause. Roll back first, understand later.
 
 1. [Day-20-L20-Observability-Production-Incident.md](../../Day-20-L20-Observability-Production-Incident.md) - the core lesson, read this first
 2. [Day-35-Production-Project-05-Observability-Incident-Response-Clean-Style.md](../../Day-35-Production-Project-05-Observability-Incident-Response-Clean-Style.md) - hands-on project
-3. [Day-34-Production-Project-04-Reliability-Safe-Deployments-Failure-Containment.md](../../Day-34-Production-Project-04-Reliability-Safe-Deployments-Failure-Containment.md) - reliability by design
+3. [Day-34-Production-Project-04-Reliability-Safe-Deployments-Failure-Containment.md](../../Day-34-Production-Project-04-Reliability-Safe-Deployments-Failure-Containment.md) - safe deployments, canary with health signals, rollback
 4. [Day-41-Production-Simulation-01-Production-Deployment-Incident-Clean-Style.md](../../Day-41-Production-Simulation-01-Production-Deployment-Incident-Clean-Style.md) - full incident simulation
 
 ## Common interview question
@@ -70,4 +73,4 @@ Sezzle-style JDs name Prometheus or Datadog daily use, sometimes Golang. If your
 
 ## Source tags
 
-Sezzle SRE · EPAM Senior SRE · Fundraise Up DevOps
+Sezzle SRE · EPAM Senior SRE · EPAM Senior SRE (Grafana + EKS) · Fundraise Up DevOps
