@@ -879,7 +879,7 @@ How will I verify it?
 How will I remove or recover it?
 ```
 
-### 🧪 Exercise
+One more name you will meet in job descriptions: **OpenTofu**. It is an open-source fork of Terraform that keeps the same language (HCL) and the same workflow (`init`, `plan`, `apply`), so everything you practised in this lesson applies to it directly. When a JD says "Terraform or OpenTofu", it is asking for one skill, not two. You do not need to study it separately; recognise the name and know that your Terraform skills transfer as they are.
 
 Take this requirement:
 
