@@ -2,7 +2,7 @@
 
 ## In one sentence
 
-Lead Azure JDs add "cost-effective" next to "secure and scalable", meaning you should treat cost as a design input and be able to find and fix waste.
+Lead cloud JDs (Azure and AWS) add "cost-effective" next to "secure and scalable", meaning you should treat cost as a design input and be able to find and fix waste.
 
 ## What employers ask for
 
@@ -67,4 +67,4 @@ You do not need a FinOps certificate for these roles. Showing the loop above, pl
 
 ## Source tags
 
-EPAM Lead Azure Cloud ("cost-effective Azure solutions") · EPAM Lead Platform
+EPAM Lead Azure Cloud ("cost-effective Azure solutions") · EPAM Lead Platform · EPAM Lead AWS DevOps (cost optimisation and billing)
