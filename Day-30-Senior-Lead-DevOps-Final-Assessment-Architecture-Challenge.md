@@ -116,7 +116,7 @@ You have several possible runtime models: virtual machines, managed application 
 
 Your decision should start with the application characteristics rather than the service name. Ask: Does the application need long-running processes? Does it need container-level control? Does it require Kubernetes? How much operational control does the team need? What scaling pattern exists? What networking and security requirements exist? What is the team's operational maturity?
 
-For ShopSphere, a containerized Spring Boot application could run on a managed container platform without requiring Kubernetes if Kubernetes-specific capabilities are not needed. If the organization already operates Kubernetes at scale and needs its ecosystem, AKS/EKS becomes reasonable. A VM-based architecture gives more control but increases infrastructure responsibility.
+For ShopSphere, a containerized Spring Boot application could run on a managed container platform without Kubernetes, if it does not need Kubernetes-specific capabilities. If the organization already operates Kubernetes at scale and needs its ecosystem, AKS/EKS becomes reasonable. A VM-based architecture gives more control but increases infrastructure responsibility.
 
 The Senior/Lead answer is therefore not “Kubernetes is better.” It is: **choose the runtime according to workload requirements, operational responsibility, team capability, and cost.**
 
@@ -180,7 +180,7 @@ VPC
  └── Private Database Subnet
 ```
 
-At Senior/Lead level, explain why traffic is allowed, where it is filtered, how outbound traffic works, and how DNS resolves private resources.
+At Senior/Lead level, explain why the network allows the traffic, where it filters the traffic, how outbound traffic works, and how DNS resolves private resources.
 
 ---
 
@@ -359,7 +359,7 @@ The application needs:
 - third-party API credentials
 - potentially cloud-service credentials
 
-None should be committed to Git.
+Do not commit any of them to Git.
 
 A production flow is:
 
@@ -377,7 +377,7 @@ The important principle is not the product name. It is:
 
 **Store secrets centrally, control access through identity, avoid embedding them in source or images, and minimize where they are exposed.**
 
-Also consider the pipeline itself. Build logs can accidentally expose secrets. Environment variables can be printed. Debug commands can leak credentials. Container images can permanently preserve values copied into layers.
+Also consider the pipeline itself. Build logs can accidentally expose secrets. A step can print environment variables. Debug commands can leak credentials. Container images can permanently preserve values copied into layers.
 
 ---
 
@@ -505,7 +505,7 @@ For an API, useful signals include:
 - dependency failures
 - deployment changes
 
-Use correlation IDs so a request can be followed across components.
+Use correlation IDs so you can follow a request across components.
 
 The operational chain is:
 
@@ -1019,7 +1019,7 @@ The complete mental model is:
 
 Your goal is not to memorize the diagram.
 
-Your goal is to be able to enter any layer, understand what is happening, trace dependencies across layers, identify the failure boundary, make a safe change, and explain the trade-off.
+Your goal is to be able to enter any layer and understand what is happening. You should be able to trace dependencies across layers, identify the failure boundary, make a safe change, and explain the trade-off.
 
 ---
 
@@ -1086,7 +1086,7 @@ Explain
 
 Repeat that loop with progressively harder systems.
 
-The strongest next step is to take the ShopSphere scenario and actually implement it in a cloud environment, then deliberately introduce failures and solve them using evidence. That is where the knowledge from these 30 days becomes engineering skill.
+The strongest next step is to take the ShopSphere scenario and actually implement it in a cloud environment. Then deliberately introduce failures and solve them with evidence. That is where the knowledge from these 30 days becomes engineering skill.
 
 ---
 
