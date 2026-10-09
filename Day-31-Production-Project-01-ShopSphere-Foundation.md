@@ -25,7 +25,7 @@ ShopSphere is an e-commerce application with:
 - High availability in Production
 - Documented recovery and troubleshooting procedures
 
-The project is deliberately designed around the problems a Senior/Lead DevOps engineer is expected to solve.
+The project deliberately centers on the problems a Senior/Lead DevOps engineer must solve.
 
 You are not trying to build Amazon.
 
@@ -102,7 +102,7 @@ For the initial version, use:
 
 These are starting assumptions, not universal production standards.
 
-The important lesson is that architecture should be derived from requirements.
+The important lesson: derive the architecture from the requirements.
 
 ---
 
@@ -262,7 +262,7 @@ VPC
       └── Database
 ```
 
-The exact AWS services will be selected during implementation.
+You will select the exact AWS services during implementation.
 
 The important traffic paths are:
 
@@ -327,7 +327,7 @@ Application Runtime Identity
 Database Identity
 ```
 
-They may be implemented differently depending on the platform, but the separation of responsibilities should remain.
+The platform can implement them differently, but the separation of responsibilities should remain.
 
 ---
 
@@ -857,7 +857,7 @@ What does the load balancer show?
 
 Then recover.
 
-The recovery should be documented:
+Document the recovery:
 
 ```text
 Detection
@@ -945,7 +945,7 @@ What exact permission is required?
 
 Restore the minimum required permission.
 
-This exercise is important because IAM failures are often incorrectly diagnosed as application or networking failures.
+This exercise is important because engineers often misdiagnose IAM failures as application or networking failures.
 
 ---
 
@@ -971,7 +971,7 @@ apply
 verification
 ```
 
-Production infrastructure changes should be controlled separately from application releases where appropriate.
+Control production infrastructure changes separately from application releases where appropriate.
 
 For example:
 
