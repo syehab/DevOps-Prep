@@ -82,7 +82,7 @@ Here, `stage` creates the major section, `job` groups the work, and `step` runs 
 
 ## 03 · Trigger · 7 min
 
-A **trigger decides when the pipeline should start**. A team might start CI when code is pushed to a branch, run checks when a Pull Request is opened, or allow a pipeline to be started manually for a controlled release.
+A **trigger decides when the pipeline should start**. A team might start CI when a developer pushes code to a branch, or run checks when a Pull Request opens. A team member can also start a pipeline manually for a controlled release.
 
 A simple trigger might look like:
 
@@ -141,7 +141,7 @@ The output could be:
 target/myapp.jar
 ```
 
-The build may also perform checks such as code quality or security scanning. Whether those checks happen inside the Build stage or in separate stages depends on the team's pipeline design.
+The build may also run checks such as code quality or security scanning. Whether those checks happen inside the Build stage or in separate stages depends on the team's pipeline design.
 
 > **Key idea:** The Build stage turns **source code into a known piece of software that can be tested and eventually deployed**.
 
@@ -174,20 +174,20 @@ The pipeline should also keep the test result visible so the team can understand
 
 > **Senior thinking:** A pipeline should stop when an important check fails instead of hiding the failure and continuing.
 
-For a Maven application, the test step can be added like this:
+For a Maven application, you can add the test step like this:
 
 ```yaml
 - script: mvn test
   displayName: Run tests
 ```
 
-If the command returns a failure, Azure DevOps normally marks the step and job as failed, preventing dependent stages from continuing.
+If the command returns a failure, Azure DevOps normally marks the step and job as failed, so dependent stages stop.
 
 ---
 
 ## 06 · Publish the Artifact · 9 min
 
-After the build and tests succeed, the pipeline can publish the JAR as an **artifact**. The artifact is the exact output that later deployment stages will use, so it becomes the hand-off point between the Build part of the pipeline and the Release part.
+After the build and tests succeed, the pipeline can publish the JAR as an **artifact**. The artifact is the exact output that later deployment stages will use. It is the hand-off point between the Build part of the pipeline and the Release part.
 
 ```text
 Source
@@ -201,7 +201,7 @@ myapp.jar
 Artifact
 ```
 
-The artifact can be stored by Azure DevOps or another artifact store. It should have enough version information to identify what it contains. That version might be connected to the Git commit SHA, build number or application version.
+The artifact can live in Azure DevOps or another artifact store. It should have enough version information to identify what it contains. That version can come from the Git commit SHA, build number or application version.
 
 For example:
 
@@ -219,7 +219,7 @@ The deployment stages use this existing artifact instead of compiling the source
 
 > **Key idea:** **Build once, publish once, deploy the same artifact.**
 
-A simple artifact publishing step can look like:
+A simple step to publish the artifact can look like:
 
 ```yaml
 - task: PublishPipelineArtifact@1
@@ -268,7 +268,7 @@ The `curl` command gives the pipeline evidence that the application actually res
 
 ## 08 · Promote to UAT & PROD · 9 min
 
-Once Dev validation is complete, the same artifact can move to UAT. UAT gives the team a more controlled environment where the application can be checked with test data, expected business flows and settings that are closer to Production.
+Once Dev validation is complete, the same artifact can move to UAT. UAT gives the team a more controlled environment. There the team can check the application with test data, expected business flows and settings closer to Production.
 
 Production can then require an approval before deployment. The approval is a control point where an authorized person confirms that the release has passed the required checks and is allowed to move forward.
 
@@ -288,7 +288,7 @@ PROD
 
 The important part is that there is no second build between UAT and Production. The pipeline promotes the same known artifact, while each environment supplies its own configuration and resources.
 
-This also makes rollback easier. If Production has a problem, you can identify the artifact that was deployed and select an earlier known-good artifact instead of trying to recreate an old build from memory.
+This also makes rollback easier. If Production has a problem, you can find the exact artifact that you deployed. You can then select an earlier known-good artifact instead of recreating an old build from memory.
 
 > **Key idea:** The pipeline promotes a **known version**, rather than creating a new version at every environment.
 
@@ -316,11 +316,11 @@ The real deployment tasks will depend on the target platform, but the idea is th
 
 ## 09 · Environment Variables & Secrets · 8 min
 
-The same application can need different settings in different environments. Dev might use one database and UAT another, while Production uses the real database and stricter settings. These values should normally be supplied by the environment instead of being written directly into the source code.
+The same application can need different settings in different environments. Dev might use one database and UAT another, while Production uses the real database and stricter settings. The environment should supply these values; do not write them into the source code.
 
 For example, the application can use a variable such as `DATABASE_URL`, while Dev, UAT and Production each provide a different value. The application artifact stays the same; only the environment value changes.
 
-Secrets need extra care because passwords, API keys and tokens should not be stored in Git or written directly into pipeline YAML. A secret store such as Azure Key Vault can keep these values protected and allow the application or pipeline to access them when needed.
+Secrets need extra care. Do not store passwords, API keys or tokens in Git or in pipeline YAML, because anyone with read access can then see them. A secret store such as Azure Key Vault can keep these values protected and allow the application or pipeline to access them when needed.
 
 > **Senior habit:** Keep **application code, environment configuration and secrets** as separate concerns. This makes the same artifact easier to promote safely.
 
@@ -334,7 +334,7 @@ steps:
 - script: echo "Deploying to $(APP_ENV)"
 ```
 
-Sensitive values should not be written directly into YAML. They should come from a protected variable or secret store such as Azure Key Vault.
+Do not write sensitive values directly into YAML. They should come from a protected variable or a secret store such as Azure Key Vault.
 
 ---
 
@@ -393,7 +393,7 @@ The pipeline YAML stays the same. The stage simply loads a different group, so t
 
 Not every environment value is sensitive. Values such as an environment name or a normal URL can usually be stored as ordinary pipeline variables.
 
-Passwords, API keys, tokens and similar values need protection. They should not be written directly into Git or ordinary YAML; they should come from a protected variable or a secret store such as Azure Key Vault.
+Passwords, API keys, tokens and similar values need protection. Do not write them into Git or ordinary YAML, because both are visible to anyone with repository access. Use a protected variable or a secret store such as Azure Key Vault.
 
 For example:
 
@@ -546,7 +546,7 @@ This gives you the central pattern:
 
 ## 17 · What Happens When Something Fails? · 7 min
 
-Imagine the Build stage passes, the artifact is created and Dev deployment succeeds, but the application returns errors in Dev.
+Imagine the Build stage passes, the pipeline creates the artifact and Dev deployment succeeds, but the application returns errors in Dev.
 
 The pipeline should stop before automatically promoting the same version to UAT or Production. The team can inspect the logs, fix the problem and create a new commit.
 
@@ -664,7 +664,7 @@ Deployment stages
 DEV → UAT → PROD
 ```
 
-Approvals, security checks, quality checks and automated verification can be added around this basic flow.
+You can add approvals, security checks, quality checks and automated verification around this basic flow.
 
 The tool is Azure DevOps, but the underlying model is the same one you learned yesterday.
 
