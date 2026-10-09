@@ -14,7 +14,7 @@ For infrastructure:
 
 ## Part 1 — Azure DevOps as a Delivery Platform
 
-Azure DevOps is not simply a place where YAML pipelines are stored. It is a collection of capabilities that can support the software delivery lifecycle: Azure Repos for source control, Azure Pipelines for CI/CD, Azure Artifacts for packages, Boards for work tracking, and deployment environments/checks for controlled releases. From a Senior/Lead perspective, the important question is not “Which Azure DevOps feature does this?” but “Where should this responsibility live in the delivery architecture?”
+Azure DevOps is not simply a place that stores YAML pipelines. It is a collection of capabilities that support the software delivery lifecycle. Azure Repos provides source control, Azure Pipelines provides CI/CD, Azure Artifacts holds packages, Boards tracks work, and deployment environments/checks control releases. From a Senior/Lead perspective, the important question is not “Which Azure DevOps feature does this?” but “Where should this responsibility live in the delivery architecture?”
 
 A typical enterprise flow is:
 
@@ -44,7 +44,7 @@ UAT
 Production
 ```
 
-The same basic model works whether the application is deployed to an Azure VM, App Service, Container Apps, or AKS. What changes is the final deployment mechanism.
+The same basic model works whether the application runs on an Azure VM, App Service, Container Apps, or AKS. What changes is the final deployment mechanism.
 
 A useful Senior/Lead distinction is **source, artifact, environment, and infrastructure**. Source answers “what code was changed?” Artifact answers “what exact software is deployable?” Environment answers “where is it running?” Infrastructure answers “what platform is required for it?” Keeping these concepts separate makes releases safer and easier to troubleshoot.
 
@@ -60,7 +60,7 @@ git commit -m "Add application health check"
 git push origin feature/add-health-check
 ```
 
-A Pull Request should normally be the controlled path into the protected main branch. Branch policies can require reviewers and successful pipeline checks before the change is merged.
+A Pull Request should normally be the controlled path into the protected main branch. Branch policies can require reviewers and successful pipeline checks before the change merges.
 
 Practice:
 
@@ -319,7 +319,7 @@ Ask yourself what would happen if the AppDeploymentIdentity were compromised. Th
 
 ## Part 5 — Environments, Approvals and Checks
 
-Azure DevOps Environments provide a logical representation of deployment targets and can be used to control and record deployments. They are especially useful for production because they provide a governance boundary around deployment.
+Azure DevOps Environments provide a logical representation of deployment targets, and you can use them to control and record deployments. They are especially useful for production because they provide a governance boundary around deployment.
 
 A simple model is:
 
@@ -367,7 +367,7 @@ Implementation example concept:
 
 The `environment: production` association allows the deployment to participate in environment-level governance.
 
-A Senior/Lead should also distinguish **pipeline logic from governance**. A YAML condition can control workflow logic, while environment checks can provide centralized controls that developers should not be able to bypass simply by changing application YAML.
+A Senior/Lead should also distinguish **pipeline logic from governance**. A YAML condition can control workflow logic. Environment checks can provide centralized controls that developers cannot bypass simply with an application YAML change.
 
 Practice:
 
@@ -393,7 +393,7 @@ Then ask: “Can a developer change YAML and bypass the production control?” I
 
 ## Part 6 — Variables, Variable Groups and Azure Key Vault
 
-Applications need configuration that changes between environments, such as database endpoints, API URLs, feature flags, and connection settings. The application artifact should normally remain unchanged while environment-specific configuration is injected during deployment or runtime.
+Applications need configuration that changes between environments, such as database endpoints, API URLs, feature flags, and connection settings. The application artifact should normally remain unchanged while the deployment or runtime injects environment-specific configuration.
 
 A useful separation is:
 
@@ -494,7 +494,7 @@ Put non-sensitive environment configuration in the groups and keep sensitive val
 
 As the number of applications grows, copying the same YAML into every repository creates maintenance problems. If 50 teams each maintain their own 200-line pipeline and a security control needs to change, updating 50 pipelines becomes difficult and inconsistent.
 
-Azure Pipelines supports YAML templates so common workflow logic can be reused.
+Azure Pipelines supports YAML templates so you can reuse common workflow logic.
 
 A simple structure is:
 
@@ -569,7 +569,7 @@ Then consume it from two different sample applications.
 
 ## Part 8 — Application Pipeline vs Infrastructure Pipeline
 
-Application delivery and infrastructure delivery are related but should not automatically be treated as the same change.
+Application delivery and infrastructure delivery are related, but do not automatically treat them as the same change.
 
 An application pipeline answers:
 
@@ -651,7 +651,7 @@ Map which changes belong to each repository.
 
 Terraform requires state so it can understand the relationship between configuration and infrastructure. In a team environment, local state is dangerous because different engineers or pipeline runs could operate against different copies of state.
 
-Azure Storage can be used as a remote backend for Terraform state.
+Azure Storage can serve as a remote backend for Terraform state.
 
 Conceptually:
 
@@ -801,7 +801,7 @@ Create a Bicep template for a storage account, run `what-if`, review the changes
 
 ## Part 11 — Infrastructure Validation and Policy Gates
 
-Infrastructure code should be treated as production code. A Terraform or Bicep change should pass validation and security/governance checks before it reaches production.
+Treat infrastructure code as production code. A Terraform or Bicep change should pass validation and security/governance checks before it reaches production.
 
 A Terraform pipeline might look like:
 
@@ -953,11 +953,11 @@ Validate
 Deploy Production
 ```
 
-The image should not be rebuilt for each environment.
+Do not rebuild the image for each environment.
 
 Practice:
 
-Build one image, push it to ACR, deploy it to Dev, then identify the exact digest that was deployed. Use that same image identity for UAT and Production.
+Build one image, push it to ACR, and deploy it to Dev. Then identify the exact digest that you deployed. Use that same image identity for UAT and Production.
 
 ---
 
@@ -1238,7 +1238,7 @@ Registry access control
 Deployment identity
 ```
 
-Pipeline identities should have only the permissions they require. Build agents should not automatically have permanent access to production. Secrets should not be printed into logs.
+Give pipeline identities only the permissions they require. Do not give build agents permanent access to production. Do not print secrets into logs.
 
 A common dangerous pattern is:
 
