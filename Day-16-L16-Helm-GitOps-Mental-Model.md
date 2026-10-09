@@ -1,8 +1,8 @@
 # Day 16 — Helm + GitOps Mental Model
 
-**Goal:** Understand why Helm exists, how Helm charts package Kubernetes applications, and how GitOps changes the way Kubernetes deployments are managed.
+**Goal:** Understand why Helm exists, how Helm charts package Kubernetes applications, and how GitOps changes the way teams manage Kubernetes deployments.
 
-**Core idea:** A real application quickly needs many YAML files, different values per environment, and a safe way to upgrade and roll back. Helm solves the packaging half of that problem: one chart, many values files, so the design is written once and only the environment values change. GitOps solves the deployment half: Git holds the desired state and a controller continuously corrects the cluster toward it, instead of a pipeline pushing changes and the cluster slowly drifting away from what anyone wrote down.
+**Core idea:** A real application quickly needs many YAML files, different values per environment, and a safe way to upgrade and roll back. Helm solves the packaging half of that problem: one chart, many values files, so the design is written once and only the environment values change. GitOps solves the deployment half: Git holds the desired state, and a controller continuously corrects the cluster toward it. Without this, a pipeline pushes changes and the cluster slowly drifts away from what anyone wrote down.
 
 > **JD note:** GitOps plus paved roads is the core ask in Platform and Lead roles. See the [GitOps pattern card](jd-insights/patterns/gitops-platform.md).
 
@@ -118,7 +118,7 @@ containers:
     image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
 ```
 
-When Helm processes the chart, these expressions are replaced with actual values and produce normal Kubernetes YAML. The Kubernetes API server does not understand `{{ .Values.replicaCount }}`; Helm processes it before Kubernetes receives the final manifest.
+When Helm processes the chart, it replaces these expressions with actual values and produces normal Kubernetes YAML. The Kubernetes API server does not understand `{{ .Values.replicaCount }}`; Helm processes it before Kubernetes receives the final manifest.
 
 5. This gives you a useful flow:
 
@@ -170,7 +170,7 @@ you can write:
 replicas: {{ .Values.replicaCount }}
 ```
 
-and define the value in `values.yaml`. This becomes powerful when the same chart is deployed to multiple environments with different configuration.
+and define the value in `values.yaml`. This becomes powerful when you deploy the same chart to multiple environments with different configuration.
 
 2. You can override values at deployment time using another values file:
 
@@ -216,7 +216,7 @@ helm template myapp ./myapp \
   -f ./myapp/values-prod.yaml
 ```
 
-This separates **template problems** from **cluster problems**. If the rendered YAML is wrong, the problem can be investigated before Kubernetes is involved.
+This separates **template problems** from **cluster problems**. If the rendered YAML is wrong, you can investigate the problem before Kubernetes is involved.
 
 4. You can also inspect a specific rendered resource:
 
@@ -342,13 +342,13 @@ helm uninstall myapp
 
 This removes the Helm release and the resources managed by it, subject to how the chart and resources were designed. Before uninstalling a production release, understand what data resources, persistent volumes or externally managed objects are involved.
 
-**Practice:** Install the chart, change the image tag or replica count, upgrade it, inspect the history, then deliberately introduce a bad application image and observe the resulting failure. Roll back and verify recovery.
+**Practice:** Install the chart, change the image tag or replica count, upgrade it, and inspect the history. Then deliberately introduce a bad application image and observe the resulting failure. Roll back and verify recovery.
 
 ---
 
 ## Part 5 — Helm Dependencies, Secrets and Configuration
 
-1. Real applications often depend on other components. A Helm chart can declare dependencies on other charts, which allows an application package to describe related components. However, dependencies should be used deliberately. Packaging an entire database, message broker and application into one chart may be convenient for a lab but can create an undesirable operational boundary in production when those components have different ownership, scaling and lifecycle requirements.
+1. Real applications often depend on other components. A Helm chart can declare dependencies on other charts, which allows an application package to describe related components. However, use dependencies deliberately. To package an entire database, message broker and application into one chart may be convenient for a lab. In production it can create an undesirable operational boundary, because those components have different ownership, scaling and lifecycle requirements.
 
 2. Helm values are appropriate for configuration, but they should not become a place to casually store production secrets in Git. A value such as:
 
@@ -383,7 +383,7 @@ Environment-specific deployment
 
 The image should remain the same across environments whenever possible. Environment-specific values and secret resolution should happen at deployment/runtime rather than requiring a separate application image for every environment.
 
-5. Be careful with Helm's `--set` when dealing with sensitive values. Even if a secret is eventually rendered into a Kubernetes Secret, placing credentials directly in shell history, CI logs or pipeline command output can create another exposure path. A secure design considers not only where the secret ends up but also how it travels through the deployment process.
+5. Be careful with Helm's `--set` when dealing with sensitive values. Even if a secret eventually becomes a Kubernetes Secret, credentials that pass through shell history, CI logs or pipeline command output create another exposure path. A secure design considers not only where the secret ends up but also how it travels through the deployment process.
 
 **Practice:** Modify your chart so the database host is configurable through values, but the database password is represented only as a Secret reference. Do not put a real password into the repository.
 
@@ -391,7 +391,7 @@ The image should remain the same across environments whenever possible. Environm
 
 ## Part 6 — From Helm to GitOps
 
-1. Helm answers the question **“How do I package and deploy Kubernetes applications?”** GitOps adds the question **“What should be running in the cluster, and where is that desired state defined?”** In a GitOps model, Git becomes the authoritative source for the desired configuration, while a controller running in or around the cluster continuously compares the desired state with the actual cluster state. When they differ, the controller attempts to reconcile the cluster toward the desired state.
+1. Helm answers the question **“How do I package and deploy Kubernetes applications?”** GitOps adds the question **“What should be running in the cluster, and where is that desired state defined?”** In a GitOps model, Git becomes the authoritative source for the desired configuration. A controller running in or around the cluster continuously compares the desired state with the actual cluster state. When they differ, the controller attempts to reconcile the cluster toward the desired state.
 
 2. The traditional CI/CD model you learned earlier might look like:
 
@@ -515,9 +515,9 @@ image:
 
 The GitOps controller notices the Git change and reconciles Kubernetes.
 
-3. An important security benefit is that the GitOps controller can operate with controlled access to the cluster, while developers and CI systems do not necessarily need unrestricted direct write access to production Kubernetes APIs. The exact permissions depend on the architecture, but the general principle is **reduce the number of systems that need direct production-cluster mutation privileges**.
+3. An important security benefit is that the GitOps controller can operate with controlled access to the cluster. Developers and CI systems then do not need unrestricted direct write access to production Kubernetes APIs. The exact permissions depend on the architecture, but the general principle is **reduce the number of systems that need direct production-cluster mutation privileges**.
 
-4. GitOps also creates a strong audit trail because deployment configuration changes are represented as Git commits and pull requests. Instead of asking “Who changed the production Deployment manually?” you can often trace the desired-state change through Git history. This does not eliminate all operational investigation, because cluster-level changes and infrastructure changes can still happen outside Git, but it provides a strong source of evidence.
+4. GitOps also creates a strong audit trail because Git commits and pull requests represent the deployment configuration changes. Instead of asking “Who changed the production Deployment manually?” you can often trace the desired-state change through Git history. This does not eliminate all operational investigation, because cluster-level changes and infrastructure changes can still happen outside Git. It does provide a strong source of evidence.
 
 5. GitOps introduces its own failure modes. A deployment can fail because the image does not exist, the Helm template renders invalid Kubernetes YAML, the controller cannot access the cluster or repository, the Kubernetes resources are invalid, or the application itself is unhealthy. Therefore, “Git commit merged” does not mean “production is healthy.” You still need the observability and rollout verification concepts from Day 7 and Day 15.
 
@@ -607,7 +607,7 @@ Then restore the desired configuration through Helm. In a real GitOps lab, repea
 
 ## Part 9 — Helm vs GitOps: Understand the Boundary
 
-1. Helm and GitOps are not competing replacements. Helm is primarily a packaging and templating/release-management tool for Kubernetes, while GitOps is an operating model in which a controller continuously reconciles cluster state from a declarative source such as Git. A GitOps controller can use Helm charts as part of that process. Therefore, the architecture can be **Git → Helm chart/values → GitOps controller → Kubernetes**.
+1. Helm and GitOps are not competing replacements. Helm is primarily a packaging and templating/release-management tool for Kubernetes. GitOps is an operating model in which a controller continuously reconciles cluster state from a declarative source such as Git. A GitOps controller can use Helm charts as part of that process. Therefore, the architecture can be **Git → Helm chart/values → GitOps controller → Kubernetes**.
 
 2. Think about the responsibilities separately:
 
@@ -653,7 +653,7 @@ Then explain why you assigned it to Terraform/Bicep, CI, Helm/GitOps or another 
 
 ## Part 10 — Senior/Lead Troubleshooting Drill
 
-1. Helm and GitOps add deployment layers, so troubleshooting must account for them. If a Helm deployment fails, first determine whether the chart rendered correctly, whether Kubernetes accepted the resources, whether the Pods started, whether Services have endpoints, and whether the application is healthy. If GitOps is involved, add another question: **Did the controller actually observe and reconcile the desired state?** This extends the troubleshooting approach from Day 15 rather than replacing it.
+1. Helm and GitOps add deployment layers, so troubleshooting must account for them. If a Helm deployment fails, first check that the chart rendered correctly and that Kubernetes accepted the resources. Then check that the Pods started, that Services have endpoints, and that the application is healthy. If GitOps is involved, add another question: **Did the controller actually observe and reconcile the desired state?** This extends the troubleshooting approach from Day 15 rather than replacing it.
 
 2. Consider this incident:
 
