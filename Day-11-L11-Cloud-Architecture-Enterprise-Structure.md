@@ -1,6 +1,6 @@
 # Day 11 — Cloud Architecture & Enterprise Structure
 
-**Goal:** Understand the structure above individual resources (tenant, governance, subscriptions or accounts, resource groups) and why each boundary exists, so you can explain an enterprise cloud design instead of only building inside one.
+**Goal:** Understand the structure above individual resources (tenant, governance, subscriptions or accounts, resource groups) and why each boundary exists. Then you can explain an enterprise cloud design instead of only building inside one.
 
 **Core mental model:** Hold this one picture before any detail. Every numbered question in this lesson explains one level of it, so if you get lost, come back here.
 
@@ -26,7 +26,7 @@ Resource                      → The actual VM, VNet, database
 
 ## What you will learn
 
-A few cloud resources are easy to manage. Hundreds of resources across many teams, applications, and environments are not, and the thing that keeps them manageable is structure: management groups, subscriptions or accounts, resource groups, regions, and clear ownership. This lesson is about why each of those boundaries exists and what control it gives you, not about how to click resources into existence.
+A few cloud resources are easy to manage. Hundreds of resources across many teams, applications, and environments are not. The thing that keeps them manageable is structure: management groups, subscriptions or accounts, resource groups, regions, and clear ownership. This lesson is about why each of those boundaries exists and what control it gives you, not about how to click resources into existence.
 
 ---
 
@@ -34,7 +34,7 @@ A few cloud resources are easy to manage. Hundreds of resources across many team
 
 1. Why does an enterprise need a cloud hierarchy?
 
-A small project can put its resources into a single cloud account or subscription, but an enterprise needs stronger boundaries for security, billing, ownership, governance, and operational control. Cloud providers therefore give organizations higher-level containers that allow resources to be grouped and controlled at different levels. The important idea is that a hierarchy is not created simply to make the portal look organized; each boundary should provide a useful control such as access management, policy, cost separation, or workload isolation.
+A small project can put its resources into a single cloud account or subscription. An enterprise needs stronger boundaries for security, billing, ownership, governance, and operational control. Cloud providers therefore give organizations higher-level containers, so you can group and control resources at different levels. You do not create a hierarchy simply to make the portal look organized. Each boundary should provide a useful control, such as access management, policy, cost separation, or workload isolation.
 
 **Practice**
 
@@ -74,7 +74,7 @@ Map the same fictional company into an AWS Organization with separate accounts f
 
 4. What is an Entra ID tenant?
 
-An Azure tenant is the organization's identity boundary in Microsoft Entra ID. It contains identities such as users, groups, applications, and service principals and provides the identity system used to authenticate and authorize access to Azure and other connected services. A tenant is not the same thing as a subscription: one tenant can contain multiple Azure subscriptions, while the subscriptions use the tenant's identity system for access control.
+An Azure tenant is the organization's identity boundary in Microsoft Entra ID. It contains identities such as users, groups, applications, and service principals. It provides the identity system that authenticates and authorizes access to Azure and other connected services. A tenant is not the same thing as a subscription: one tenant can contain multiple Azure subscriptions, while the subscriptions use the tenant's identity system for access control.
 
 **Practice**
 
@@ -82,7 +82,7 @@ Draw the relationship between one tenant and three subscriptions: Dev, UAT, and 
 
 5. What is an Azure Subscription?
 
-An Azure subscription is a major management, billing, quota, and access boundary for Azure resources. Organizations often create multiple subscriptions to separate environments, business units, workloads, or security boundaries. A subscription can contain many resource groups and resources, and Azure policies and role assignments can be applied at subscription scope. Separating subscriptions is therefore much stronger than simply creating separate resource groups inside one subscription.
+An Azure subscription is a major management, billing, quota, and access boundary for Azure resources. Organizations often create multiple subscriptions to separate environments, business units, workloads, or security boundaries. A subscription can contain many resource groups and resources, and you can apply Azure policies and role assignments at subscription scope. Separate subscriptions are therefore a much stronger boundary than separate resource groups inside one subscription.
 
 **Practice**
 
@@ -102,7 +102,7 @@ An Azure Resource Group is a logical container for related Azure resources. It i
 
 **Practice**
 
-For a Spring Boot application with an App Service, database, storage account, and monitoring resources, decide which resources you would place in the same resource group and explain the lifecycle relationship.
+For a Spring Boot application with an App Service, database, storage account, and monitoring resources, decide which resources you would place in the same resource group. Explain the lifecycle relationship.
 
 **Remember:** Resource groups organize resources; subscriptions provide a broader management boundary.
 
@@ -112,7 +112,7 @@ For a Spring Boot application with an App Service, database, storage account, an
 
 8. Is a Resource Group the same as a Region?
 
-No. A resource group is a logical management container, while a region is a physical geographic location where cloud infrastructure is deployed. A resource group can contain resources associated with different regions, although individual Azure resources may have regional placement requirements. Keeping this distinction clear prevents a common architectural mistake: assuming that putting resources into one resource group makes them physically reside together.
+No. A resource group is a logical management container, while a region is a physical geographic location where the provider operates cloud infrastructure. A resource group can contain resources associated with different regions, although individual Azure resources may have regional placement requirements. Keep this distinction clear to avoid a common architectural mistake: one resource group does not make resources physically reside together.
 
 **Practice**
 
@@ -128,7 +128,7 @@ For an application serving users primarily in India, list the factors you would 
 
 10. What is an Availability Zone?
 
-Availability Zones are physically separate locations within a cloud region that are designed to reduce the impact of failures affecting one location. Deploying supported workloads across multiple zones can improve availability because a failure in one zone does not necessarily take down the entire workload. Zones do not replace regional disaster recovery: a region-wide failure requires a multi-region strategy.
+Availability Zones are physically separate locations within a cloud region. They reduce the impact of a failure in one location. Deploy supported workloads across multiple zones to improve availability: a failure in one zone does not necessarily take down the entire workload. Zones do not replace regional disaster recovery: a region-wide failure requires a multi-region strategy.
 
 **Practice**
 
@@ -138,7 +138,7 @@ Take a production application with a load balancer, application instances, and d
 
 11. How are environments represented in cloud architecture?
 
-Dev, UAT, and Production are logical environments representing different stages of the application lifecycle and different levels of operational risk. They can be separated using subscriptions or accounts, resource groups, naming conventions, or a combination of these depending on the organization's scale and governance requirements. Production normally deserves stronger access controls and change processes than development, so environment boundaries should support those differences rather than exist only as labels.
+Dev, UAT, and Production are logical environments representing different stages of the application lifecycle and different levels of operational risk. You can separate them with subscriptions or accounts, resource groups, naming conventions, or a combination of these, depending on the organization's scale and governance requirements. Production normally deserves stronger access controls and change processes than development, so environment boundaries should support those differences rather than exist only as labels.
 
 **Practice**
 
@@ -150,7 +150,7 @@ Design a Dev/UAT/Prod structure for one application and decide which boundaries 
 
 12. What is an Azure Management Group?
 
-An Azure Management Group is a governance container above subscriptions. It allows organizations to organize subscriptions into a hierarchy and apply Azure Policy, role assignments, and other governance controls at a broader scope. For example, a company might place Production subscriptions under one management-group branch and Development subscriptions under another, allowing different policies and access requirements to be inherited by the subscriptions below them.
+An Azure Management Group is a governance container above subscriptions. It allows organizations to organize subscriptions into a hierarchy and apply Azure Policy, role assignments, and other governance controls at a broader scope. For example, a company might place Production subscriptions under one management-group branch and Development subscriptions under another. The subscriptions below each branch then inherit different policies and access requirements.
 
 **Practice**
 
@@ -158,7 +158,7 @@ Design a simple management-group hierarchy for a company with Production, Non-Pr
 
 13. What is the AWS equivalent of an Azure Management Group?
 
-AWS does not have an exact one-to-one equivalent, but AWS Organizations and Organizational Units provide a similar higher-level governance capability. Organizational Units group AWS accounts, while Service Control Policies can be applied to accounts or organizational units to establish guardrails. The important interview point is not to claim that the services are identical; instead, understand the architectural role they play: both provide governance above individual workload resources.
+AWS does not have an exact one-to-one equivalent, but AWS Organizations and Organizational Units provide a similar higher-level governance capability. Organizational Units group AWS accounts, and you can apply Service Control Policies to accounts or organizational units as guardrails. Do not claim in an interview that the services are identical. Instead, understand their architectural role: both provide governance above individual workload resources.
 
 **Practice**
 
@@ -174,7 +174,7 @@ Then identify where the mapping is approximate rather than exact.
 
 14. What belongs at the governance layer?
 
-The governance layer should contain controls that need to apply consistently across multiple subscriptions or accounts, such as allowed regions, security requirements, required tags, identity controls, logging requirements, and restrictions on risky services or configurations. The purpose is to establish organizational guardrails without requiring every application team to implement the same foundational controls independently.
+The governance layer should contain controls that must apply consistently across multiple subscriptions or accounts. Examples: allowed regions, security requirements, required tags, identity controls, logging requirements, and restrictions on risky services or configurations. The purpose is to establish organizational guardrails, so that application teams do not each build the same foundational controls independently.
 
 **Practice**
 
@@ -196,7 +196,7 @@ For a company with Network, Platform, Security, and Application teams, assign ow
 
 16. Why should access follow ownership?
 
-Access should be granted according to what a team needs to operate, rather than giving everyone broad access because it is convenient. The Network team may need administrative access to network infrastructure while an application team may only need permission to consume that network. Similarly, developers may need access to development resources but not unrestricted production administration. This follows the least-privilege principle and reduces the impact of compromised credentials or operational mistakes.
+Grant access according to what a team needs to operate, not broad access for everyone because it is convenient. The Network team may need administrative access to network infrastructure while an application team may only need permission to consume that network. Similarly, developers may need access to development resources but not unrestricted production administration. This follows the least-privilege principle and reduces the impact of compromised credentials or operational mistakes.
 
 **Practice**
 
@@ -218,7 +218,7 @@ Imagine an engineer accidentally deletes an application resource. Compare the po
 
 18. How does a typical enterprise cloud structure fit together?
 
-A practical enterprise design starts with the identity and governance layer, then creates strong boundaries for subscriptions or accounts, environments, shared platforms, and workloads. Inside those boundaries, resource groups or similar logical containers organize resources according to lifecycle and ownership. Individual resources are then deployed into appropriate regions and availability zones. The important point is that each layer answers a different question: **Who are we? What rules apply? Who owns this environment? Where does it run? Which resources belong together?**
+A practical enterprise design starts with the identity and governance layer, then creates strong boundaries for subscriptions or accounts, environments, shared platforms, and workloads. Inside those boundaries, resource groups or similar logical containers organize resources according to lifecycle and ownership. Teams then deploy individual resources into appropriate regions and availability zones. The important point is that each layer answers a different question: **Who are we? What rules apply? Who owns this environment? Where does it run? Which resources belong together?**
 
 > **Remember:** This ready-to-use foundation is what JDs call a **landing zone**. Think of it as a paved parking lot: each workload parks in its own numbered spot, and the lights, gates, and cameras are already there.
 
@@ -242,7 +242,7 @@ Now decide how you would represent this using Azure Management Groups, Subscript
 
 19. How should Terraform fit into this architecture?
 
-Terraform should normally follow the ownership and lifecycle boundaries already established by the cloud architecture. If the Network team owns network infrastructure and the Application team owns application infrastructure, their Terraform configurations and states should normally reflect those boundaries rather than putting everything into one large project and state. This creates a consistent relationship between cloud ownership, source code, state, access permissions, and deployment pipelines.
+Terraform should normally follow the ownership and lifecycle boundaries already established by the cloud architecture. If the Network team owns network infrastructure and the Application team owns application infrastructure, their Terraform configurations and states should normally reflect those boundaries. Do not put everything into one large project and state. This creates a consistent relationship between cloud ownership, source code, state, access permissions, and deployment pipelines.
 
 **Practice**
 
@@ -264,7 +264,7 @@ For one production application, draw the flow from Git commit through the applic
 
 Design a small enterprise cloud from scratch.
 
-Start with one company containing Dev, UAT, and Production environments. Define the identity boundary, governance hierarchy, subscriptions or accounts, network ownership, platform ownership, and application ownership. Decide where resources should live, which regions and availability zones are required, how access should be separated, and how Terraform projects and state should map to those boundaries.
+Start with one company containing Dev, UAT, and Production environments. Define the identity boundary, governance hierarchy, subscriptions or accounts, network ownership, platform ownership, and application ownership. Decide where resources should live and which regions and availability zones you need. Decide how to separate access and how Terraform projects and state map to those boundaries.
 
 Then explain the architecture as if you were presenting it to a Lead Architect:
 
