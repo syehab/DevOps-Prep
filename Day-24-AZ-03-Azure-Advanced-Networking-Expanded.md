@@ -18,7 +18,7 @@ For private Azure PaaS access:
 
 ## Part 1 — The Azure Networking Mental Model
 
-Azure networking starts with the Virtual Network, or VNet. A VNet provides the private IP space in which Azure workloads communicate, while subnets divide that address space into smaller logical network segments. A Senior/Lead engineer should think about a VNet not merely as a container for IP addresses but as a boundary around routing, security, connectivity, and workload placement.
+Azure networking starts with the Virtual Network, or VNet. A VNet provides the private IP space in which Azure workloads communicate, while subnets divide that address space into smaller logical network segments. A Senior/Lead engineer should not think about a VNet merely as a container for IP addresses. It is a boundary around routing, security, connectivity, and workload placement.
 
 For example:
 
@@ -114,7 +114,7 @@ VNet
     10.20.4.0/24
 ```
 
-A common mistake is choosing address ranges without thinking about future connectivity. If an enterprise already has an on-premises network using `10.20.0.0/16`, creating an Azure VNet with the same range can make routing ambiguous or impossible across VPN/ExpressRoute.
+A common mistake is to choose address ranges without thought for future connectivity. If an enterprise already has an on-premises network on `10.20.0.0/16`, an Azure VNet with the same range can make routing ambiguous or impossible across VPN/ExpressRoute.
 
 Implementation example:
 
@@ -237,7 +237,7 @@ Then ask whether each rule is required and whether the source can be narrowed fu
 
 ## Part 4 — NSG Rule Evaluation and Troubleshooting
 
-NSG rules are evaluated according to priority, with lower numerical priority evaluated before higher numerical priority. Azure also has default NSG rules, so the absence of a custom rule does not mean that no rules exist.
+Azure evaluates NSG rules according to priority: lower numerical priority runs before higher numerical priority. Azure also has default NSG rules, so the absence of a custom rule does not mean that no rules exist.
 
 Suppose you create:
 
@@ -297,7 +297,7 @@ Create an intentional NSG failure. Block TCP 5432 from the application subnet an
 
 ## Part 5 — Route Tables and User Defined Routes
 
-Routing determines where packets should be sent. Azure automatically provides system routes, but User Defined Routes, or UDRs, allow you to explicitly control paths for certain traffic.
+Routing determines where packets go. Azure automatically provides system routes, but User Defined Routes, or UDRs, let you explicitly control paths for certain traffic.
 
 For example:
 
@@ -370,7 +370,7 @@ Imagine an application suddenly cannot reach an on-premises network after a rout
 
 ## Part 6 — Azure Firewall
 
-Azure Firewall provides centralized, stateful network security and traffic inspection. Stateful means the firewall remembers each connection it allows, so the reply traffic for an allowed connection is permitted automatically instead of needing its own rule. It is different from an NSG because it is designed as a centralized security service rather than simply filtering traffic at a subnet/NIC boundary.
+Azure Firewall provides centralized, stateful network security and traffic inspection. Stateful means the firewall remembers each connection it allows, so it permits the reply traffic for an allowed connection automatically, without a rule of its own. It is different from an NSG because it is designed as a centralized security service rather than simply filtering traffic at a subnet/NIC boundary.
 
 A common architecture is:
 
@@ -507,7 +507,7 @@ Azure PaaS Service
 
 For example, an Azure Storage account can have a private endpoint.
 
-The key benefit is not simply “the service is private.” The important benefit is that the application can reach the PaaS service through private network connectivity while the organization's security architecture can control and monitor that path.
+The key benefit is not simply “the service is private.” The important benefit: the application reaches the PaaS service through private network connectivity, and the organization's security architecture can control and monitor that path.
 
 Implementation example:
 
@@ -635,7 +635,7 @@ Hub VNet
                 10.10.0.0/16
 ```
 
-The VNets must have non-overlapping address spaces. Peering does not automatically mean that every traffic flow is allowed; routing and security controls still matter.
+The VNets must have non-overlapping address spaces. Peering does not automatically allow every traffic flow; routing and security controls still matter.
 
 Implementation example:
 
@@ -648,9 +648,9 @@ az network vnet peering create \
   --allow-vnet-access
 ```
 
-The reverse peering direction also needs to be configured for normal bidirectional connectivity.
+You also need to configure the reverse peering direction for normal bidirectional connectivity.
 
-VNet Peering is commonly used in hub-and-spoke architectures, but as the number of networks grows, a central connectivity architecture may use services such as Azure Virtual WAN.
+Hub-and-spoke architectures commonly use VNet Peering. As the number of networks grows, a central connectivity architecture may use services such as Azure Virtual WAN.
 
 Practice:
 
