@@ -127,7 +127,7 @@ Every one of these commands ultimately interacts with the Kubernetes API.
 
 5. What is etcd?
 
-`etcd` is the distributed key-value store used by Kubernetes to persist important cluster state. Kubernetes stores information about objects such as Deployments, Services, ConfigMaps, Secrets, and other resources through the API/control-plane architecture, with etcd providing durable storage for that state. If you are using a managed Kubernetes service, the cloud provider generally operates etcd for you, but as a Senior/Lead engineer you should understand that loss or corruption of control-plane state is a serious cluster-level concern.
+`etcd` is the distributed key-value store used by Kubernetes to persist important cluster state. Kubernetes stores information about objects such as Deployments, Services, ConfigMaps, Secrets, and other resources through the API/control-plane architecture. etcd provides durable storage for that state. If you use a managed Kubernetes service, the cloud provider generally operates etcd for you. As a Senior/Lead engineer you should still understand that loss or corruption of control-plane state is a serious cluster-level concern.
 
 ```text
 kubectl
@@ -214,7 +214,7 @@ This connects directly with Day 13: Docker is a higher-level developer platform,
 
 10. What is a Pod?
 
-A Pod is the smallest deployable unit in Kubernetes. It represents one or more containers that are scheduled together onto the same node and share certain resources, including a network namespace and optionally storage volumes. In the common case, a Pod contains one main application container, but sidecar patterns can place tightly coupled helper containers in the same Pod.
+A Pod is the smallest deployable unit in Kubernetes. It represents one or more containers that Kubernetes schedules together onto the same node. Those containers share certain resources, including a network namespace and optionally storage volumes. In the common case, a Pod contains one main application container, but sidecar patterns can place tightly coupled helper containers in the same Pod.
 
 **Example**
 
@@ -259,7 +259,7 @@ Both containers share the Pod's network namespace, so they can communicate throu
 
 13. What is the Pod IP?
 
-A Pod receives an IP address from the Kubernetes cluster network. Containers inside the same Pod share that network namespace and therefore share the Pod's IP. Pod IPs are generally temporary because Pods are replaceable; a replacement Pod can receive a different IP. Applications should therefore normally use Services rather than storing Pod IPs as permanent endpoints.
+A Pod receives an IP address from the Kubernetes cluster network. Containers inside the same Pod share that network namespace and therefore share the Pod's IP. Pod IPs are generally temporary because Pods are replaceable; a replacement Pod can receive a different IP. Applications should therefore use Services rather than store Pod IPs as permanent endpoints.
 
 **Example**
 
@@ -339,7 +339,7 @@ Containers
 
 17. What is a ReplicaSet?
 
-A ReplicaSet maintains a specified number of matching Pods. If the desired count is three and one Pod disappears, the ReplicaSet causes another Pod to be created. In normal application deployments, you usually manage the Deployment rather than directly managing the ReplicaSet.
+A ReplicaSet keeps a specified number of matching Pods. If the desired count is three and one Pod disappears, the ReplicaSet creates another Pod. In normal application deployments, you usually manage the Deployment rather than directly managing the ReplicaSet.
 
 **Example**
 
@@ -381,7 +381,7 @@ kubectl get pods -l app=myapp
 
 18. What happens if a Pod fails?
 
-Kubernetes continuously observes workload state. If a Pod managed by a Deployment disappears, the controller creates a replacement so that the desired replica count is restored. This is one of the major differences between running containers manually and running them under an orchestrator.
+Kubernetes continuously observes workload state. If a Pod managed by a Deployment disappears, the controller creates a replacement to restore the desired replica count. This is one of the major differences between running containers manually and running them under an orchestrator.
 
 **Practice**
 
@@ -529,7 +529,7 @@ This allows the Service to provide a consistent application-facing port even whe
 
 23. What are common Service types?
 
-`ClusterIP` provides internal cluster connectivity and is the normal default. `NodePort` exposes a service through a port on each node and is useful for understanding Kubernetes networking, although production cloud architectures often use a LoadBalancer or Ingress instead. `LoadBalancer` integrates with a cloud provider to provision external load-balancing infrastructure.
+`ClusterIP` provides internal cluster connectivity and is the normal default. `NodePort` exposes a service through a port on each node and is useful to understand Kubernetes networking. Production cloud architectures often use a LoadBalancer or Ingress instead. `LoadBalancer` integrates with a cloud provider to provision external load-balancing infrastructure.
 
 **Mental model:**
 
@@ -546,7 +546,7 @@ Cloud load balancer + Service
 
 24. How does DNS work inside Kubernetes?
 
-Kubernetes provides internal DNS so applications can normally reach Services by name instead of using IP addresses. A Service such as `myapp` can be resolved by workloads in the appropriate namespace, and fully qualified service names can be used when needed. This is the Kubernetes continuation of the Docker networking principle learned on Day 13: use stable names instead of ephemeral container or Pod IPs.
+Kubernetes provides internal DNS so applications can normally reach Services by name instead of using IP addresses. Workloads in the appropriate namespace can resolve a Service such as `myapp`, and you can use fully qualified service names when needed. This is the Kubernetes continuation of the Docker networking principle learned on Day 13: use stable names instead of ephemeral container or Pod IPs.
 
 **Example:**
 
@@ -568,7 +568,7 @@ Application Pods
 
 25. How should application configuration be supplied?
 
-Configuration that differs between environments should normally be kept outside the container image. Kubernetes provides ConfigMaps for non-sensitive configuration and Secrets for sensitive values. This allows the same image to be deployed to Dev, UAT, and Production while receiving different runtime configuration.
+Keep configuration that differs between environments outside the container image. Kubernetes provides ConfigMaps for non-sensitive configuration and Secrets for sensitive values. You can then deploy the same image to Dev, UAT, and Production while each environment supplies different runtime configuration.
 
 **Example ConfigMap:**
 
@@ -586,7 +586,7 @@ A Deployment can consume these values as environment variables.
 
 26. What is a Kubernetes Secret?
 
-A Secret is a Kubernetes object intended for sensitive configuration such as passwords, tokens, and certificates. It is important to understand that the word "Secret" does not automatically mean the data is protected to every required production standard; access control, encryption at rest, RBAC, secret rotation, and integration with external secret managers still matter.
+A Secret is a Kubernetes object intended for sensitive configuration such as passwords, tokens, and certificates. The word "Secret" does not automatically mean the data meets every required production protection standard. Access control, encryption at rest, RBAC, secret rotation, and integration with external secret managers still matter.
 
 **Example:**
 
@@ -630,7 +630,7 @@ A liveness probe answers:
 
 > "Is this container still functioning well enough to remain running?"
 
-If a liveness probe repeatedly fails, Kubernetes may restart the container. Liveness should not simply duplicate readiness because an application can be temporarily unable to receive traffic without needing to be restarted.
+If a liveness probe repeatedly fails, Kubernetes may restart the container. Liveness should not simply duplicate readiness, because an application can be temporarily unable to receive traffic and still not need a restart.
 
 **Example:**
 
@@ -707,7 +707,7 @@ This does not mean the container is permanently consuming exactly that amount; i
 
 32. What are CPU and memory limits?
 
-Limits place an upper boundary on how much of a resource a container can consume, subject to Kubernetes and runtime behavior. Memory limits are particularly important because uncontrolled memory growth can affect other workloads on the node. Poorly chosen limits can also cause problems, such as container OOM (out-of-memory) kills, where a container is stopped for using more memory than its limit allows, or CPU throttling. Resource values should therefore be based on observed application behavior rather than arbitrary numbers.
+Limits place an upper boundary on how much of a resource a container can consume, subject to Kubernetes and runtime behavior. Memory limits are particularly important because uncontrolled memory growth can affect other workloads on the node. Poorly chosen limits can also cause problems. Examples: container OOM (out-of-memory) kills, where Kubernetes stops a container that uses more memory than its limit allows, and CPU throttling. Base resource values on observed application behavior, not on arbitrary numbers.
 
 **Example:**
 
@@ -756,7 +756,7 @@ Application readiness problem
 
 34. How does a Deployment perform a rolling update?
 
-When the image version changes, the Deployment creates a new ReplicaSet and gradually replaces Pods from the old ReplicaSet with Pods from the new one according to its rollout strategy. This allows an application to be updated without necessarily taking all replicas offline at once.
+When the image version changes, the Deployment creates a new ReplicaSet. It then gradually replaces Pods from the old ReplicaSet with Pods from the new one, according to its rollout strategy. This lets you update an application without taking all replicas offline at once.
 
 **Example:**
 
@@ -791,11 +791,11 @@ Then:
 kubectl rollout status deployment/myapp
 ```
 
-The important operational point is that rollback should be based on evidence from application health, metrics, logs, and deployment behavior rather than simply assuming every failed deployment requires rollback.
+The important operational point: base rollback on evidence from application health, metrics, logs, and deployment behavior. Do not assume every failed deployment requires rollback.
 
 36. What does self-healing mean?
 
-Self-healing means Kubernetes continuously attempts to restore the declared state when managed workloads fail or disappear. If a Pod crashes and the controller determines that another replica is required, a replacement is created. Self-healing does not mean Kubernetes can repair application bugs; it can replace failed infrastructure/workload instances, but the underlying application failure may continue.
+Self-healing means Kubernetes continuously attempts to restore the declared state when managed workloads fail or disappear. If a Pod crashes and the controller determines that another replica is required, it creates a replacement. Self-healing does not mean Kubernetes can repair application bugs; it can replace failed infrastructure/workload instances, but the underlying application failure may continue.
 
 **Example:**
 
