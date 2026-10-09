@@ -42,7 +42,7 @@ Practice: Take a familiar AWS architecture and translate only its organizational
 
 ## Part 2 — Microsoft Entra ID, Tenant and Azure Resource Management
 
-Microsoft Entra ID is Azure's cloud identity and access-management system. It contains identities such as users, groups, applications, and service principals (a service principal is the identity a piece of software uses — like a user account, but for an application or automation instead of a person) and provides authentication and identity-related capabilities for Azure and other applications. The **tenant** is the identity boundary associated with an Entra directory; it is not the same thing as a subscription. A subscription is an Azure resource-management and billing boundary that trusts identities from the tenant.
+Microsoft Entra ID is Azure's cloud identity and access-management system. It contains identities such as users, groups, applications, and service principals (a service principal is the identity a piece of software uses — like a user account, but for an application or automation instead of a person). It provides authentication and identity-related capabilities for Azure and other applications. The **tenant** is the identity boundary associated with an Entra directory; it is not the same thing as a subscription. A subscription is an Azure resource-management and billing boundary that trusts identities from the tenant.
 
 A simplified relationship is:
 
@@ -90,7 +90,7 @@ Practice: Explain why a user can exist once in Entra ID but have different Azure
 
 ## Part 3 — Management Groups: Governance Above Subscriptions
 
-Management groups provide a hierarchy above subscriptions so that governance can be applied consistently across groups of subscriptions. They are useful for large organizations where applying every policy individually to hundreds of subscriptions would be difficult.
+Management groups provide a hierarchy above subscriptions so that you can apply governance consistently across groups of subscriptions. They are useful for large organizations where applying every policy individually to hundreds of subscriptions would be difficult.
 
 A conceptual structure is:
 
@@ -119,7 +119,7 @@ Management groups are particularly useful for:
 - Regulatory boundaries.
 - Environment or business-unit organization.
 
-For example, a policy requiring specific regions could be assigned at management-group scope and inherited by subscriptions underneath it.
+For example, you could assign a policy that requires specific regions at management-group scope, and the subscriptions underneath inherit it.
 
 The important hierarchy is:
 
@@ -211,7 +211,7 @@ rg-shopsphere-prod-data
 
 A resource group is not the same as a subnet, VNet, region, or availability zone. It is an Azure resource-management boundary.
 
-A critical operational property is that deleting a resource group can delete the resources it contains. Therefore resource-group design affects blast radius.
+A critical operational property: when you delete a resource group, you can delete the resources it contains. Therefore resource-group design affects blast radius.
 
 Ask:
 
@@ -251,7 +251,7 @@ Individual Resource
 
 This is why Azure RBAC is described as **scope-based authorization**.
 
-A role assigned at subscription scope can affect many resources underneath that scope, while a role assigned to one resource has a much smaller blast radius.
+A role assigned at subscription scope can affect many resources underneath that scope. A role assigned to one resource has a much smaller blast radius.
 
 Practice: Compare these three assignments:
 
@@ -300,7 +300,7 @@ Global
 
 This distinction matters when designing availability.
 
-For example, a workload may be deployed across zones while another dependency remains regional or zone-specific. The architecture is only as resilient as its relevant dependencies.
+For example, a workload may run across zones while another dependency remains regional or zone-specific. The architecture is only as resilient as its relevant dependencies.
 
 Practice: For every major component in your ShopSphere architecture, determine:
 
@@ -318,7 +318,7 @@ What happens if one zone fails?
 
 ## Part 8 — Azure Policy: Governance as Code
 
-Azure Policy evaluates resources against organizational rules and can audit, deny, modify, or otherwise govern resource configurations depending on the policy definition and effect. It is different from Azure RBAC: RBAC answers **who is allowed to perform an action**, while Policy answers **whether a resource configuration complies with a defined rule**.
+Azure Policy evaluates resources against organizational rules and can audit, deny, modify, or otherwise govern resource configurations depending on the policy definition and effect. It is different from Azure RBAC. RBAC answers **who can perform an action**, while Policy answers **whether a resource configuration complies with a defined rule**.
 
 For example:
 
@@ -472,7 +472,7 @@ az provider show \
   --query registrationState
 ```
 
-A resource provider being registered does not mean every possible resource configuration is supported in every region or subscription. Service capabilities can depend on region, SKU (the size or pricing tier of a service, such as a VM size or a storage performance level), API version, quota, and other constraints.
+A registered resource provider does not mean every possible resource configuration works in every region or subscription. Service capabilities can depend on region, SKU (the size or pricing tier of a service, such as a VM size or a storage performance level), API version, quota, and other constraints.
 
 Practice: Pick three resources in your Azure lab and identify:
 
@@ -488,7 +488,7 @@ Subscription
 
 ## Part 11 — ARM, Azure Resource Manager and Control Plane
 
-Azure Resource Manager (ARM) is the management layer through which Azure resources are created, updated, organized, secured, and governed. When you use Azure CLI, PowerShell, Bicep, Terraform's Azure provider, or the Azure portal, those tools ultimately interact with Azure management APIs.
+Azure Resource Manager (ARM) is the management layer through which you create, update, organize, secure, and govern Azure resources. When you use Azure CLI, PowerShell, Bicep, Terraform's Azure provider, or the Azure portal, those tools ultimately interact with Azure management APIs.
 
 Conceptually:
 
