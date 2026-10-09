@@ -6,7 +6,7 @@
 
 ## Part 1 — Kubernetes Networking Mental Model
 
-1. Kubernetes networking starts with a simple expectation: every Pod gets an IP address, and Pods should be able to communicate with other Pods across the cluster. Unlike Docker's default bridge networking, Kubernetes is designed around a cluster-wide network model where a Pod can communicate with another Pod without manually publishing ports. The actual implementation is provided by the cluster's networking layer, commonly through a CNI plugin. This gives us the first mental model: **Pod IP = address of a workload instance, but not a stable application endpoint**.
+1. Kubernetes networking starts with a simple expectation: every Pod gets an IP address, and Pods should be able to communicate with other Pods across the cluster. Unlike Docker's default bridge networking, Kubernetes is designed around a cluster-wide network model where a Pod can communicate with another Pod without manually publishing ports. The cluster's networking layer provides the actual implementation, commonly through a CNI plugin. This gives us the first mental model: **Pod IP = address of a workload instance, but not a stable application endpoint**.
 
 2. A Pod IP is normally temporary because Pods are disposable. If a Deployment replaces a Pod, the replacement can receive a different IP address. Therefore, an application should not normally store `10.x.x.x` as the address of another Pod and assume it will remain valid. Kubernetes introduces the Service abstraction precisely because workloads change while applications still need a stable way to communicate. **Pods change; Services remain the stable communication abstraction.**
 
@@ -48,7 +48,7 @@ Application
 
 The important point is that every arrow represents a possible failure boundary. If users cannot reach an application, do not jump directly to the Pod. Start at the point where the traffic originates and progressively eliminate each layer.
 
-4. Kubernetes networking also has an important distinction between **routing** and **service discovery**. Routing answers “How does traffic reach this IP?” while service discovery answers “Which IP should I use for this application?” Kubernetes DNS and Services primarily solve the second problem, while the CNI, node networking, routes and underlying cloud network help solve the first. This distinction is useful because DNS can work perfectly while packets still fail to reach their destination.
+4. Kubernetes networking also has an important distinction between **routing** and **service discovery**. Routing answers “How does traffic reach this IP?” while service discovery answers “Which IP should I use for this application?” Kubernetes DNS and Services primarily solve the second problem. The CNI, node networking, routes and underlying cloud network help solve the first. This distinction is useful because DNS can work perfectly while packets still fail to reach their destination.
 
 5. There are several different IPs you will encounter:
 
@@ -61,7 +61,7 @@ Load Balancer IP
 
 A Pod IP identifies a particular Pod instance. A Service ClusterIP provides a stable virtual destination for a Service. A Node IP identifies a Kubernetes node, and a Load Balancer IP provides an externally reachable entry point when the environment provisions one. Confusing these addresses is a common source of troubleshooting mistakes.
 
-6. Kubernetes networking is implemented through several components rather than one “Kubernetes network service.” The CNI is responsible for providing Pod networking, while components or mechanisms such as kube-proxy, eBPF-based networking, or the particular CNI implementation can provide Service traffic handling. The exact implementation differs between clusters, but the logical model remains the same. **As a DevOps engineer, understand the behavior first and then learn how your specific CNI implements it.**
+6. Several components implement Kubernetes networking; there is no single “Kubernetes network service.” The CNI provides Pod networking. Components or mechanisms such as kube-proxy, eBPF-based networking, or the particular CNI implementation can handle Service traffic. The exact implementation differs between clusters, but the logical model remains the same. **As a DevOps engineer, understand the behavior first and then learn how your specific CNI implements it.**
 
 **Practice:** Using the Day 14 application, write down the exact path for an internal request:
 
@@ -141,7 +141,7 @@ Endpoints / EndpointSlices contain matching Pod addresses
 Service sends traffic to those Pods
 ```
 
-This is an extremely important chain to understand. If any link is broken, the application can be deployed successfully but still be unreachable.
+This is an extremely important chain to understand. If any link breaks, the application can deploy successfully but still be unreachable.
 
 4. `port` and `targetPort` are frequently confused. `port` is the port exposed by the Service, while `targetPort` is the destination port on the selected Pod. For example:
 
@@ -193,7 +193,7 @@ Then answer:
 
 ## Part 3 — Kubernetes DNS and Service Discovery
 
-1. Kubernetes DNS allows applications to find Services using names rather than hard-coded IP addresses. A Service such as `myapp` can normally be resolved by another Pod in the same namespace using the name `myapp`. Kubernetes DNS creates records for Services and allows applications to use these stable names even though the underlying Pods may change repeatedly. This is one of the reasons Kubernetes applications can be dynamically scaled and rescheduled without changing application configuration.
+1. Kubernetes DNS allows applications to find Services using names rather than hard-coded IP addresses. Another Pod in the same namespace can normally resolve a Service such as `myapp` by the name `myapp`. Kubernetes DNS creates records for Services and allows applications to use these stable names even though the underlying Pods may change repeatedly. This is one of the reasons Kubernetes applications can be dynamically scaled and rescheduled without changing application configuration.
 
 2. A Service name can be represented using a fully qualified DNS name such as:
 
@@ -221,7 +221,7 @@ http://myapp.production
 
 or the fully qualified form when appropriate.
 
-3. DNS troubleshooting should be separated from connectivity troubleshooting. First ask:
+3. Separate DNS troubleshooting from connectivity troubleshooting. First ask:
 
 ```text
 Can the name resolve?
@@ -353,7 +353,7 @@ or:
 netstat -lnt
 ```
 
-A common failure is assuming that the application listens on `8080` because the Deployment says `containerPort: 8080`, while the application is actually configured to listen on another port.
+A common failure: you assume the application listens on `8080` because the Deployment says `containerPort: 8080`, but the application actually listens on another port.
 
 **Practice — Break and Recover:**
 
@@ -398,7 +398,7 @@ This distinction is exactly what you should be able to explain in an interview.
 
 ## Part 5 — Readiness, Liveness and Startup Probes
 
-1. A Kubernetes container being `Running` does not necessarily mean that the application is ready to receive production traffic. The process may still be starting, the application may have failed to connect to its database, or it may have loaded configuration incorrectly. Readiness probes give Kubernetes a signal for whether the application should currently receive traffic. When readiness fails, the Pod can remain running while being removed from the Service's ready backend set.
+1. A Kubernetes container being `Running` does not necessarily mean that the application is ready to receive production traffic. The process may still be starting, the application may have failed to connect to its database, or it may have loaded configuration incorrectly. Readiness probes give Kubernetes a signal for whether the application should currently receive traffic. When readiness fails, the Pod can remain running while Kubernetes removes it from the Service's ready backend set.
 
 2. Liveness answers a different question: **“Is this application still alive enough that Kubernetes should keep this container?”** If a liveness probe repeatedly fails, Kubernetes can restart the container. This means readiness is primarily about **traffic eligibility**, while liveness is primarily about **container recovery**. Mixing these two concepts can cause serious production problems, especially if an application takes a long time to start.
 
@@ -412,7 +412,7 @@ Pod B   Running + Ready
 Pod C   Running + NotReady
 ```
 
-The Service should normally direct traffic to A and B rather than treating C as a ready backend. Therefore, if you see a running Pod that appears to receive no traffic, check its readiness state and endpoint membership before assuming that networking is broken.
+The Service should normally direct traffic to A and B rather than treating C as a ready backend. Therefore, if you see a running Pod that appears to receive no traffic, check its readiness state and endpoint membership before you assume that networking is broken.
 
 5. Useful commands are:
 
@@ -451,7 +451,7 @@ Restore the correct probe and verify recovery.
 
 ## Part 6 — NetworkPolicy and Pod-to-Pod Security
 
-1. Kubernetes networking is not only about making traffic work; it is also about controlling which workloads are allowed to communicate. NetworkPolicy provides a mechanism for restricting traffic based on Pod and namespace identity, ports and other selectors. This is important because a cluster containing many applications should not automatically mean that every workload can communicate with every other workload. A production design should consider which communication paths are actually required.
+1. Kubernetes networking is not only about making traffic work; it is also about controlling which workloads are allowed to communicate. NetworkPolicy restricts traffic based on Pod and namespace identity, ports and other selectors. This is important because a cluster containing many applications should not automatically mean that every workload can communicate with every other workload. A production design should consider which communication paths are actually required.
 
 2. Imagine this application:
 
@@ -561,7 +561,7 @@ Service
 Pod
 ```
 
-It is useful for understanding how external exposure can work, but production managed-Kubernetes architectures often use cloud load balancers or ingress controllers instead of exposing applications directly through arbitrary node ports.
+It is useful to understand how external exposure can work. Production managed-Kubernetes architectures often use cloud load balancers or ingress controllers instead of arbitrary node ports.
 
 3. A `LoadBalancer` Service asks the surrounding infrastructure to provide an external load-balancing entry point:
 
@@ -774,7 +774,7 @@ This turns Kubernetes troubleshooting into a repeatable engineering process rath
 
 ## Part 9 — Azure ↔ AWS ↔ Kubernetes Mapping
 
-1. The networking concepts you have learned across the course should now start connecting together. Azure has VNets, subnets, NSGs, private endpoints and load balancers; AWS has VPCs, subnets, security groups, private endpoints and load balancers; Kubernetes adds Pods, Services, NetworkPolicies and ingress mechanisms on top of the underlying cloud network. These are not interchangeable objects, but they solve related problems at different layers. A Senior engineer needs to understand where each control lives.
+1. The networking concepts you have learned across the course should now start connecting together. Azure has VNets, subnets, NSGs, private endpoints and load balancers. AWS has VPCs, subnets, security groups, private endpoints and load balancers. Kubernetes adds Pods, Services, NetworkPolicies and ingress mechanisms on top of the underlying cloud network. These are not interchangeable objects, but they solve related problems at different layers. A Senior engineer needs to understand where each control lives.
 
 2. Think about the layers like this:
 
