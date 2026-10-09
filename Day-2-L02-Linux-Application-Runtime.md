@@ -29,7 +29,7 @@ Spring Boot application
       Server
 ```
 
-The important idea is that each layer can fail independently. Your Java code might be healthy while the JVM is out of memory, the process might have stopped, the OS might be out of disk space, or the server might be unreachable over the network.
+The important idea is that each layer can fail independently. Your Java code can be healthy while the JVM is out of memory. The process can stop, the OS can run out of disk space, or the server can be unreachable over the network.
 
 > **DevOps view:** Don't treat “the application is down” as a diagnosis. It is only a symptom.
 
@@ -37,7 +37,7 @@ The important idea is that each layer can fail independently. Your Java code mig
 
 ## 02 · Linux as the Application's Environment · 8 min
 
-Linux provides the environment in which your application operates. It manages **processes, memory, CPU, files, users, permissions and network connections**. You don't need to become a Linux administrator for this course, but you should understand enough to inspect these areas when an application behaves unexpectedly.
+Linux provides the environment in which your application runs. It manages **processes, memory, CPU, files, users, permissions and network connections**. You don't need to become a Linux administrator for this course, but you should understand enough to inspect these areas when an application behaves unexpectedly.
 
 For example, if a Spring Boot application suddenly stops responding, useful questions are: Is its process still running? Is the expected port listening? Is the server out of memory? Is the disk full? Did the application write an error to its logs?
 
@@ -83,7 +83,7 @@ JVM process
 PID
 ```
 
-If the process is gone, the application cannot serve requests. If it exists but is consuming excessive CPU or memory, the application may still be technically “running” while being unhealthy.
+If the process is gone, the application cannot serve requests. If it exists but uses too much CPU or memory, the application may still be technically “running” and still unhealthy.
 
 > **Senior habit:** “Process exists” does not automatically mean “application is healthy.”
 
@@ -91,9 +91,9 @@ If the process is gone, the application cannot serve requests. If it exists but 
 
 ## 04 · Services & systemd · 10 min
 
-A process is simply a running program, but production applications usually need something to **manage that process**. This is where a Linux service comes in. A service describes how an application should be started, stopped and managed by the operating system instead of requiring someone to manually run a command every time.
+A process is simply a running program, but production applications usually need something to **manage that process**. This is where a Linux service comes in. A service tells the operating system how to start, stop and manage an application, so nobody has to run a command by hand every time.
 
-On most modern Linux distributions, **systemd** is the service manager. It starts services during boot, keeps track of their state, can restart them after failures, and provides a consistent way to inspect their status and logs.
+On most modern Linux distributions, **systemd** is the service manager. It starts services during boot, tracks their state, and can restart them after failures. It also gives you one consistent way to inspect their status and logs.
 
 Think of the relationship like this:
 
@@ -107,7 +107,7 @@ Starts / manages
 Application process
 ```
 
-For example, a Spring Boot application might have a service called `myapp`. The service can tell Linux to run something like `java -jar myapp.jar`, which user should run it, which working directory to use, what environment variables are required, and whether the service should restart if it crashes.
+For example, a Spring Boot application might have a service called `myapp`. The service can tell Linux to run something like `java -jar myapp.jar`. It also sets which user runs it, which working directory to use, which environment variables it needs, and whether to restart it after a crash.
 
 A simplified service definition might look like:
 
@@ -119,7 +119,7 @@ ExecStart=/usr/bin/java -jar /opt/myapp/myapp.jar
 Restart=on-failure
 ```
 
-You don't need to memorize service-file syntax yet. The important idea is that **the service definition describes how the application should run**, while systemd is responsible for managing it.
+You don't need to memorize service-file syntax yet. The important idea is that **the service definition describes how the application should run**, while systemd manages it.
 
 ### Useful commands
 
@@ -132,9 +132,9 @@ systemctl enable myapp
 journalctl -u myapp
 ```
 
-`status` tells you whether the service is running and often shows recent failure information. `start`, `stop` and `restart` control the service, while `enable` configures it to start automatically when the system boots. `journalctl -u myapp` lets you inspect logs associated with that service.
+`status` tells you whether the service is running and often shows recent failure information. `start`, `stop` and `restart` control the service, while `enable` configures it to start automatically when the system boots. `journalctl -u myapp` lets you inspect the logs for that service.
 
-There is an important difference between **`start` and `enable`**: `start` affects the service now, while `enable` affects what happens during future system boots. A service can therefore be running now without being configured to start automatically after a reboot.
+There is an important difference between **`start` and `enable`**: `start` affects the service now, while `enable` affects what happens during future system boots. A service can therefore run now and still not start automatically after a reboot.
 
 ### What happens when the application crashes?
 
@@ -144,7 +144,7 @@ If the service is configured with:
 Restart=on-failure
 ```
 
-systemd can start the application again after an unexpected failure. This improves availability, but it does **not** mean the underlying problem has been fixed. Repeated crashes can simply result in repeated restarts.
+systemd can start the application again after an unexpected failure. This improves availability, but it does **not** mean the underlying problem is fixed. Repeated crashes can simply result in repeated restarts.
 
 > **Senior habit:** A restart can restore service, but logs and the service configuration explain **why it failed and whether the restart is actually safe**.
 
@@ -198,7 +198,7 @@ Network can reach it
 Application responds correctly
 ```
 
-Each step answers a different question. A problem at one step should not be confused with a problem at another.
+Each step answers a different question. Do not confuse a problem at one step with a problem at another.
 
 ---
 
@@ -214,7 +214,7 @@ free -h
 df -h
 ```
 
-If the application suddenly stopped, the logs might show an exception while `free -h` reveals severe memory pressure and `df -h` shows that the disk is 100% full.
+If the application suddenly stopped, the logs might show an exception. At the same time, `free -h` can show severe memory pressure and `df -h` can show that the disk is 100% full.
 
 > **Key idea:** Don't guess from the symptom. Collect evidence from **logs, process state, resources and network state**.
 
@@ -317,7 +317,7 @@ No cloud resources are required.
 
 Nothing to clean up if you used your local machine.
 
-If you created a temporary VM specifically for this exercise, delete it after completing the lab.
+If you created a temporary VM specifically for this exercise, delete it when you finish the lab.
 
 ---
 
