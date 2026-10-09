@@ -51,7 +51,7 @@ The exact ownership boundary differs between AKS and EKS and changes depending o
 
 ## Part 2 — AKS Architecture
 
-1. An AKS cluster contains a managed Kubernetes control plane and a worker/compute layer where your workloads run. Azure operates the managed control-plane components, while your node pools provide the compute capacity for Pods. The control plane includes the Kubernetes API server and other Kubernetes control-plane functionality, while your workloads ultimately execute on nodes represented to Kubernetes as worker capacity.
+1. An AKS cluster contains a managed Kubernetes control plane and a worker/compute layer where your workloads run. Azure operates the managed control-plane components, while your node pools provide the compute capacity for Pods. The control plane includes the Kubernetes API server and other control-plane functionality. Your workloads ultimately run on nodes that Kubernetes sees as worker capacity.
 
 2. A simplified AKS architecture is:
 
@@ -111,7 +111,7 @@ Then mark which components are primarily managed by Azure and which are controll
 
 ## Part 3 — EKS Architecture
 
-1. EKS follows the same fundamental Kubernetes model but maps it into AWS infrastructure concepts. AWS manages the EKS control plane, while worker capacity can be provided through managed node groups, self-managed nodes or serverless-style compute options such as Fargate, depending on the architecture. Workloads are connected to the surrounding AWS VPC and its networking controls.
+1. EKS follows the same fundamental Kubernetes model but maps it into AWS infrastructure concepts. AWS manages the EKS control plane. Worker capacity can come from managed node groups, self-managed nodes or serverless-style compute options such as Fargate, depending on the architecture. Workloads connect to the surrounding AWS VPC and its networking controls.
 
 2. A simplified EKS architecture is:
 
@@ -170,7 +170,7 @@ The same underlying application architecture can be built on AKS with ACR and Az
 
 ## Part 4 — Node Pools, Managed Node Groups and Workload Placement
 
-1. A Kubernetes cluster needs compute capacity to run Pods. In AKS this is commonly organized through node pools; in EKS, managed node groups are one common approach for EC2 worker capacity. The important design question is not “How many nodes do I need?” but **“What workload characteristics require which type of compute?”** Different applications may have different CPU, memory, architecture, scaling and availability requirements.
+1. A Kubernetes cluster needs compute capacity to run Pods. In AKS this is commonly organized through node pools; in EKS, managed node groups are one common approach for EC2 worker capacity. The important design question is not “How many nodes do I need?” but **“What workload characteristics require which type of compute?”** Applications can differ in CPU, memory, architecture, scaling and availability requirements.
 
 2. Consider:
 
@@ -185,7 +185,7 @@ Application C
 GPU workload
 ```
 
-Putting everything into one generic node pool may be simple, but it can produce poor utilization, scheduling constraints or unnecessary cost. A more deliberate design can use different node pools/groups and Kubernetes scheduling rules to place workloads appropriately.
+One generic node pool for everything may be simple, but it can produce poor utilization, scheduling constraints or unnecessary cost. A more deliberate design can use different node pools/groups and Kubernetes scheduling rules to place workloads appropriately.
 
 3. Kubernetes resource requests are particularly important:
 
@@ -259,7 +259,7 @@ Ingress / Load Balancer
 Users
 ```
 
-A failure at any layer can look like “the application is down.” This is why Day 15's troubleshooting sequence is essential when working with AKS or EKS.
+A failure at any layer can look like “the application is down.” This is why Day 15's troubleshooting sequence is essential when you work with AKS or EKS.
 
 3. Consider a Pod connecting to a managed database:
 
@@ -305,7 +305,7 @@ The cloud provider may provision the external load balancer based on Kubernetes 
 
 ## Part 6 — Identity and Access: Cloud IAM vs Kubernetes RBAC
 
-1. Managed Kubernetes creates two related but distinct authorization worlds. The cloud provider controls access to the cloud account/subscription and its resources, while Kubernetes RBAC controls what identities can do to Kubernetes objects. This distinction is critical because an identity might be allowed to access the cluster API but still have limited permissions inside Kubernetes. Conversely, a Kubernetes administrator does not automatically receive permission to manage unrelated cloud resources.
+1. Managed Kubernetes creates two related but distinct authorization worlds. The cloud provider controls access to the cloud account/subscription and its resources, while Kubernetes RBAC controls what identities can do to Kubernetes objects. This distinction is critical because an identity can have access to the cluster API and still have limited permissions inside Kubernetes. Conversely, a Kubernetes administrator does not automatically receive permission to manage unrelated cloud resources.
 
 2. In Azure, a common identity architecture involves Microsoft Entra ID for user identity and Azure RBAC for Azure resources, combined with Kubernetes RBAC for cluster resources. The conceptual path is:
 
@@ -377,7 +377,7 @@ Availability Zones / failure domains
 Region
 ```
 
-If all replicas are placed on one node and that node fails, the application can temporarily lose every replica. Kubernetes scheduling constraints such as topology spread constraints and affinity can help distribute workloads intentionally.
+If the scheduler places all replicas on one node and that node fails, the application can temporarily lose every replica. Kubernetes scheduling constraints such as topology spread constraints and affinity can help distribute workloads intentionally.
 
 3. Managed Kubernetes also requires careful thinking about node availability. A cluster with multiple nodes is not automatically resilient if all nodes are in one failure domain or depend on a single infrastructure component. Production architecture should consider the failure boundaries of the cloud platform and place critical workloads appropriately.
 
@@ -421,11 +421,11 @@ Validate workloads
 Observe
 ```
 
-The exact order and supported upgrade path depend on the managed service and version combination, so production upgrades should always follow the provider's current support policy.
+The exact order and supported upgrade path depend on the managed service and version combination. Production upgrades should therefore always follow the provider's current support policy.
 
-3. Node upgrades can cause workload disruption because Pods may need to move from old nodes to new ones. Kubernetes mechanisms such as PodDisruptionBudgets can help define how much voluntary disruption is acceptable. Applications should also have multiple replicas and correct readiness probes so that traffic is not sent to Pods before they are ready.
+3. Node upgrades can cause workload disruption because Pods may need to move from old nodes to new ones. Kubernetes mechanisms such as PodDisruptionBudgets can help define how much voluntary disruption is acceptable. Applications should also have multiple replicas and correct readiness probes, so that the Service does not send traffic to Pods before they are ready.
 
-4. Cluster upgrades are therefore closely connected to application design. A Deployment with one replica, no readiness probe and no disruption strategy is operationally very different from a Deployment with multiple replicas, graceful shutdown, readiness checks and appropriate resource requests. Kubernetes can provide the mechanisms, but the workload must be designed to use them correctly.
+4. Cluster upgrades are therefore closely connected to application design. A Deployment with one replica, no readiness probe and no disruption strategy is operationally fragile. A Deployment with multiple replicas, graceful shutdown, readiness checks and appropriate resource requests behaves very differently. Kubernetes can provide the mechanisms, but the workload must be designed to use them correctly.
 
 5. Observability is part of upgrade operations. Before and during an upgrade, monitor node health, Pod restarts, Pending Pods, readiness failures, application errors and request latency. A successful infrastructure upgrade is not enough; the real success criterion is that the workloads continue serving correctly.
 
@@ -455,7 +455,7 @@ The table is a conceptual map, not a claim that each service has identical behav
 
 3. For interviews, avoid answering with product names alone. If asked, “How would you secure AKS?” do not simply list Azure services. Explain the layers: identity, Kubernetes RBAC, workload identity, network segmentation, NetworkPolicy, secret management, image security, private connectivity, logging and least privilege. Then map those concepts to Azure services. The same answer structure works for EKS.
 
-4. This approach also makes migration easier. If you understand that AKS and EKS both provide managed Kubernetes but use different identity and networking integrations, moving an application between them becomes primarily a platform-integration exercise rather than relearning Kubernetes itself.
+4. This approach also makes migration easier. AKS and EKS both provide managed Kubernetes but use different identity and networking integrations. Once you understand that, a move between them becomes primarily a platform-integration exercise, not a relearning of Kubernetes itself.
 
 **Practice:** Take your Spring Boot application architecture and produce two versions:
 
@@ -677,7 +677,7 @@ If you created a dedicated namespace for the exercise:
 kubectl delete namespace aks-eks-lab
 ```
 
-For actual AKS/EKS resources created in a cloud subscription/account, do not delete the cluster simply as a generic cleanup step if it is shared or contains other workloads. Instead, remove only the lab resources you created and verify the resulting cloud resources and billing state.
+For actual AKS/EKS resources in a cloud subscription/account, do not delete the cluster as a generic cleanup step if it is shared or contains other workloads, because that destroys work that is not yours. Instead, remove only the lab resources you created and verify the resulting cloud resources and billing state.
 
 The operational habit remains:
 
