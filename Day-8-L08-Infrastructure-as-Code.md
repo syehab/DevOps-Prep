@@ -18,7 +18,7 @@
 
 Infrastructure as Code (IaC) means defining infrastructure in files instead of creating everything manually through a cloud portal. The code describes what infrastructure you want, and an IaC engine communicates with the cloud platform to create or change it.
 
-Without IaC, an engineer might manually create a VPC, subnets, routes and security rules. With IaC, those decisions are written down and can be reviewed, versioned, reused and applied again.
+Without IaC, an engineer might manually create a VPC, subnets, routes and security rules. With IaC, you write those decisions down, and the team can review, version, reuse and apply them again.
 
 ```text
 IaC Code
@@ -69,7 +69,7 @@ VPC
  └── Private Subnet
 ```
 
-If the VPC does not exist, Terraform can create it. If one required subnet is missing, Terraform can determine that it needs to be created.
+If the VPC does not exist, Terraform can create it. If one required subnet is missing, Terraform can detect that and create it.
 
 The important idea is:
 
@@ -360,7 +360,7 @@ Some changes cannot safely happen in place. Terraform may show:
 -/+ aws_instance.app
 ```
 
-which means the existing resource will be replaced.
+which means Terraform will replace the existing resource.
 
 ### Why is `plan` so important?
 
@@ -437,7 +437,7 @@ terraform plan -out=tfplan
 terraform apply tfplan
 ```
 
-This is useful in CI/CD because the reviewed plan can become the exact plan that is applied.
+This is useful in CI/CD because the reviewed plan becomes the exact plan that Terraform applies.
 
 The important distinction is:
 
@@ -563,7 +563,7 @@ terraform.tfstate
 
 In a team environment, keeping state only on one engineer's laptop is unsafe. Teams normally move state to a **remote backend**, with appropriate access control and locking/concurrency protection.
 
-Do not think of state as simply "a backup of your infrastructure." It is part of Terraform's operation and needs to be protected because it can contain sensitive information depending on the resources and configuration.
+Do not think of state as simply "a backup of your infrastructure." It is part of Terraform's operation. Protect it, because it can contain sensitive information, depending on the resources and configuration.
 
 ### 🧪 Exercise
 
@@ -607,7 +607,7 @@ A useful command for learning is:
 terraform plan
 ```
 
-because the plan process checks the real infrastructure and determines whether changes are needed.
+because the plan process checks the real infrastructure and decides whether anything needs to change.
 
 ### 🧪 Exercise
 
@@ -635,7 +635,7 @@ When the lab is finished:
 terraform destroy
 ```
 
-Terraform calculates which managed resources need to be removed and asks for confirmation.
+Terraform calculates which managed resources it must remove and asks for confirmation.
 
 This is safer than manually deleting every resource because Terraform knows the resources represented in its state.
 
@@ -691,7 +691,7 @@ What should Terraform report?
 
 ## 13 · Bicep Mental Model · 6 min
 
-Bicep is an Azure-focused language for describing Azure resources. Bicep files are compiled into Azure Resource Manager (ARM) templates, and Azure Resource Manager performs the deployment.
+Bicep is an Azure-focused language for describing Azure resources. The Bicep tooling compiles your files into Azure Resource Manager (ARM) templates, and Azure Resource Manager runs the deployment.
 
 The flow is:
 
@@ -761,7 +761,7 @@ The same basic mental model applies:
 Input → Resource → Output
 ```
 
-This becomes important when the same Bicep code is used for Dev, UAT and Prod with different parameter values.
+This becomes important when you use the same Bicep code for Dev, UAT and Prod with different parameter values.
 
 ### 🧪 Exercise
 
@@ -1040,7 +1040,7 @@ The bigger operational lesson is:
 
 > **IaC makes infrastructure repeatable, so expensive infrastructure can also become repeatable.**
 
-Cost should therefore be considered during design, not only after the bill arrives.
+Therefore consider cost during design, not only after the bill arrives.
 
 ---
 
