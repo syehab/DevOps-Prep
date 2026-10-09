@@ -22,7 +22,7 @@ Azure  → Bicep Modules
 
 ## 01 · Why Do We Need Modules? · 6 min
 
-Imagine you need the same basic application infrastructure in Dev, UAT and Prod. Copying the same Terraform or Bicep code three times works at first, but it becomes difficult to maintain because a change must be made in several places.
+Imagine you need the same basic application infrastructure in Dev, UAT and Prod. To copy the same Terraform or Bicep code three times works at first. It then becomes difficult to maintain, because you must make each change in several places.
 
 A **module** is a reusable piece of infrastructure code. You define the common design once and pass different values to it.
 
@@ -98,7 +98,7 @@ Then ask:
 
 ## 03 · Terraform Module Inputs · 7 min
 
-The module should not hard-code values that are expected to change. Instead, define variables inside the module.
+The module should not hard-code values that you expect to change. Instead, define variables inside the module.
 
 ```hcl
 # modules/s3/variables.tf
@@ -421,7 +421,7 @@ Compare the plans.
 
 ## 08 · Bicep Structure · 6 min
 
-Bicep also supports reusable modules. A Bicep module is another `.bicep` file that can be called from a main Bicep file.
+Bicep also supports reusable modules. A Bicep module is another `.bicep` file that a main Bicep file can call.
 
 A useful structure is:
 
@@ -505,7 +505,7 @@ Now identify where each value should come from.
 
 Ask:
 
-> Should the reusable module know that it is being used for Dev, UAT or Prod?
+> Should the reusable module know whether it builds Dev, UAT or Prod?
 
 The answer should normally be **no**. The caller supplies that information.
 
@@ -584,7 +584,7 @@ This is the Bicep equivalent of passing variables into a Terraform module.
 
 A `.bicepparam` file stores values for parameters defined by a Bicep deployment.
 
-This is useful because the same `main.bicep` can be reused for Dev, UAT and Prod while each environment has its own values.
+This is useful because you can reuse the same `main.bicep` for Dev, UAT and Prod while each environment has its own values.
 
 Example:
 
@@ -902,7 +902,7 @@ For example, another resource or deployment process may need the resource name.
 
 This distinction is one of the most important ideas in this lesson.
 
-A **module describes how something is built**. An **environment describes where and with which values it is deployed**.
+A **module describes how to build something**. An **environment describes where you deploy it and with which values**.
 
 Think:
 
@@ -1154,7 +1154,7 @@ UAT  → medium
 PROD → production capacity
 ```
 
-> **IaC makes infrastructure repeatable. Make sure expensive infrastructure is not accidentally repeated.**
+> **IaC makes infrastructure repeatable. Make sure you do not accidentally repeat expensive infrastructure.**
 
 ---
 
@@ -1233,7 +1233,7 @@ module
 Azure Resource
 ```
 
-> **Takeaway:** The reusable code defines **how** infrastructure is built. Parameter files define **which values** to use for a particular environment.
+> **Takeaway:** The reusable code defines **how** to build the infrastructure. Parameter files define **which values** to use for a particular environment.
 
 ---
 
