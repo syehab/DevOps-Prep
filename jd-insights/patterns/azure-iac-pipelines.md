@@ -6,7 +6,7 @@ Most Azure senior roles want one person who can describe infrastructure as code 
 
 ## What employers ask for
 
-- Terraform (sometimes OpenTofu) and Bicep for Azure infrastructure
+- Terraform and Bicep together, many JDs name both (sometimes OpenTofu)
 - Reusable IaC modules across dev, test, and prod environments
 - Azure DevOps pipelines: build, plan, approve, apply
 - Remote state, locking, and drift control
@@ -72,3 +72,4 @@ JDs sometimes name OpenTofu or Ansible. If you use Terraform daily, say so, and 
 ## Source tags
 
 EPAM Azure Lead (TR, KZ) · EPAM Senior Azure DevOps · EPAM Senior Azure DevOps (KZ, migration) · EPAM Senior Azure Engineer (KZ) · EPAM Lead Azure Cloud
+EPAM Azure Lead (TR, KZ) · EPAM Senior Azure DevOps · EPAM Lead Azure Cloud · EPAM Senior Azure Cloud (KZ) · EPAM Lead DevOps (KZ)

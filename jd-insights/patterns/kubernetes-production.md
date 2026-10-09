@@ -70,3 +70,4 @@ JDs name many add-ons (service mesh, specific CNIs, cluster autoscalers). You do
 ## Source tags
 
 EPAM Azure Lead · EPAM Senior Azure DevOps · EPAM AWS DevOps · EPAM Lead Cloud (AKS add-ons) · Sezzle SRE · Fundraise Up DevOps
+EPAM Azure Lead · EPAM Senior Azure DevOps · EPAM AWS DevOps · EPAM Senior Azure Cloud (KZ, AKS ops) · Sezzle SRE · Fundraise Up DevOps

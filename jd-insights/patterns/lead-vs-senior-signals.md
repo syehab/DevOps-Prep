@@ -63,4 +63,4 @@ Some Lead JDs ask for only about one year of leadership. Frame real experience (
 
 ## Source tags
 
-EPAM Lead DevOps / Lead Azure Cloud / Lead Platform · RedCloud Head of Platform (stretch)
+EPAM Lead DevOps / Lead Azure Cloud / Lead Platform · EPAM Lead DevOps (KZ, module ownership + review bar + paved road) · RedCloud Head of Platform (stretch)
