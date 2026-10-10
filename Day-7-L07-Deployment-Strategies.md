@@ -42,7 +42,7 @@ Write down:
 
 ## 02 · Rolling Deployment · 8 min
 
-In a **rolling deployment**, instances are updated in small groups instead of all at once.  
+In a **rolling deployment**, you update instances in small groups instead of all at once.  
 For example, with 4 application instances, we might update 1 or 2 instances to v2 while the others continue serving v1.
 
 This reduces downtime and avoids changing the entire fleet at once. The trade-off is that **v1 and v2 may run together**, so the application must tolerate this during the deployment.
@@ -85,9 +85,9 @@ Answer:
 ## 03 · Blue-Green Deployment · 8 min
 
 In **blue-green deployment**, two environments exist: one runs the current version and the other runs the new version.  
-For example, Blue runs v1 while Green is prepared with v2. Traffic stays on Blue until Green is ready.
+For example, Blue runs v1 while you prepare Green with v2. Traffic stays on Blue until Green is ready.
 
-After validation, traffic is switched to Green. If v2 has a serious problem, traffic can be switched back to Blue, making rollback relatively quick.
+After validation, you switch traffic to Green. If v2 has a serious problem, you can switch traffic back to Blue, which makes rollback relatively quick.
 
 ```text
              Load Balancer
@@ -129,10 +129,10 @@ Now answer:
 
 ## 04 · Canary Deployment · 8 min
 
-In a **canary deployment**, only a small percentage of traffic is sent to the new version first.  
+In a **canary deployment**, you send only a small percentage of traffic to the new version first.  
 For example, 95% can continue using v1 while 5% uses v2. If the new version behaves correctly, traffic can gradually increase.
 
-Canary is useful when you want to observe real production behavior before exposing everyone to the change. It requires good monitoring because the decision to continue should be based on evidence.
+Canary is useful when you want to observe real production behavior before exposing everyone to the change. It needs good monitoring, because evidence should drive the decision to continue.
 
 ```text
 Users
@@ -237,7 +237,7 @@ v1 → Database schema A
 v2 → Database schema B
 ```
 
-v2 is deployed and the application fails.
+You deploy v2 and the application fails.
 
 Ask yourself:
 
@@ -406,7 +406,7 @@ v1 → 0.8% errors
 v2 → 8% errors
 ```
 
-v2 was deployed using Canary.
+You deployed v2 using Canary.
 
 Write down the **first three pieces of evidence** you would check before changing anything.
 
