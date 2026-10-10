@@ -6,7 +6,7 @@ The goal of this day is not to memorize AWS developer-tool names. It is to under
 
 ## Part 1 — The AWS DevOps Mental Model
 
-A production DevOps platform is a controlled path from a code change to a running workload. The basic flow is **Source → Validate → Build → Test → Secure → Package → Store → Promote → Deploy → Verify → Observe**. AWS provides services that can implement different parts of this flow: CodePipeline coordinates the workflow, CodeBuild performs managed builds and tests, ECR stores container images, CodeDeploy can perform deployments for supported compute targets, and CloudWatch/CloudTrail provide operational visibility and audit evidence. The important Senior/Lead idea is that these services are pieces of an architecture; a good design also defines identity, environment boundaries, approvals, rollback, secrets, artifact traceability, and failure handling. AWS documents CodePipeline as a workflow made from stages and actions, while CodeBuild provides managed build and test execution. [AWS CodePipeline](https://docs.aws.amazon.com/codepipeline/latest/userguide/pipelines.html) and [AWS CodeBuild](https://docs.aws.amazon.com/codebuild/latest/userguide/how-to-create-pipeline.html) are useful references.
+A production DevOps platform is a controlled path from a code change to a running workload. The basic flow is **Source → Validate → Build → Test → Secure → Package → Store → Promote → Deploy → Verify → Observe**. AWS provides services for different parts of this flow. CodePipeline coordinates the workflow, CodeBuild runs managed builds and tests, and ECR stores container images. CodeDeploy can run deployments for supported compute targets, and CloudWatch/CloudTrail provide operational visibility and audit evidence. The important Senior/Lead idea is that these services are pieces of an architecture. A good design also defines identity, environment boundaries, approvals, rollback, secrets, artifact traceability, and failure handling. AWS documents CodePipeline as a workflow made from stages and actions, while CodeBuild provides managed build and test execution. [AWS CodePipeline](https://docs.aws.amazon.com/codepipeline/latest/userguide/pipelines.html) and [AWS CodeBuild](https://docs.aws.amazon.com/codebuild/latest/userguide/how-to-create-pipeline.html) are useful references.
 
 A simple enterprise flow looks like:
 
@@ -58,13 +58,13 @@ A useful mapping from the Azure DevOps model you already know is:
 
 Do not memorize this as a list of equivalent products. The more useful mental model is **orchestration, execution, storage, deployment, identity, secrets, and observability**.
 
-AWS CodeCommit deserves one current-status note: AWS announced that CodeCommit returned to general availability for new customers in November 2025 after the 2024 change, so it is again a valid AWS-native repository option. In an interview, however, the important architectural point is that CodePipeline can work with multiple source providers rather than being coupled to one Git service.
+AWS CodeCommit deserves one current-status note: AWS announced that CodeCommit returned to general availability for new customers in November 2025 after the 2024 change. It is therefore again a valid AWS-native repository option. In an interview, however, the important architectural point is that CodePipeline can work with multiple source providers; it is not coupled to one Git service.
 
 ---
 
 ## Part 3 — Build Once, Promote the Same Artifact
 
-A strong CI/CD architecture separates **building software** from **deploying software**. The build stage should compile and test a specific commit, run security checks, and create an immutable release artifact. That artifact is then promoted through Dev, UAT, and Production rather than rebuilding the application independently in each environment. Rebuilding for production creates a subtle traceability problem because the source may be the same while the resulting binary or image can differ because of dependency, compiler, base-image, or build-environment changes.
+A strong CI/CD architecture separates **building software** from **deploying software**. The build stage should compile and test a specific commit, run security checks, and create an immutable release artifact. The pipeline then promotes that artifact through Dev, UAT, and Production; it does not rebuild the application independently in each environment. A rebuild for production creates a subtle traceability problem. The source may be the same while the resulting binary or image differs, because of dependency, compiler, base-image, or build-environment changes.
 
 For a Spring Boot container application, the traceability chain should look like:
 
@@ -90,7 +90,7 @@ An image tag such as `1.8.4` is useful for humans, but a digest is the stronger 
 
 ## Part 4 — IAM Is Part of the Pipeline Architecture
 
-Every pipeline action needs an identity. A common beginner mistake is to think of the pipeline as one identity with broad permissions. A production design separates responsibilities. For example, the pipeline orchestration role should not automatically have unrestricted production access, the build role should have only the permissions required to build and publish, and the deployment role should have only the permissions required to deploy the target workload.
+Every pipeline action needs an identity. A common beginner mistake is to think of the pipeline as one identity with broad permissions. A production design separates responsibilities. For example, the pipeline orchestration role should not automatically have unrestricted production access. The build role should have only the permissions to build and publish. The deployment role should have only the permissions to deploy the target workload.
 
 A simplified model is:
 
@@ -116,7 +116,7 @@ The Senior/Lead question is: **If this pipeline identity is compromised, what is
 
 ## Part 5 — Secrets and Configuration
 
-Secrets should not live in Git, Dockerfiles, pipeline YAML, or container images. AWS Secrets Manager is designed for sensitive secrets such as database credentials, API keys, and application secrets, while Systems Manager Parameter Store is useful for configuration parameters and can also hold secure parameters. The application should retrieve what it needs through an appropriate runtime identity rather than receiving a large collection of secrets unnecessarily.
+Do not keep secrets in Git, Dockerfiles, pipeline YAML, or container images. AWS Secrets Manager serves sensitive secrets such as database credentials, API keys, and application secrets. Systems Manager Parameter Store is useful for configuration parameters and can also hold secure parameters. The application should retrieve what it needs through an appropriate runtime identity rather than receiving a large collection of secrets unnecessarily.
 
 Think about configuration in three layers:
 
@@ -138,7 +138,7 @@ A useful failure scenario is: **the deployment succeeds, but the application can
 
 For a containerized Spring Boot application, a common AWS flow is **Git → CodePipeline → CodeBuild → ECR → ECS**. CodeBuild builds the Docker image, authenticates to ECR, pushes the image, and produces the metadata required for deployment. ECS then updates the service so the desired task definition points to the new image. AWS provides an example of a CodePipeline-based ECS deployment using CodeBuild and ECR.
 
-The important distinction is between the image and the running service. ECR stores the image; ECS decides how many tasks should run and where they should run; the load balancer controls traffic; the task role controls what the application can access. A successful image push therefore does not mean a successful deployment. The new task may fail to start, fail its health check, fail to pull the image, fail to obtain secrets, or start successfully but return application errors.
+The important distinction is between the image and the running service. ECR stores the image. ECS decides how many tasks should run and where. The load balancer controls traffic, and the task role controls what the application can access. A successful image push therefore does not mean a successful deployment. The new task may fail to start, fail its health check, fail to pull the image, fail to obtain secrets, or start successfully but return application errors.
 
 A practical troubleshooting chain is:
 
@@ -237,7 +237,7 @@ CDK → code → CloudFormation
 
 ## Part 10 — Multi-Account CI/CD Architecture
 
-In a mature AWS organization, Dev, UAT, and Production are often separated into different AWS accounts rather than relying only on naming conventions or resource groups. This gives stronger isolation for permissions, billing, quotas, blast radius, and governance. A central tooling account can host shared CI/CD components while deployment roles exist in workload accounts.
+A mature AWS organization often separates Dev, UAT, and Production into different AWS accounts; it does not rely only on naming conventions or resource groups. This gives stronger isolation for permissions, billing, quotas, blast radius, and governance. A central tooling account can host shared CI/CD components while deployment roles exist in workload accounts.
 
 A simplified architecture is:
 
@@ -261,7 +261,7 @@ This also creates a useful separation of duties: the team that manages the deliv
 
 ## Part 11 — Pipeline Governance and Production Controls
 
-A production pipeline needs more than automated commands. It needs controls around who can change the pipeline, who can approve production deployment, what artifact is being deployed, what infrastructure change is being applied, and how the deployment can be stopped or reversed. CodePipeline supports stages and actions, including approval-style workflow controls, while IAM controls who can modify or execute the pipeline.
+A production pipeline needs more than automated commands. It needs controls around who can change the pipeline and who can approve production deployment. It also needs to know which artifact deploys, which infrastructure change applies, and how to stop or reverse the deployment. CodePipeline supports stages and actions, including approval-style workflow controls, while IAM controls who can modify or execute the pipeline.
 
 A useful production release sequence is:
 
@@ -458,7 +458,7 @@ The final mental model is:
 
 ## Part 18 — Cleanup
 
-Delete the resources created during the lab when they are no longer needed. Pay particular attention to ECS services, load balancers, NAT Gateways, ECR images, CodeBuild projects, CodePipeline resources, CloudWatch log groups, and any temporary networking resources because some of these can generate charges even when the application itself is not receiving traffic.
+Delete the resources created during the lab when they are no longer needed. Pay particular attention to ECS services, load balancers, NAT Gateways, ECR images, CodeBuild projects, CodePipeline resources, CloudWatch log groups, and any temporary networking resources. Some of these generate charges even when the application itself receives no traffic.
 
 If Terraform created the infrastructure, prefer Terraform-managed cleanup so the state remains consistent with the actual environment. For manually created resources, verify deletion in the AWS console or CLI rather than assuming that deleting the top-level application removed every dependent resource.
 
