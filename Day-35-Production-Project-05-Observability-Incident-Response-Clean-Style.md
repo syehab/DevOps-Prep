@@ -6,7 +6,7 @@ Day 34 made ShopSphere safer to change. Day 35 focuses on the next production qu
 
 ## Part 1 — The Observability Mental Model
 
-Observability is the ability to understand the internal state and behavior of a system from the evidence it produces. The three primary telemetry signals are **metrics, logs, and traces**. Metrics tell you that something is changing, logs provide detailed events and context, and traces show how an individual request moves across services and dependencies. These signals become useful when they are connected to deployment information, infrastructure state, business impact, and a clear incident process.
+Observability is the ability to understand the internal state and behavior of a system from the evidence it produces. The three primary telemetry signals are **metrics, logs, and traces**. Metrics tell you that something is changing, logs provide detailed events and context, and traces show how an individual request moves across services and dependencies. These signals become useful when you connect them to deployment information, infrastructure state, business impact, and a clear incident process.
 
 Think of the production loop as:
 
@@ -202,7 +202,7 @@ Do not copy a universal latency threshold.
 
 ## Part 6 — Structured Logging
 
-Application logs should be structured so that systems can search and correlate them.
+Structure application logs so that systems can search and correlate them.
 
 Instead of:
 
@@ -262,7 +262,7 @@ Database
 Payment Service
 ```
 
-Without correlation, finding the events belonging to one request can be difficult.
+Without correlation, it can be difficult to find the events for one request.
 
 A correlation or request ID allows you to connect related events.
 
@@ -282,7 +282,7 @@ Payment call
 API response
 ```
 
-Distributed tracing provides a richer version of this concept by representing the request as spans across components.
+Distributed tracing provides a richer version of this concept. It represents the request as spans across components.
 
 The important operational principle is:
 
@@ -326,7 +326,7 @@ Now you know where to investigate.
 
 Without tracing, you might incorrectly spend time investigating the database because the endpoint is slow.
 
-OpenTelemetry is a common framework for instrumenting applications and producing telemetry that can be exported to compatible observability backends.
+OpenTelemetry is a common framework for instrumenting applications and producing telemetry that you can export to compatible observability backends.
 
 You do not need to build a complete distributed tracing platform today.
 
@@ -443,7 +443,7 @@ Example:
 99.9% successful requests
 ```
 
-An **SLA** is a formal service commitment, often involving consequences if agreed targets are not met.
+An **SLA** is a formal service commitment. It often includes consequences if the provider does not meet agreed targets.
 
 Keep the distinction clear:
 
