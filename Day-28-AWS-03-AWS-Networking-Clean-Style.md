@@ -22,7 +22,7 @@ For private outbound access:
 
 ## Part 1 — AWS VPC and the Network Boundary
 
-A Virtual Private Cloud, or VPC, is the fundamental AWS network boundary for workloads. It provides a private IPv4 and/or IPv6 address space and contains subnets, route tables, security groups, network ACLs, gateways, endpoints, and other networking components. The VPC itself does not make an application private or public; the actual behavior depends on subnet routing, addressing, security controls, and the services placed inside it.
+A Virtual Private Cloud, or VPC, is the fundamental AWS network boundary for workloads. It provides a private IPv4 and/or IPv6 address space and contains subnets, route tables, security groups, network ACLs, gateways, endpoints, and other networking components. The VPC itself does not make an application private or public. The actual behavior depends on subnet routing, addressing, security controls, and the services inside it.
 
 For example, a production VPC might use:
 
@@ -51,7 +51,7 @@ Azure Subnet ↔ AWS Subnet
 
 The important difference is not the name. The underlying responsibility is the same: define the network space and provide the foundation on which routing and security are built.
 
-A VPC can be inspected with:
+You can inspect a VPC with:
 
 ```bash
 aws ec2 describe-vpcs
@@ -69,7 +69,7 @@ Private AWS service access
 Outbound internet access
 ```
 
-Before creating anything, choose the CIDR ranges and make sure they will not conflict with networks that may later connect through VPN, Direct Connect, or Transit Gateway.
+Before you create anything, choose the CIDR ranges. Make sure they will not conflict with networks that may later connect through VPN, Direct Connect, or Transit Gateway.
 
 ---
 
@@ -248,7 +248,7 @@ You must still have the correct subnet route and workload addressing/security.
 
 ## Part 5 — NAT Gateway and Private Outbound Access
 
-A NAT Gateway allows resources in private subnets to initiate outbound connections to the internet without receiving direct inbound internet connectivity.
+A NAT Gateway lets resources in private subnets start outbound connections to the internet without direct inbound internet connectivity.
 
 The typical architecture is:
 
@@ -347,7 +347,7 @@ Inspect Security Groups:
 aws ec2 describe-security-groups
 ```
 
-A Security Group is stateful. If an allowed inbound connection is established, the corresponding response traffic is automatically allowed by the stateful behavior.
+A Security Group is stateful. When it allows an inbound connection, it automatically allows the corresponding response traffic.
 
 Practice:
 
@@ -366,7 +366,7 @@ Then identify which source should be used for each rule.
 
 ## Part 7 — Network ACLs
 
-Network Access Control Lists, or NACLs, provide subnet-level traffic filtering. Unlike Security Groups, NACLs are stateless, so both directions of a connection need to be considered.
+Network Access Control Lists, or NACLs, provide subnet-level traffic filtering. Unlike Security Groups, NACLs are stateless, so you must consider both directions of a connection.
 
 A simplified mental model is:
 
@@ -378,7 +378,7 @@ NACL:
 subnet-level + stateless
 ```
 
-NACL rules have rule numbers and are evaluated in order.
+NACL rules have rule numbers, and AWS evaluates them in order.
 
 Inspect NACLs:
 
@@ -409,7 +409,7 @@ Route table
 Application
 ```
 
-Because NACLs are stateless, return traffic must be permitted explicitly.
+Because NACLs are stateless, you must allow return traffic explicitly.
 
 ---
 
@@ -478,7 +478,7 @@ Gateway endpoint
 Interface endpoint
 ```
 
-Gateway endpoints are commonly used for services such as S3 and DynamoDB. Interface endpoints use private network interfaces and are powered by AWS PrivateLink, the AWS technology that exposes a service through a private IP in your VPC instead of a public address.
+Gateway endpoints are commonly used for services such as S3 and DynamoDB. Interface endpoints use private network interfaces, and AWS PrivateLink powers them. PrivateLink is the AWS technology that exposes a service through a private IP in your VPC instead of a public address.
 
 A simplified architecture is:
 
@@ -624,7 +624,7 @@ Design how Transit Gateway could connect them.
 
 ## Part 12 — AWS Network Firewall and Centralized Inspection
 
-AWS Network Firewall provides managed network firewall capabilities that can be used for centralized inspection and traffic control.
+AWS Network Firewall provides managed network firewall capabilities for centralized inspection and traffic control.
 
 A common architecture is:
 
@@ -707,7 +707,7 @@ aws elbv2 describe-target-health \
   --target-group-arn <TARGET-GROUP-ARN>
 ```
 
-A target being registered does not mean it is healthy. Health checks provide important evidence about whether the backend is ready to receive traffic.
+A registered target is not automatically a healthy target. Health checks provide important evidence about whether the backend is ready to receive traffic.
 
 Practice:
 
@@ -724,7 +724,7 @@ Then explain how hostname-based routing works.
 
 ## Part 14 — Network Load Balancer
 
-A Network Load Balancer, or NLB, operates primarily at Layer 4 and is designed for TCP, UDP and TLS traffic patterns where connection-level load balancing is required.
+A Network Load Balancer, or NLB, operates primarily at Layer 4. It serves TCP, UDP and TLS traffic patterns that need connection-level load balancing.
 
 The distinction is:
 
@@ -979,7 +979,7 @@ Run a Fargate task in a private subnet and make it connect to a database. Verify
 
 ## Part 19 — Outbound vs Inbound Architecture
 
-Inbound and outbound traffic should be treated separately.
+Treat inbound and outbound traffic separately.
 
 Inbound:
 
@@ -1120,7 +1120,7 @@ aws elbv2 describe-target-health \
   --target-group-arn <TARGET-GROUP-ARN>
 ```
 
-AWS Reachability Analyzer can also be used to analyze whether a network path should be reachable between supported network resources.
+AWS Reachability Analyzer can also analyze whether a network path should be reachable between supported network resources.
 
 The key troubleshooting rule is:
 
@@ -1456,7 +1456,7 @@ Security
 Service
 ```
 
-For interface endpoints, private DNS configuration is particularly important because applications can continue using normal AWS service hostnames while DNS resolves them toward the private endpoint.
+For interface endpoints, private DNS configuration is particularly important. Applications can continue to use normal AWS service hostnames while DNS resolves them toward the private endpoint.
 
 Practice:
 
