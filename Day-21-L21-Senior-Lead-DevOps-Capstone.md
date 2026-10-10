@@ -2,7 +2,7 @@
 
 ## Part 1 — The Capstone Mindset
 
-The first 20 days taught individual capabilities: Linux and networking, CI/CD, Terraform, cloud architecture, containers, Kubernetes, identity, security, and observability. A Senior/Lead DevOps engineer is expected to combine these capabilities rather than solve each problem in isolation. In a real interview or production situation, you may be given a business requirement such as “move this application to Azure with high availability and secure CI/CD” and be expected to turn it into an architecture, explain the trade-offs, implement the important parts, and troubleshoot failures. This capstone is designed to make you practice exactly that.
+The first 20 days taught individual capabilities: Linux and networking, CI/CD, Terraform, cloud architecture, containers, Kubernetes, identity, security, and observability. A Senior/Lead DevOps engineer is expected to combine these capabilities rather than solve each problem in isolation. In a real interview or production situation, you may receive a business requirement such as “move this application to Azure with high availability and secure CI/CD.” You then have to turn it into an architecture, explain the trade-offs, implement the important parts, and troubleshoot failures. This capstone is designed to make you practice exactly that.
 
 Your core reasoning loop remains:
 
@@ -276,7 +276,7 @@ AKS → Registry
 For every flow, ask:
 
 ```text
-Who initiates it?
+Who starts it?
 What DNS name is used?
 What IP/path is used?
 Which route is required?
@@ -510,7 +510,7 @@ Then deliberately remove one unnecessary permission from your design.
 
 ## Part 10 — Kubernetes Workload Architecture
 
-The application should be deployed through Kubernetes objects that express desired state.
+Deploy the application through Kubernetes objects that express desired state.
 
 A simplified structure is:
 
@@ -585,7 +585,7 @@ spec:
               port: 8080
 ```
 
-The image digest is used here to emphasize exact artifact identity.
+The image digest here emphasizes exact artifact identity.
 
 Practice: Explain what happens if one Pod dies, if one Pod becomes unready, and if the entire node hosting one or more Pods fails.
 
@@ -593,7 +593,7 @@ Practice: Explain what happens if one Pod dies, if one Pod becomes unready, and 
 
 ## Part 11 — Reliability and Availability Design
 
-High availability is not achieved by simply setting `replicas: 3`.
+You do not achieve high availability simply by setting `replicas: 3`.
 
 Ask what happens when each layer fails:
 
@@ -612,9 +612,9 @@ Deployment failure
 
 For application replicas, distribute workloads across appropriate failure domains where the platform supports it.
 
-For deployment safety, use readiness probes and controlled rolling updates so traffic is not intentionally sent to unhealthy Pods.
+For deployment safety, use readiness probes and controlled rolling updates, so the platform does not send traffic to unhealthy Pods.
 
-For database availability, understand the capabilities and limitations of the chosen managed database service rather than assuming the database automatically has the same availability characteristics as the application tier.
+For database availability, understand the capabilities and limitations of the chosen managed database service. Do not assume the database automatically has the same availability characteristics as the application tier.
 
 Practice: Take the architecture and perform a failure walk:
 
