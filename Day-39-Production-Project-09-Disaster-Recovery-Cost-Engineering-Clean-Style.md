@@ -223,7 +223,7 @@ Region A
  └── AZ-C
 ```
 
-If the entire region becomes unavailable, all three AZs are affected.
+If the entire region becomes unavailable, the outage affects all three AZs.
 
 Multi-region architecture requires:
 
@@ -291,7 +291,7 @@ Restore Testing
 
 A backup that has never been restored is only an assumption.
 
-The recovery process should be tested.
+Test the recovery process.
 
 A useful flow is:
 
@@ -313,9 +313,9 @@ Verify Business Operations
 
 ## Part 9 — Kubernetes Recovery
 
-Kubernetes workloads should be treated differently from persistent data.
+Treat Kubernetes workloads differently from persistent data.
 
-Most Kubernetes application objects can be recreated from:
+You can recreate most Kubernetes application objects from:
 
 ```text
 Git
@@ -739,7 +739,7 @@ Redundancy
 Operational Choices
 ```
 
-A Lead DevOps engineer should be able to explain what architectural decisions drive the bill.
+A Lead DevOps engineer must explain what architectural decisions drive the bill.
 
 ---
 
@@ -913,7 +913,7 @@ Do not solve observability by collecting everything forever.
 
 ## Part 27 — Cost Allocation
 
-ShopSphere should be able to answer:
+ShopSphere must answer:
 
 ```text
 How much does Dev cost?
