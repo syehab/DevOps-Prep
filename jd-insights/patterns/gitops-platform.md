@@ -6,7 +6,7 @@ Platform and Lead roles want Git to be the source of truth for deployments (GitO
 
 ## What employers ask for
 
-- GitOps delivery: desired state in Git, a controller (Argo CD) syncs the cluster
+- GitOps delivery: desired state in Git, a controller (Argo CD or Flux) syncs the cluster
 - Helm charts or templates that teams reuse
 - Golden paths: a new service gets repo, pipeline, deploy, and monitoring by default
 - Internal Developer Platform thinking, sometimes Backstage by name, down to its pieces: Software Catalog, Scaffolder templates, TechDocs
@@ -24,7 +24,7 @@ CI: build + test          PR changes image tag
 Push image ───────────────────┘
                               ↓
                       GitOps controller
-                      (Argo CD syncs)
+                      (Argo CD or Flux syncs)
                               ↓
                          Cluster matches Git
 ```
@@ -37,6 +37,17 @@ CD loop: Git state → cluster    (applies things)
 ```
 
 The platform idea is the same loop, offered as a product: teams get a template, a pipeline, and a deploy path that already works.
+
+## How a platform proves it works (DORA metrics)
+
+Platform JDs now ask you to measure the paved road, not just build it. The four DORA metrics:
+
+- Deployment frequency: how often you ship to production
+- Lead time for changes: how long a commit takes to reach production
+- Change failure rate: what share of deploys cause a problem
+- Mean time to recovery: how fast users are OK again after a bad deploy
+
+A good paved road pushes the first two up and the last two down. [Day-34-Production-Project-04-Reliability-Safe-Deployments-Failure-Containment.md](../../Day-34-Production-Project-04-Reliability-Safe-Deployments-Failure-Containment.md) walks through these four (it calls them release metrics, not DORA).
 
 ## Remember
 
@@ -62,8 +73,9 @@ Outline:
 
 ## Honest gap note
 
-Backstage appears in EPAM platform JDs. If you have not run Backstage, do not claim plugins or ownership. Explain the paved-road idea (templates, catalogs, golden paths) and show your GitOps and Helm experience, which is the engine under any IDP.
+Backstage appears in EPAM platform JDs, and newer ones also name Crossplane, Pulumi, Humanitec, and OpsLevel. If you have not run these, do not claim plugins or ownership. Explain the ideas (Crossplane provisions cloud resources from inside the cluster, Pulumi is IaC in a real programming language, Humanitec and OpsLevel are IDP products like Backstage) and show your GitOps and Helm experience, which is the engine under any IDP.
 
 ## Source tags
 
+EPAM Lead Platform / Unified Automation (Backstage) · EPAM Senior DevOps Azure · RedCloud Platform · EPAM Senior/Lead Platform Engineer
 EPAM Lead Platform / Unified Automation (Backstage) · EPAM Lead Cloud (IDP) · EPAM Senior DevOps Azure · RedCloud Platform
