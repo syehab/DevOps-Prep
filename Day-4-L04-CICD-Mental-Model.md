@@ -34,17 +34,17 @@ Deploy
 Verify
 ```
 
-**CI (Continuous Integration)** mainly focuses on bringing code changes together and checking that they build and pass tests. **CD (Continuous Delivery/Deployment)** takes the tested software toward an environment where it can be released.
+**CI (Continuous Integration)** brings code changes together and checks that they build and pass tests. **CD (Continuous Delivery/Deployment)** takes the tested software toward an environment where it can be released.
 
 The exact tools can change — Azure DevOps, GitHub Actions, Jenkins or GitLab — but the basic flow stays similar.
 
-> **Key idea:** CI/CD is not a tool. It is a **delivery process** implemented using tools.
+> **Key idea:** CI/CD is not a tool. It is a **delivery process** that you build with tools.
 
 ---
 
 ## 02 · Code Commit & Commit SHA · 9 min
 
-A **commit is a saved point in the Git history**. When a developer finishes a change, they create a commit with a message describing what changed. The commit is then pushed to the remote repository, where the CI/CD pipeline can pick it up.
+A **commit is a saved point in the Git history**. When a developer finishes a change, they create a commit with a message describing what changed. The developer then pushes the commit to the remote repository, where the CI/CD pipeline can pick it up.
 
 ```text
 Developer changes code
@@ -112,7 +112,7 @@ main
 a72b41e   ← tomorrow
 ```
 
-For traceability, deployments should record the exact commit or artifact version that was released.
+For traceability, record the exact commit or artifact version in every deployment.
 
 ---
 
@@ -128,7 +128,7 @@ Compile
 JAR
 ```
 
-The build may also download dependencies, run code checks and create other files needed by the application. If the build fails, the pipeline should normally stop before anything is deployed.
+The build may also download dependencies, run code checks and create other files needed by the application. If the build fails, the pipeline should stop before it deploys anything.
 
 > **Simple rule:** Don't deploy software that did not successfully build.
 
@@ -149,7 +149,7 @@ Fail → Stop
 
 Tests are not only about finding bugs. They create a **safety check** between a code change and a deployment. The more important the application, the more valuable automated checks become.
 
-A test passing does not prove that production will never fail. It only gives you evidence that the tested conditions behaved as expected.
+A passing test does not prove that production will never fail. It only gives you evidence that the tested conditions behaved as expected.
 
 > **Senior thinking:** Ask **“What risk does this test reduce?”**, not just “Do we have tests?”
 
@@ -185,7 +185,7 @@ myapp.jar v1.4
 
 The same artifact can move through each environment. This gives you more confidence that the code tested in UAT is the same software that reaches Production.
 
-An artifact should also have a clear version or identifier. That identifier might be a build number, Git commit SHA, package version or container image tag. The important part is being able to connect the artifact back to the source code that produced it.
+An artifact should also have a clear version or identifier. That identifier might be a build number, Git commit SHA, package version or container image tag. The important part is that you can connect the artifact back to the source code that produced it.
 
 For example:
 
@@ -235,7 +235,7 @@ Application starts
 Users can access it
 ```
 
-Deployment is more than copying a file. The platform must start the application with the correct **configuration, environment variables, network settings and secrets**. These values normally come from the environment or a secret store rather than being stored directly in the application code.
+Deployment is more than copying a file. The platform must start the application with the correct **configuration, environment variables, network settings and secrets**. These values normally come from the environment or a secret store, not from the application code itself.
 
 For example, a Spring Boot application may need:
 
@@ -269,11 +269,11 @@ This is one reason we keep environment configuration outside the artifact. The s
 
 ### What does a successful deployment mean?
 
-A deployment command returning success usually means the platform accepted or started the new version. It does **not automatically prove that users can successfully use the application**.
+When a deployment command returns success, it usually means the platform accepted or started the new version. It does **not automatically prove that users can successfully use the application**.
 
 For example, the JAR may start but fail to connect to MySQL. The deployment step can therefore be successful while the application is unhealthy.
 
-That is why deployment should be followed by verification:
+That is why verification must follow every deployment:
 
 ```text
 Deploy
@@ -302,7 +302,7 @@ Healthy → Continue
 Unhealthy → Investigate / Rollback
 ```
 
-**Rollback** means returning to a previously known working version when the new release causes a serious problem. This is much easier when artifacts are versioned and previous versions can be deployed again.
+**Rollback** means returning to a previously known working version when the new release causes a serious problem. This is much easier when you version artifacts and can deploy a previous version again.
 
 Rollback is not a replacement for finding the root cause. It restores service first; investigation can then continue safely.
 
@@ -330,7 +330,7 @@ Verify
 Release
 ```
 
-Security and quality checks can be added throughout the flow:
+You can add security and quality checks throughout the flow:
 
 ```text
         Security
@@ -344,7 +344,7 @@ The pipeline should create a **repeatable path** from code to running software. 
 
 ### Where AI tools fit
 
-Newer senior JDs expect you to use AI assistants inside this exact loop: drafting pipeline YAML, scripts and IaC on the writing side, and summarising logs or drafting incident timelines on the operating side. Notice that the loop itself does not change when AI joins it. AI shortens the writing, while the checking stays where it always was: review, tests and an approval gate before production.
+Newer senior JDs expect you to use AI assistants inside this exact loop. On the writing side they draft pipeline YAML, scripts and IaC. On the operating side they summarise logs and draft incident timelines. Notice that the loop itself does not change when AI joins it. AI shortens the writing, while the checking stays where it always was: review, tests and an approval gate before production.
 
 > **Remember:** Treat AI output like a fast junior engineer: great first drafts, zero accountability. Review stays human, gates stay in the pipeline.
 
@@ -425,7 +425,7 @@ But users receive HTTP `500` errors.
 
 The pipeline did not necessarily fail.
 
-The deployment step only proved that the artifact was placed successfully. The application still needs to start correctly, connect to its dependencies and handle requests.
+The deployment step only proved that the platform placed the artifact. The application still needs to start correctly, connect to its dependencies and handle requests.
 
 > **Senior habit:** Always separate **pipeline success** from **application health**.
 
@@ -443,7 +443,7 @@ The tools may have different names, but the CI/CD flow is almost the same.
 | Artifact | Azure Artifacts / Storage | S3 / ECR |
 | Deploy | Azure services | CodeDeploy / ECS / EKS |
 
-You do not need to memorize the service names yet. First understand the **delivery flow**. The cloud-specific tools can then be mapped onto it.
+You do not need to memorize the service names yet. First understand the **delivery flow**. You can then map the cloud-specific tools onto it.
 
 ---
 
