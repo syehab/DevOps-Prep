@@ -4,7 +4,7 @@
 
 ## What you will learn
 
-Containers are one of the most common ways applications are packaged and delivered in modern DevOps environments. A Senior/Lead DevOps engineer should understand not only Docker commands, but what is happening underneath them. This lesson builds that understanding in order:
+Containers are one of the most common ways to package and deliver applications in modern DevOps environments. A Senior/Lead DevOps engineer should understand not only Docker commands, but what is happening underneath them. This lesson builds that understanding in order:
 
 - how Linux isolates a process
 - how an image is built from layers
@@ -40,7 +40,7 @@ Decide which items belong inside the image and which should be supplied at runti
 
 2. What is a Container?
 
-A container is an isolated process running on a host operating system. It has its own view of processes, networking, filesystems, users, and other resources, but normally shares the host's kernel. This is why a container is lighter than a virtual machine: it does not normally need a complete guest operating-system kernel. The important operational idea is that the container should be treated as a replaceable execution unit rather than as a permanent server.
+A container is an isolated process running on a host operating system. It has its own view of processes, networking, filesystems, users, and other resources, but normally shares the host's kernel. This is why a container is lighter than a virtual machine: it does not normally need a complete guest operating-system kernel. The important operational idea: treat the container as a replaceable execution unit, not as a permanent server.
 
 **Remember:** A container is an isolated process, not a lightweight VM.
 
@@ -80,7 +80,7 @@ Notice that the container sees a different process environment even though the p
 
 4. What is a Container Image?
 
-A container image is a packaged, read-only template from which containers are created. It contains a filesystem, application files, runtime dependencies, and metadata such as the default command. Images are built in layers, so common layers can be reused between images and versions. When a container starts, the runtime adds a writable layer on top of the image layers; this is one reason changes made directly inside a container should not be treated as a permanent way of managing an application.
+A container image is a packaged, read-only template from which you create containers. It contains a filesystem, application files, runtime dependencies, and metadata such as the default command. Images consist of layers, so different images and versions can share common layers. When a container starts, the runtime adds a writable layer on top of the image layers. This is one reason you should not treat direct changes inside a container as a permanent way to manage an application.
 
 **Example:**
 
@@ -113,7 +113,7 @@ Look at the image size, layers, default command, and exposed ports.
 
 5. What is Docker?
 
-Docker is a platform and toolset for building, distributing, and running containers. The `docker` CLI is the interface you normally use, while the Docker Engine manages images, containers, networks, volumes, and the container runtime underneath. Modern Docker installations also use components such as containerd and an OCI runtime such as `runc`, so it is useful to distinguish Docker's developer experience from the lower-level runtime responsible for actually starting containers.
+Docker is a platform and toolset for building, distributing, and running containers. The `docker` CLI is the interface you normally use, while the Docker Engine manages images, containers, networks, volumes, and the container runtime underneath. Modern Docker installations also use components such as containerd and an OCI runtime such as `runc`. It is therefore useful to distinguish Docker's developer experience from the lower-level runtime that actually starts containers.
 
 **Practice**
 
@@ -126,7 +126,7 @@ Identify the client, Engine/server, storage, runtime, and other information repo
 
 6. What happens when you run `docker run`?
 
-`docker run` combines several operations into one command. Docker first checks whether the image exists locally and pulls it from a registry if necessary. It then creates a container filesystem and configures networking, environment variables, mounts, resource settings, and other options before asking the runtime to start the container's main process. The container normally remains running while that main process is running; when that process exits, the container normally stops.
+`docker run` combines several operations into one command. Docker first checks whether the image exists locally and pulls it from a registry if necessary. It then creates a container filesystem and configures networking, environment variables, mounts, resource settings, and other options. After that, it asks the runtime to start the container's main process. The container normally remains running while that main process is running; when that process exits, the container normally stops.
 
 For example:
 
@@ -160,7 +160,7 @@ docker ps -a
 
 7. What is the difference between an Image and a Container?
 
-An image is the packaged template; a container is an instance created from that image. One image can create many containers, each with its own runtime state and configuration. This distinction is fundamental to CI/CD because you normally want to build a known image once, store it in a registry, and deploy that same image to multiple environments rather than rebuilding it separately for Dev, UAT, and Production.
+An image is the packaged template; a container is an instance created from that image. One image can create many containers, each with its own runtime state and configuration. This distinction is fundamental to CI/CD. You normally want to build a known image once, store it in a registry, and deploy that same image to multiple environments. Do not rebuild it separately for Dev, UAT, and Production.
 
 **Example:**
 
@@ -177,7 +177,7 @@ Both containers can come from the same image while having different names, IP ad
 
 8. What is a Dockerfile?
 
-A Dockerfile is the recipe used to turn application source code and dependencies into a container image. Each instruction describes part of the final filesystem or runtime configuration, and Docker can cache the resulting layers so that unchanged work does not have to be repeated. For a Spring Boot application, the Dockerfile might define a Java runtime, copy the application JAR, set `/app` as the working directory, document port `8080`, and define Java as the process that starts when the container runs. A good Dockerfile is therefore not just a list of commands; it is a definition of the application's runtime environment.
+A Dockerfile is the recipe used to turn application source code and dependencies into a container image. Each instruction describes part of the final filesystem or runtime configuration, and Docker can cache the resulting layers so that it does not repeat unchanged work. For a Spring Boot application, the Dockerfile might define a Java runtime, copy the application JAR, and set `/app` as the working directory. It can also document port `8080` and define Java as the process that starts when the container runs. A good Dockerfile is therefore not just a list of commands; it is a definition of the application's runtime environment.
 
 **Example — simple Spring Boot Dockerfile:**
 
@@ -297,7 +297,7 @@ A single `myapp:1.0.0` image can therefore run in Dev, UAT, and Production while
 
 11. What is the difference between `CMD` and `ENTRYPOINT`?
 
-`ENTRYPOINT` defines the primary executable that the container is intended to run, while `CMD` provides default arguments or, when no entrypoint is defined, a default command. This distinction is useful when you want the application executable to remain fixed while allowing selected arguments to change.
+`ENTRYPOINT` defines the primary executable that the container runs. `CMD` provides default arguments or, when no entrypoint exists, a default command. This distinction is useful when you want the application executable to remain fixed while allowing selected arguments to change.
 
 **Example:**
 
@@ -318,7 +318,7 @@ You can experiment with another argument:
 docker run --rm myapp:1.0.0 --server.port=9090
 ```
 
-The important interview point is not memorizing syntax. It is understanding that `ENTRYPOINT` establishes the main executable while `CMD` provides defaults that can be overridden.
+The important interview point is not memorizing syntax. It is understanding that `ENTRYPOINT` sets the main executable while `CMD` provides defaults that you can override.
 
 12. Why should Docker images be small?
 
@@ -356,7 +356,7 @@ docker history myapp:1.0.0
 
 13. What is a Multi-Stage Build?
 
-A multi-stage build uses multiple `FROM` statements so that the build environment and runtime environment can be kept separate. The first stage can contain Maven, the JDK, source code, and build dependencies; the second stage can contain only the JRE and the compiled application. Docker copies the required artifact from the build stage into the runtime stage, so the final image does not inherit the entire build environment.
+A multi-stage build uses multiple `FROM` statements so that you can keep the build environment and the runtime environment separate. The first stage can contain Maven, the JDK, source code, and build dependencies; the second stage can contain only the JRE and the compiled application. Docker copies the required artifact from the build stage into the runtime stage, so the final image does not inherit the entire build environment.
 
 **Example — Spring Boot multi-stage build:**
 
@@ -552,7 +552,7 @@ Then ask:
 
 > Could a developer's local `.env` file contain a password or API key?
 
-This is one reason `.dockerignore` and proper secret management should be used together.
+This is one reason to use `.dockerignore` and proper secret management together.
 
 ---
 
@@ -560,7 +560,7 @@ This is one reason `.dockerignore` and proper secret management should be used t
 
 17. How does a container communicate over the network?
 
-A container can communicate through a virtual network provided by Docker. Docker assigns network interfaces and addresses to containers and provides the connectivity required by the selected network type. For application stacks, a user-defined bridge network is usually more useful than relying on the default network because Docker provides name-based discovery between containers on that network.
+A container can communicate through a virtual network provided by Docker. Docker assigns network interfaces and addresses to containers and provides the connectivity required by the selected network type. For application stacks, a user-defined bridge network is usually more useful than the default network. Docker provides name-based discovery between containers on a user-defined network.
 
 **Example:**
 
@@ -634,7 +634,7 @@ This same principle appears later in Kubernetes, where applications normally use
 
 19. Why do we publish container ports?
 
-A container can listen on a port without that port being directly exposed through the host. Port publishing creates a host-to-container mapping. For example, `-p 8080:80` means traffic arriving at the host on port 8080 is forwarded to port 80 of the container.
+A container can listen on a port without that port being directly exposed through the host. Port publishing creates a host-to-container mapping. For example, `-p 8080:80` means Docker forwards traffic that arrives at the host on port 8080 to port 80 of the container.
 
 ```bash
 docker run -d \
@@ -870,7 +870,7 @@ The underlying networking idea remains the same even though the implementation c
 
 25. What happens when a container is restarted or recreated?
 
-A restart keeps the same container identity and writable layer, while removing and recreating a container creates a new instance. This distinction matters because a container's IP address and runtime state should not be treated as permanent. Production systems usually assume containers can be replaced at any time and therefore use stable service endpoints and externalized state.
+A restart keeps the same container identity and writable layer, while removing and recreating a container creates a new instance. This distinction matters because you should not treat a container's IP address and runtime state as permanent. Production systems usually assume containers can be replaced at any time and therefore use stable service endpoints and externalized state.
 
 **Practice**
 
@@ -938,7 +938,7 @@ The file is gone.
 
 27. Why should application state usually live outside the container?
 
-Containers are intentionally disposable. If a container crashes, is rescheduled, or is replaced during deployment, anything stored only inside its writable layer can disappear. A stateless Spring Boot API should therefore normally store user data in MySQL/PostgreSQL, files in object storage such as Azure Blob Storage or Amazon S3, and other persistent information in appropriate external services. This allows the application container to be replaced without losing business state.
+Containers are intentionally disposable. If a container crashes, is rescheduled, or is replaced during deployment, anything stored only inside its writable layer can disappear. A stateless Spring Boot API should therefore store user data in MySQL/PostgreSQL and files in object storage such as Azure Blob Storage or Amazon S3. Other persistent information belongs in appropriate external services. You can then replace the application container without losing business state.
 
 **Example:**
 
@@ -964,7 +964,7 @@ Object Storage → User files
 
 28. What is a Docker Volume?
 
-A Docker volume provides persistent storage outside the container's writable layer and can be mounted into a container. When the container is removed, the volume can remain. Volumes are useful when a workload genuinely needs persistent filesystem data, but they should not automatically be treated as the right storage solution for every application.
+A Docker volume provides persistent storage outside the container's writable layer and can be mounted into a container. When the container is removed, the volume can remain. Volumes are useful when a workload genuinely needs persistent filesystem data. Do not treat them automatically as the right storage solution for every application.
 
 **Practice:**
 
@@ -1052,7 +1052,7 @@ Remove the container and create another container from the same image with the s
 
 30. When should you use a Docker volume versus external storage?
 
-A volume is useful when the application genuinely requires filesystem persistence on the Docker host, such as some local development workloads or self-managed services. For cloud production systems, persistent business data is often better placed in managed databases, object storage, or cloud-managed storage because those services provide durability, backups, replication, and operational capabilities beyond a single Docker host. The correct choice depends on the workload and reliability requirements.
+A volume is useful when the application genuinely requires filesystem persistence on the Docker host, such as some local development workloads or self-managed services. For cloud production systems, persistent business data often belongs in managed databases, object storage, or cloud-managed storage. Those services provide durability, backups, replication, and operational capabilities beyond a single Docker host. The correct choice depends on the workload and reliability requirements.
 
 **Example:**
 
@@ -1073,7 +1073,7 @@ The production container can then be replaced without affecting the database.
 
 31. How should configuration be separated from the image?
 
-The image should contain the application and its runtime dependencies, while environment-specific configuration should normally be injected when the container starts. This lets the same image run in different environments. For example, the Dev database endpoint and Production database endpoint should not require two different application images.
+The image should contain the application and its runtime dependencies, while you normally inject environment-specific configuration when the container starts. This lets the same image run in different environments. For example, the Dev database endpoint and Production database endpoint should not require two different application images.
 
 **Example:**
 
@@ -1102,7 +1102,7 @@ myapp:1.0.0
 
 32. How should secrets be handled?
 
-Secrets such as database passwords, API tokens, certificates, and private keys should not be baked into the image or committed to Git. Environment variables are useful for basic configuration and labs, but production environments should normally use dedicated secret-management mechanisms so that access can be controlled, audited, rotated, and separated from the application image.
+Do not bake secrets such as database passwords, API tokens, certificates, and private keys into the image, and do not commit them to Git. Environment variables are useful for basic configuration and labs, but production environments should normally use dedicated secret-management mechanisms. These let you control, audit, and rotate access, and keep secrets separate from the application image.
 
 **Bad:**
 
@@ -1273,7 +1273,7 @@ Look for the exit code and reason about what caused the process to terminate.
 
 22. Why should containers normally run one main application process?
 
-A container is easiest to operate when its lifecycle maps clearly to one primary application process. This makes health checks, logs, scaling, restart behavior, and failure diagnosis easier to understand. It is technically possible to run multiple processes inside one container, but independently managed components are usually better represented as separate containers so the platform can scale and restart them independently.
+A container is easiest to operate when its lifecycle maps clearly to one primary application process. This makes health checks, logs, scaling, restart behavior, and failure diagnosis easier to understand. It is technically possible to run multiple processes inside one container. Independently managed components usually belong in separate containers, so the platform can scale and restart them independently.
 
 **Example:**
 
@@ -1301,7 +1301,7 @@ Monitoring → platform/agent mechanism
 
 23. What makes a container production-ready?
 
-A production container should have a predictable startup command, minimal unnecessary software, runtime configuration, secure secret handling, useful logs, an appropriate health model, and a known image version. It should use a trusted and maintained base image, be scanned for vulnerabilities, run with only the permissions it needs, and have sensible CPU/memory limits where the platform supports them. Production readiness is broader than the Dockerfile: networking, observability, deployment strategy, storage, identity, and recovery all matter.
+A production container should have a predictable startup command, minimal unnecessary software, runtime configuration, secure secret handling, useful logs, an appropriate health model, and a known image version. It should use a trusted and maintained base image and pass a vulnerability scan. It should run with only the permissions it needs and have sensible CPU/memory limits where the platform supports them. Production readiness is broader than the Dockerfile: networking, observability, deployment strategy, storage, identity, and recovery all matter.
 
 **Practice**
 
@@ -1349,7 +1349,7 @@ Production Platform
 
 25. How should containers move through CI/CD?
 
-A strong container pipeline builds the image once, tests it, scans it, pushes it to a trusted registry, and promotes that same image through Dev, UAT, and Production. Environment-specific configuration changes, but the application image should remain the same. This gives you traceability between a Git commit, the image that was built, the image that was deployed, and the behavior observed in production.
+A strong container pipeline builds the image once, tests it, scans it, pushes it to a trusted registry, and promotes that same image through Dev, UAT, and Production. Environment-specific configuration changes, but the application image should remain the same. This gives you traceability between a Git commit, the image you built, the image you deployed, and the behavior you observe in production.
 
 **Example:**
 
@@ -1371,11 +1371,11 @@ UAT
 Prod
 ```
 
-The image should not be rebuilt just because it is being deployed to Production.
+Do not rebuild the image just because you deploy it to Production.
 
 26. Why should images be tagged carefully?
 
-A tag such as `latest` is a mutable pointer and can refer to different image contents over time. That makes it harder to know exactly what is running and can make rollback ambiguous. A version tag such as `1.4.7` is easier for humans to understand, while an image digest identifies the exact content-addressed image; in production, a strong deployment process should be able to identify the exact image content that is running.
+A tag such as `latest` is a mutable pointer and can refer to different image contents over time. That makes it harder to know exactly what is running and can make rollback ambiguous. A version tag such as `1.4.7` is easier for humans to understand, while an image digest identifies the exact content-addressed image. In production, a strong deployment process should be able to identify the exact image content that is running.
 
 **Practice**
 
@@ -1406,7 +1406,7 @@ Exact image content
 
 27. How is a Container different from a Virtual Machine?
 
-A virtual machine includes a complete guest operating system and its own kernel, running on a hypervisor. A container normally shares the host kernel and isolates the application process using operating-system mechanisms. VMs therefore provide stronger operating-system-level separation and can run different guest operating systems on the same physical host, while containers are generally lighter and faster to start. The choice depends on workload requirements rather than the idea that one technology universally replaces the other.
+A virtual machine includes a complete guest operating system and its own kernel, running on a hypervisor. A container normally shares the host kernel and isolates the application process using operating-system mechanisms. VMs therefore provide stronger operating-system-level separation and can run different guest operating systems on the same physical host. Containers are generally lighter and faster to start. The choice depends on workload requirements rather than the idea that one technology universally replaces the other.
 
 **Example:**
 
@@ -1450,7 +1450,7 @@ For each, explain what isolation and operating-system requirements matter.
 
 28. What is the Container Runtime?
 
-The container runtime is responsible for the lower-level work of creating and running containers. Docker provides a higher-level developer workflow, while modern container environments commonly use containerd and an OCI runtime such as `runc` underneath. This distinction matters when learning Kubernetes: Kubernetes does not require the Docker Engine itself to run application containers; it communicates with a compatible container runtime through its runtime interface.
+The container runtime is responsible for the lower-level work of creating and running containers. Docker provides a higher-level developer workflow, while modern container environments commonly use containerd and an OCI runtime such as `runc` underneath. This distinction matters when you learn Kubernetes. Kubernetes does not require the Docker Engine itself to run application containers; it communicates with a compatible container runtime through its runtime interface.
 
 **Practice**
 
@@ -1478,7 +1478,7 @@ Linux kernel
 
 29. What changes when a container moves to the cloud?
 
-On a laptop, Docker provides the host, container runtime, networking, storage, and basic lifecycle operations. In production, those responsibilities are usually distributed across a cloud container platform or orchestrator. The platform must decide where workloads run, how they receive traffic, how they obtain configuration and secrets, how they restart, how they scale, how identity works, and how logs and metrics are collected. This is why container knowledge is the foundation for services such as Azure Container Apps, Amazon ECS, AKS, and EKS.
+On a laptop, Docker provides the host, container runtime, networking, storage, and basic lifecycle operations. In production, those responsibilities are usually distributed across a cloud container platform or orchestrator. The platform must decide where workloads run, how they receive traffic, how they obtain configuration and secrets, how they restart, how they scale, how identity works, and how it collects logs and metrics. This is why container knowledge is the foundation for services such as Azure Container Apps, Amazon ECS, AKS, and EKS.
 
 **Example:**
 
