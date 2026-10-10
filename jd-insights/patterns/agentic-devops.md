@@ -7,6 +7,7 @@ Newer JDs (Sezzle, EPAM GenAI-flavoured roles) expect you to use AI tools and ag
 ## What employers ask for
 
 - Use AI assistants for IaC, pipeline, and script writing (Copilot-style)
+- One Lead JD now lists AI-assisted Terraform and Ansible authoring with GitHub Copilot as standard project practice (human review still owns the result)
 - Use agents to speed up ops loops: triage, runbook drafting, log summarising
 - Judge AI output: review it like a junior engineer's PR, never auto-trust
 - Keep guardrails: AI suggests, pipelines and humans still gate production
@@ -33,6 +34,15 @@ The safety rule is the same as GitOps: every change still goes through review, t
 
 > **Treat AI output like a fast junior engineer: great first drafts, zero accountability. Review stays human, gates stay in the pipeline.**
 
+## Platform teams now also run AI traffic (emerging, seen in 1 to 2 JDs)
+
+A newer ask, so treat it as an early signal, not a core requirement:
+
+- Some Lead roles run an AI gateway (Azure API Management AI gateway, LiteLLM). It is a normal API gateway with model-aware rules: route requests across model providers, rate-limit by tokens not just calls, enforce policies like PII redaction, and log usage for cost and debugging.
+- Others support GenAI / RAG apps on AKS with Azure AI Search, private networking, and a WAF. The platform work is the usual work: networking, security, observability, resilience. The app behind it just happens to call models.
+
+If you have not run one of these gateways, say so. Describe it as gateway skills (routing, limits, policy, logging) applied to model traffic.
+
 ## Study these days first
 
 AI assists existing loops, so study the loops:
@@ -57,4 +67,5 @@ This is the easiest area to over-claim and get caught. Do not invent product nam
 
 ## Source tags
 
-Sezzle SRE (AI tooling expected) · EPAM Azure AI/GenAI DevOps themes
+Sezzle SRE (AI tooling expected) · EPAM Azure AI/GenAI DevOps themes · EPAM Lead Azure (AI gateway) · EPAM Senior Azure (GenAI/RAG on AKS)
+Sezzle SRE (AI tooling expected) · EPAM Azure AI/GenAI DevOps themes · EPAM Lead Cloud (Copilot standard)

@@ -109,10 +109,15 @@ The coverage result, card by card:
 | FinOps + cost awareness | 39, 11, 30 | Covered. Day-39 teaches the full loop including attribution (Part 27) and unit cost; it only lacked the card link (fixed, one line). |
 | Agentic AI in DevOps | 4, 19, 20 | Covered, no change. Day-4's AI-in-the-loop note with the fast-junior anchor remains the right-sized home. |
 | Lead vs Senior signals | 21, 30, 40 | Covered, no change. Day-21 carries the card link; Day-40 grades exactly the defend-every-decision behaviour the card describes. |
+| Golden images / Image Factory | 27, 23, 13, 19 | New card added 2026-10-06 from two EPAM KZ JDs (bake-don't-patch loop, CIS hardening, image scanning, gallery publishing); the listed Days already teach each piece, no Day change needed. |
 
 The instructional verdict is that no Day needed a content fix. Every theme lands on Days that open with the model, define jargon at first use (the third and fourth passes already closed those gaps), and end with recall. The one real gap this direction of reading exposed was navigational: six cards were reachable from their lead Day through the one-line JD note introduced in the first pass, but three (Kubernetes in production, AWS + EKS + Terraform, FinOps) were not, so a learner inside Day-14, Day-26, or Day-39 had no way to discover that a market pattern card existed for exactly what they were studying. Each of those three Days gained one JD-note line in its own small PR, matching the existing format, and nothing else was touched.
 
 Remaining watch-list items carry over unchanged: the duplicate Day-8/9/10 and Day-24 files still await an owner decision on rename or merge (the README note keeps learners on the canonical files meanwhile), and JWT remains undefined but unblocking. New normal from here: when fresh JDs arrive, update the card first per HOW-WE-UPDATE, and only touch a Day if the card exposes a missing model or anchor, not to add length.
+
+## Golden-image gap fix (2026-10-06)
+
+Fresh Senior/Lead Azure JDs ask for "Image Factory" pipelines (golden images, CIS hardening, Ansible as code, publishing to Azure Compute Gallery), and Day-23 taught VMSS rolling updates without ever saying where the image comes from. Day-23 Part 3 gained one short golden-image block (plain-English definition, build-harden-scan-publish flow, a "bake, don't patch in place" Remember, and a Day-27 Part 3 cross-link to the AWS AMI version of the same idea) plus one Part 22 recall question. No other Day was touched.
 
 ## Simplified Technical English pass (sixth pass, 2026-10-09)
 

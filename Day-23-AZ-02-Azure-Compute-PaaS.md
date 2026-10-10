@@ -122,6 +122,26 @@ Traffic distributed
 
 But scaling needs capacity planning and health checks. If the database is already saturated, adding more application VMs may make the overall system worse.
 
+Where does the "common configuration" above actually come from? In mature teams it comes from a **golden image**: a pre-built, tested, and hardened VM template that your team owns. Every new VM or scale-set instance boots from that image, so servers start identical instead of being configured by hand after launch. **Hardening** means locking down the operating system's security settings, often against a **CIS benchmark**, which is a published security configuration checklist. When a patch or change is needed, you do not SSH into live servers and fix them one by one. Instead, an image-build pipeline produces a new image version, publishes it to **Azure Compute Gallery** (Azure's store for versioned VM images, formerly called Shared Image Gallery), and the scale set rolls its instances onto the new version.
+
+```text
+Base OS image
+ ↓
+Configure (scripts / Ansible as code)
+ ↓
+Harden (e.g. CIS baseline)
+ ↓
+Scan the image
+ ↓
+Publish version to Azure Compute Gallery
+ ↓
+VMSS rolling update to the new version
+```
+
+This is the "Image / model update → Rolling instance update" step you will meet again in Part 15: a VM Scale Set can reference a specific gallery image version, and a rolling upgrade replaces old instances with new ones booted from it. Day 27 Part 3 teaches the same immutable idea on AWS, where the golden image is called an AMI.
+
+**Remember:** Bake, don't patch in place. Fix the image, then replace the servers.
+
 Practice: Imagine your Spring Boot application receives 10x normal traffic. Explain how VMSS could respond and what other component could become the bottleneck.
 
 ---
@@ -1115,6 +1135,10 @@ Increasing the capacity of an existing instance.
 Does scaling the application guarantee better performance?
 
 No. Another dependency can become the bottleneck.
+
+What is a golden image and why rebuild instead of patching live VMs?
+
+A pre-built, tested, hardened VM template that every new instance boots from. Building a new image version and rolling instances onto it keeps every server identical; patching live servers by hand lets their configurations drift apart.
 
 Does containerization automatically require AKS?
 
