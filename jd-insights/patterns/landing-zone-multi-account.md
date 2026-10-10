@@ -11,6 +11,7 @@ Lead cloud roles expect you to design the structure around workloads: how subscr
 - Central identity, logging, and networking shared by all workloads
 - Policy guardrails: what teams can and cannot create
 - Cost and security isolation between workloads
+- Azure Landing Zone with hub-spoke networks; workloads like AKS live in spokes
 - Interview style: design questions, not commands ("how would you structure...")
 
 ## Mental model
@@ -68,4 +69,4 @@ Few people have built a full landing zone alone. It is honest to say you worked 
 
 ## Source tags
 
-EPAM Lead Azure Cloud · EPAM Lead Platform · EPAM Senior Azure DevOps (migration)
+EPAM Lead Azure Cloud · EPAM Lead Platform · EPAM Senior Azure DevOps (migration) · EPAM Senior Azure Cloud (KZ)

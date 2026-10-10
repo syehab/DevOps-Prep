@@ -65,7 +65,10 @@ Outline:
 
 This is the easiest area to over-claim and get caught. Do not invent product names or "built an AI platform" stories. Generic, honest wording (AI-assisted checks, delivery loops, runbooks) matches what these JDs actually ask and survives follow-up questions.
 
+Emerging note: some Azure cloud JDs now name Azure AI or RAG next to the usual cloud skills. Your answer stays the loop above: AI assists, humans review and approve.
+
 ## Source tags
 
 Sezzle SRE (AI tooling expected) · EPAM Azure AI/GenAI DevOps themes · EPAM Lead Azure (AI gateway) · EPAM Senior Azure (GenAI/RAG on AKS)
 Sezzle SRE (AI tooling expected) · EPAM Azure AI/GenAI DevOps themes · EPAM Lead Cloud (Copilot standard)
+Sezzle SRE (AI tooling expected) · EPAM Azure AI/GenAI DevOps themes · EPAM Azure Cloud (KZ, Azure AI / RAG named)
