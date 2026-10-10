@@ -29,7 +29,7 @@ Recovery
 RCA + Improvement
 ```
 
-Senior DevOps thinking goes beyond “install Prometheus and Grafana.” The real question is whether the telemetry allows you to detect an important failure, understand its impact, isolate the failing component, recover safely, and prevent the same class of incident from recurring.
+Senior DevOps thinking goes beyond “install Prometheus and Grafana.” The real question is whether the telemetry lets you detect an important failure, understand its impact, and isolate the failing component. It should also let you recover safely and prevent the same class of incident from recurring.
 
 **Remember:** Monitoring tells you that something may be wrong; observability helps you understand why.
 
@@ -93,7 +93,7 @@ p95 = 700 ms
 p99 = 4 s
 ```
 
-This means approximately half of requests are at or below 200 ms, 95% are at or below 700 ms, and 99% are at or below 4 seconds. The exact interpretation depends on how the metric is calculated, but the operational idea is that high percentiles reveal the slower tail of user requests.
+This means about half of requests are at or below 200 ms, 95% are at or below 700 ms, and 99% are at or below 4 seconds. The exact interpretation depends on how the system calculates the metric, but the operational idea is that high percentiles reveal the slower tail of user requests.
 
 Practice: Suppose an application reports:
 
@@ -111,7 +111,7 @@ Do not conclude that the application is simply “300 ms fast.” Ask what is ca
 
 ## Part 4 — Logs: Understanding Events
 
-Logs record discrete events and application context. They are useful when you need details that cannot be represented by a simple number: an exception stack trace, request identifier, authentication failure, configuration error, database timeout, or deployment event. Logs are particularly valuable during troubleshooting because they explain what a process believed was happening at a particular moment.
+Logs record discrete events and application context. They are useful when you need details that a simple number cannot represent: an exception stack trace, request identifier, authentication failure, configuration error, database timeout, or deployment event. Logs are particularly valuable during troubleshooting because they explain what a process believed was happening at a particular moment.
 
 A useful structured log might contain:
 
@@ -209,7 +209,7 @@ Senior point: In distributed systems, “the API is slow” is not a sufficient 
 
 ## Part 6 — Correlation: Connecting Logs, Metrics and Traces
 
-The real value of observability appears when telemetry signals can be connected. Suppose an alert reports that the `orders-api` error rate increased. Metrics tell you the increase happened. Logs may reveal database timeout exceptions. Traces can show that requests are spending most of their time waiting for the database.
+The real value of observability appears when you can connect the telemetry signals. Suppose an alert reports that the `orders-api` error rate increased. Metrics tell you the increase happened. Logs may reveal database timeout exceptions. Traces can show that requests are spending most of their time waiting for the database.
 
 A useful investigation chain is:
 
@@ -362,7 +362,7 @@ An **SLO (Service Level Objective)** is the target for that measurement, such as
 99.9% of valid requests succeed over 30 days.
 ```
 
-An **SLA (Service Level Agreement)** is a formal agreement with customers or stakeholders that may include commitments and consequences if those commitments are not met.
+An **SLA (Service Level Agreement)** is a formal agreement with customers or stakeholders. It may include commitments, and consequences if the provider does not meet those commitments.
 
 The relationship is:
 
@@ -435,7 +435,7 @@ Are Pods healthy?
 Is the database healthy?
 ```
 
-If evidence strongly connects the incident to the latest release, a rollback may be a reasonable mitigation if the rollback is safe and the previous version remains compatible with the current data state.
+If evidence strongly connects the incident to the latest release, a rollback may be a reasonable mitigation. It must be safe, and the previous version must remain compatible with the current data state.
 
 Do not automatically restart everything. A restart can temporarily hide symptoms while leaving the underlying problem unresolved.
 
@@ -614,7 +614,7 @@ Do not assume “add more Pods” always solves the issue. If all Pods are waiti
 
 ## Part 14 — Root Cause Analysis
 
-A Root Cause Analysis should explain not only what failed but why the system allowed the failure to reach users and why existing controls did not stop or detect it earlier.
+A Root Cause Analysis should explain not only what failed. It should also explain why the system allowed the failure to reach users and why existing controls did not stop or detect it earlier.
 
 A useful RCA structure is:
 
