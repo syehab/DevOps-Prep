@@ -12,7 +12,7 @@ The central question for today is:
 
 ShopSphere currently runs as a managed container workload. The platform handles much of the runtime orchestration: scheduling, service execution, scaling primitives, health integration, and parts of deployment management. Kubernetes gives you a broader and more programmable orchestration platform, but that flexibility comes with additional concepts and operational responsibility.
 
-A Kubernetes migration should therefore begin with a business or engineering reason rather than “we use Kubernetes because it is standard.” Possible reasons include a requirement for Kubernetes-native workloads, a common enterprise platform, portability across environments, advanced scheduling, standardized deployment tooling, or an ecosystem requirement. If the existing managed container platform already satisfies the workload requirements, Kubernetes may add complexity without enough benefit.
+A Kubernetes migration should therefore begin with a business or engineering reason, not “we use Kubernetes because it is standard.” Possible reasons include a requirement for Kubernetes-native workloads, a common enterprise platform, or portability across environments. Other reasons include advanced scheduling, standardized deployment tooling, or an ecosystem requirement. If the existing managed container platform already satisfies the workload requirements, Kubernetes may add complexity without enough benefit.
 
 Your architecture decision should explicitly record:
 
@@ -224,7 +224,7 @@ A namespace is therefore a useful organizational and policy boundary, not a repl
 
 ## Part 7 — Deployments and ReplicaSets
 
-ShopSphere's Spring Boot application should be represented by a Deployment.
+Represent ShopSphere's Spring Boot application with a Deployment.
 
 A Deployment describes the desired workload state.
 
@@ -315,7 +315,7 @@ If the selector is wrong, the Service can exist perfectly while having no usable
 
 A running process is not necessarily ready to receive traffic.
 
-ShopSphere should expose a health endpoint that can be used by Kubernetes.
+ShopSphere should expose a health endpoint that Kubernetes can use.
 
 For example:
 
@@ -331,7 +331,7 @@ A liveness probe answers:
 
 **“Is this container still functioning, or should Kubernetes restart it?”**
 
-A startup probe can protect slow-starting applications from being killed before initialization completes.
+A startup probe can protect a slow-starting application, so Kubernetes does not kill it before initialization completes.
 
 The distinction matters:
 
@@ -347,7 +347,7 @@ This principle connects directly to the safe deployment work from Day 34.
 
 ## Part 10 — Graceful Shutdown
 
-When Kubernetes terminates a Pod, ShopSphere should stop accepting new work while allowing active requests to finish within a controlled period.
+When Kubernetes terminates a Pod, ShopSphere should stop new work and still allow active requests to finish within a controlled period.
 
 The desired flow is:
 
@@ -395,7 +395,7 @@ Secrets
 
 Kubernetes ConfigMaps can hold non-sensitive configuration.
 
-Kubernetes Secrets provide a Kubernetes API object for sensitive configuration, but they should not automatically be treated as a complete secrets-management solution.
+Kubernetes Secrets provide a Kubernetes API object for sensitive configuration. Do not treat them automatically as a complete secrets-management solution.
 
 For production, integrate the workload with the cloud's secret-management system where appropriate.
 
@@ -773,7 +773,7 @@ This connects directly to Day 34:
 
 **A deployment rollback is not necessarily a database rollback.**
 
-Database migrations should therefore follow backward-compatible patterns when zero-downtime rollback is required.
+Therefore follow backward-compatible database migration patterns when you need a zero-downtime rollback.
 
 ---
 
@@ -885,7 +885,7 @@ UAT
 Production
 ```
 
-Environment differences should be expressed through controlled configuration.
+Express environment differences through controlled configuration.
 
 ---
 
