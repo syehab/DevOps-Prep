@@ -10,7 +10,7 @@ The core mental model is **AWS Organization → Organizational Units → Account
 
 ## Part 1 — Why AWS Enterprise Architecture Exists
 
-A small AWS account can be managed by one person, but enterprise environments quickly become difficult if every application, environment, and team shares the same account. AWS Organizations provides a higher-level structure in which multiple AWS accounts can be centrally governed. Accounts become important isolation boundaries for security, billing, ownership, and operational blast radius.
+One person can manage a small AWS account, but enterprise environments quickly become difficult if every application, environment, and team shares the same account. AWS Organizations provides a higher-level structure in which you can centrally govern multiple AWS accounts. Accounts become important isolation boundaries for security, billing, ownership, and operational blast radius.
 
 A common enterprise model separates security, infrastructure, workloads and sandbox accounts into appropriate OUs. For example, Security may contain dedicated security and log-archive accounts, Infrastructure may contain networking and shared services, and Workloads may contain separate Production, UAT and Development accounts.
 
@@ -44,7 +44,7 @@ Decide how you would divide accounts and why.
 
 AWS Organizations allows an organization to centrally manage multiple AWS accounts. The organization has a management account that owns the organization-level control plane and can apply organization-wide governance mechanisms.
 
-The management account is highly privileged and should not be treated as a normal workload account. Production applications should not run there simply because it is convenient.
+The management account is highly privileged; do not treat it as a normal workload account. Production applications should not run there simply because it is convenient.
 
 A healthy conceptual separation is:
 
@@ -89,7 +89,7 @@ Explain why an enterprise should avoid deploying an Internet-facing production a
 
 ## Part 3 — Organizational Units
 
-Organizational Units, or OUs, group AWS accounts so that governance can be applied to groups of accounts rather than individually.
+Organizational Units, or OUs, group AWS accounts so that you can apply governance to groups of accounts rather than individually.
 
 For example:
 
@@ -127,7 +127,7 @@ Subnet:
 network segmentation
 ```
 
-Service Control Policies, or SCPs, can be attached to OUs and accounts to restrict what identities can do within those accounts.
+You can attach Service Control Policies, or SCPs, to OUs and accounts to restrict what identities can do within those accounts.
 
 Implementation example:
 
@@ -223,7 +223,7 @@ For a critical financial application, explain why Production might be placed in 
 
 ## Part 5 — IAM: Authentication and Authorization
 
-AWS Identity and Access Management, or IAM, controls authentication and authorization for AWS resources. The concepts are the same as those learned in Azure: authentication answers who or what is making the request, while authorization determines what that identity is allowed to do.
+AWS Identity and Access Management, or IAM, controls authentication and authorization for AWS resources. The concepts are the same as in Azure: authentication answers who or what makes the request. Authorization determines what that identity can do.
 
 Important AWS IAM concepts include:
 
@@ -286,7 +286,7 @@ This is least privilege in practice.
 
 ## Part 6 — IAM Roles and Trust Policies
 
-An IAM policy says what an identity can do. A trust policy says **who is allowed to assume a role**.
+An IAM policy says what an identity can do. A trust policy says **who can assume a role**.
 
 This is a very important AWS distinction.
 
@@ -405,7 +405,7 @@ Region: ap-south-1
 └── AZ-c
 ```
 
-A production application should not assume that one Availability Zone will always be available. Workloads can be distributed across multiple AZs to improve availability.
+A production application should not assume that one Availability Zone will always be available. Distribute workloads across multiple AZs to improve availability.
 
 For example:
 
@@ -558,7 +558,7 @@ Does the workload have a public IP?
 
 ## Part 11 — Security Groups and Network ACLs
 
-AWS Security Groups are stateful virtual firewalls associated with resources such as network interfaces. They control inbound and outbound traffic using rules. Stateful means the firewall remembers each allowed connection, so return traffic for that connection is permitted automatically.
+AWS Security Groups are stateful virtual firewalls associated with resources such as network interfaces. They control inbound and outbound traffic using rules. Stateful means the firewall remembers each allowed connection and permits the return traffic for that connection automatically.
 
 Network ACLs operate at the subnet level and are stateless, meaning return traffic must also be explicitly allowed.
 
@@ -621,7 +621,7 @@ Internet → RDS: denied
 
 ## Part 12 — Route Tables, Internet Gateway and NAT Gateway
 
-AWS route tables determine where traffic is sent. An Internet Gateway provides a path between a VPC and the public internet, while a NAT Gateway allows resources in private subnets to initiate outbound internet connections without being directly reachable from the internet.
+AWS route tables determine where traffic goes. An Internet Gateway provides a path between a VPC and the public internet. A NAT Gateway lets resources in private subnets start outbound internet connections while they stay unreachable from the internet.
 
 Typical architecture:
 
@@ -639,7 +639,7 @@ Typical architecture:
                  App
 ```
 
-The NAT Gateway itself is placed in a public subnet because it needs connectivity toward the Internet Gateway.
+The NAT Gateway itself lives in a public subnet because it needs connectivity toward the Internet Gateway.
 
 A private application's default route can therefore point to the NAT Gateway.
 
@@ -884,7 +884,7 @@ Owner=Payments
 CostCenter=FIN-001
 ```
 
-But tags should not be treated as the only cost-control mechanism. Account boundaries, budgets, service quotas, architecture choices, and monitoring are also important.
+But do not treat tags as the only cost-control mechanism. Account boundaries, budgets, service quotas, architecture choices, and monitoring are also important.
 
 Design cost ownership for:
 
@@ -934,7 +934,7 @@ AWS Organization
     └── Sandbox
 ```
 
-Networking can then be organized independently. A Transit Gateway is AWS's central network hub: VPCs attach to it once instead of peering with each other one by one, the same hub idea you saw in Azure hub-and-spoke on Day 24.
+Networking can then be organized independently. A Transit Gateway is AWS's central network hub: VPCs attach to it once instead of peering with each other one by one. This is the same hub idea you saw in Azure hub-and-spoke on Day 24.
 
 ```text
 Network Account
@@ -1486,4 +1486,4 @@ Destroy
 Verify
 ```
 
-The final Day 26 mental model is: **Organization → OU → Account → Region/AZ → VPC → Subnet → Workload**, with IAM controlling identity and authorization, SCPs and other governance controls defining boundaries, networking controlling traffic paths, CloudTrail/CloudWatch providing visibility, and Terraform plus CI/CD making the platform repeatable. At Senior/Lead level, the goal is to explain why each boundary exists, what blast radius it creates, how access is controlled, and how the platform is operated safely at scale.
+The final Day 26 mental model is: **Organization → OU → Account → Region/AZ → VPC → Subnet → Workload**, with IAM controlling identity and authorization, SCPs and other governance controls defining boundaries, networking controlling traffic paths, CloudTrail/CloudWatch providing visibility, and Terraform plus CI/CD making the platform repeatable. At Senior/Lead level, the goal is to explain why each boundary exists, what blast radius it creates, who controls access, and how the team operates the platform safely at scale.
