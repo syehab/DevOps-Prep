@@ -13,6 +13,7 @@ SRE titles (and most Lead roles) want you to define what "healthy" means with nu
 - Error budgets: use the data to decide features vs reliability work
 - Safe releases: progressive delivery with health gates and automatic rollback (Day-34 below covers this)
 - Synthetic checks (scripted probes that act like a user) and runbooks for known failures
+- AI services too: same SLOs and on-call, plus one extra signal, is the model's output still good? Watch quality next to latency and errors
 
 ## Mental model
 
@@ -73,4 +74,4 @@ Sezzle-style JDs name Prometheus or Datadog daily use, sometimes Golang. If your
 
 ## Source tags
 
-Sezzle SRE · EPAM Senior SRE · EPAM Senior SRE (Grafana + EKS) · Fundraise Up DevOps
+Sezzle SRE · EPAM Senior SRE · EPAM Senior SRE (Grafana + EKS) · Fundraise Up DevOps · EPAM Senior AI DevOps/SRE
