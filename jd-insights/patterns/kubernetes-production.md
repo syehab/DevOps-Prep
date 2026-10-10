@@ -11,6 +11,7 @@ Nearly every Senior or Lead DevOps JD expects you to run Kubernetes day 2: deplo
 - Safe deployments: rolling updates, probes, resource limits
 - Upgrades, scaling, and node lifecycle
 - Securing workloads: identities, secrets, network policies
+- AKS day 2 extras: add-ons (ingress, cert-manager, external-dns, monitoring, policy) and onboarding new namespaces or tenants
 
 ## Mental model
 
@@ -68,4 +69,4 @@ JDs name many add-ons (service mesh, specific CNIs, cluster autoscalers). You do
 
 ## Source tags
 
-EPAM Azure Lead · EPAM Senior Azure DevOps · EPAM AWS DevOps · Sezzle SRE · Fundraise Up DevOps
+EPAM Azure Lead · EPAM Senior Azure DevOps · EPAM AWS DevOps · EPAM Lead Cloud (AKS add-ons) · Sezzle SRE · Fundraise Up DevOps

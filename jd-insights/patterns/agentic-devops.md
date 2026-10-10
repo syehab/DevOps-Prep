@@ -7,6 +7,7 @@ Newer JDs (Sezzle, EPAM GenAI-flavoured roles) expect you to use AI tools and ag
 ## What employers ask for
 
 - Use AI assistants for IaC, pipeline, and script writing (Copilot-style)
+- One Lead JD now lists AI-assisted Terraform and Ansible authoring with GitHub Copilot as standard project practice (human review still owns the result)
 - Use agents to speed up ops loops: triage, runbook drafting, log summarising
 - Judge AI output: review it like a junior engineer's PR, never auto-trust
 - Keep guardrails: AI suggests, pipelines and humans still gate production
