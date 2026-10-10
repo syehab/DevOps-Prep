@@ -19,7 +19,7 @@ Deploy     → environment permissions and approvals
 Run        → runtime identity, secrets, network, monitoring
 ```
 
-Every part of this lesson secures one of these stages. A weakness anywhere in the chain can undermine the controls after it: if an attacker can change what gets built, it does not matter how carefully you deploy it.
+Every part of this lesson secures one of these stages. A weakness anywhere in the chain can undermine the controls after it. If an attacker can change what gets built, it does not matter how carefully you deploy it.
 
 **Remember:** securing the application without securing the delivery path leaves a major attack path open.
 
@@ -118,7 +118,7 @@ And dangerous:
 echo "password=$DB_PASSWORD"
 ```
 
-A better Azure DevOps pattern is to retrieve secrets from a controlled secret store and expose them only to the step that needs them. The exact implementation depends on the chosen authentication model and task, but the security principle stays the same: **the pipeline should prove who it is rather than carrying a permanent password around.**
+A better Azure DevOps pattern is to retrieve secrets from a controlled secret store and expose them only to the step that needs them. The exact implementation depends on the chosen authentication model and task. The security principle stays the same: **the pipeline should prove who it is rather than carry a permanent password around.**
 
 Practice: Search a repository for obvious secret patterns:
 
@@ -153,11 +153,11 @@ mvn versions:display-dependency-updates
 
 The pipeline should check dependencies before an artifact is promoted. The standard control is Software Composition Analysis (SCA) — a scan that lists your third-party dependencies and reports known vulnerabilities in them. Add license checks where required, and a policy that stops critical known vulnerabilities from reaching production without an approved exception.
 
-The important distinction is between **finding** a vulnerability and **controlling** it. A scanner may report that a library has a CVE (a publicly catalogued known vulnerability), but the organization still needs a policy such as “critical vulnerabilities block production” or “high severity requires a documented exception.” Severity alone does not tell the complete operational risk. Whether the vulnerable code path is actually reachable, how exposed the system is, and what compensating controls exist all change the real-world risk.
+The important distinction is between **finding** a vulnerability and **controlling** it. A scanner may report that a library has a CVE (a publicly catalogued known vulnerability). The organization still needs a policy such as “critical vulnerabilities block production” or “high severity requires a documented exception.” Severity alone does not tell the complete operational risk. Whether the vulnerable code path is actually reachable, how exposed the system is, and what compensating controls exist all change the real-world risk.
 
 Practice: Add a dependency scan to your pipeline after compilation/tests and before publishing the release artifact. Record what happened when the scanner found a vulnerability: Did the pipeline fail? Did it warn? Who could approve an exception?
 
-Senior interview question: “If your dependency scanner reports a critical CVE, do you always stop production?” A strong answer explains that the organization should have a defined risk policy, with blocking thresholds and an auditable exception process rather than an ad-hoc decision inside each pipeline.
+Senior interview question: “If your dependency scanner reports a critical CVE, do you always stop production?” A strong answer: the organization should have a defined risk policy, with blocking thresholds and an auditable exception process. An ad-hoc decision inside each pipeline is the weak answer.
 
 ---
 
@@ -171,7 +171,7 @@ A container image is another software artifact and must be treated as part of th
 - unnecessary tools are installed
 - secrets were copied into image layers
 
-Security therefore needs to happen twice: while the image is being constructed, and again before it is deployed.
+Security therefore needs to happen twice: while you build the image, and again before you deploy it.
 
 Start with the image:
 
@@ -217,7 +217,7 @@ Practice: Deliberately add an unnecessary package or run the image as root, scan
 
 ## Part 6 — Artifact Integrity and Image Provenance
 
-A secure pipeline should be able to answer a basic production question: **“Exactly what source code produced this artifact?”** The record of where an artifact came from and how it was built is called its provenance. Immutable artifacts, versioning, checksums, and build metadata all exist to make that record trustworthy. If an artifact can be silently replaced after testing, your security checks no longer describe what actually reached production.
+A secure pipeline should be able to answer a basic production question: **“Exactly what source code produced this artifact?”** The record of where an artifact came from and how it was built is called its provenance. Immutable artifacts, versioning, checksums, and build metadata all exist to make that record trustworthy. If someone can silently replace an artifact after testing, your security checks no longer describe what actually reached production.
 
 For container images, tags are human-friendly references:
 
@@ -265,7 +265,7 @@ Practice: Build an image from a known Git commit and record the commit SHA, imag
 
 ## Part 7 — Container Registry Security
 
-The registry is not simply a file server for Docker images. It is a trusted distribution point: whatever it serves will run in your environments. That is why access control, encryption, vulnerability scanning, retention, and image immutability matter here. Azure Container Registry (ACR) and Amazon Elastic Container Registry (ECR) integrate with their cloud identity systems, so access is controlled through cloud IAM instead of registry passwords handed out everywhere.
+The registry is not simply a file server for Docker images. It is a trusted distribution point: whatever it serves will run in your environments. That is why access control, encryption, vulnerability scanning, retention, and image immutability matter here. Azure Container Registry (ACR) and Amazon Elastic Container Registry (ECR) integrate with their cloud identity systems, so cloud IAM controls access instead of registry passwords handed out everywhere.
 
 The deployment path should look like:
 
@@ -316,7 +316,7 @@ For each, list the minimum operations it needs. This is a practical least-privil
 
 ## Part 8 — Pipeline Identity and Federated Authentication
 
-A pipeline needs an identity when it talks to Azure, AWS, a registry, Key Vault, a Terraform backend, or any other protected service. The dangerous pattern is a permanent credential stored in a pipeline variable and reused everywhere. A stronger architecture uses federated authentication where supported: the pipeline proves who it is to the cloud provider and receives a short-lived token in return, so no long-lived password ever has to be stored.
+A pipeline needs an identity when it talks to Azure, AWS, a registry, Key Vault, a Terraform backend, or any other protected service. The dangerous pattern is a permanent credential stored in a pipeline variable and reused everywhere. A stronger architecture uses federated authentication where supported: the pipeline proves who it is to the cloud provider and receives a short-lived token in return. You then never have to store a long-lived password.
 
 Conceptually:
 
@@ -354,7 +354,7 @@ Then ask:
 
 ## Part 9 — Security Gates in the Pipeline
 
-Security should be integrated into the delivery flow instead of being a final manual activity performed after deployment. A practical pipeline might look like:
+Integrate security into the delivery flow; do not treat it as a final manual activity after deployment. A practical pipeline might look like:
 
 ```text
 Commit
@@ -478,7 +478,7 @@ Practice: Take a Kubernetes Deployment and deliberately introduce one risky sett
 
 ## Part 11 — Supply Chain Attack Scenario
 
-Imagine an attacker compromises a developer account and changes a dependency in `pom.xml`. The application still compiles and unit tests pass. The dependency is downloaded during the pipeline build, included in the application, packaged into a container, pushed to the registry, and deployed to production. If the pipeline has no dependency verification or security gate, every later stage may treat the malicious artifact as trusted.
+Imagine an attacker compromises a developer account and changes a dependency in `pom.xml`. The application still compiles and unit tests pass. The pipeline downloads the dependency during the build, includes it in the application, packages it into a container, pushes it to the registry, and deploys it to production. If the pipeline has no dependency verification or security gate, every later stage may treat the malicious artifact as trusted.
 
 Now reason through the controls:
 
@@ -548,7 +548,7 @@ Practice: Inspect your pipeline and identify:
 - Is the workspace cleaned between jobs?
 - Can the same agent build unrelated projects?
 
-Senior interview point: **a pipeline is code execution infrastructure**, so the build worker must be treated as a security-sensitive system.
+Senior interview point: **a pipeline is code execution infrastructure**, so treat the build worker as a security-sensitive system.
 
 ---
 
