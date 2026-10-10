@@ -1,6 +1,6 @@
 # Day 36 — Production Project 06: Terraform Enterprise Hardening & Infrastructure Governance
 
-Day 35 gave ShopSphere operational visibility. Day 36 moves deeper into platform engineering: **how do you let many engineers change infrastructure without losing control of state, security, consistency, or auditability?** Terraform is easy to run for one engineer from a laptop; the challenge is designing a workflow that remains safe when multiple teams, environments, accounts, modules, and pipelines are involved. Today you will harden the Terraform architecture you started earlier and deliberately exercise state, drift, permissions, modules, versioning, and controlled changes.
+Day 35 gave ShopSphere operational visibility. Day 36 moves deeper into platform engineering: **how do you let many engineers change infrastructure without losing control of state, security, consistency, or auditability?** Terraform is easy to run for one engineer from a laptop. The challenge is to design a workflow that remains safe when multiple teams, environments, accounts, modules, and pipelines are involved. Today you will harden the Terraform architecture you started earlier and deliberately exercise state, drift, permissions, modules, versioning, and controlled changes.
 
 ---
 
@@ -38,7 +38,7 @@ The core principle is:
 
 ## Part 2 — State Is Part of the Control System
 
-Terraform state records the relationship between your configuration and the infrastructure Terraform manages. It allows Terraform to understand which real resources correspond to which configuration objects and what values Terraform already knows about them. State can contain sensitive information, so it must be protected like important infrastructure rather than treated as an ordinary generated file.
+Terraform state records the relationship between your configuration and the infrastructure Terraform manages. It allows Terraform to understand which real resources correspond to which configuration objects and what values Terraform already knows about them. State can contain sensitive information, so protect it like important infrastructure. Do not treat it as an ordinary generated file.
 
 For a team, local state is usually unsuitable because every engineer could have a different copy.
 
@@ -160,7 +160,7 @@ against the same state.
 
 Without proper coordination, concurrent changes can create race conditions.
 
-State locking helps ensure that only one Terraform operation modifies a given state at a time.
+State locking helps make sure that only one Terraform operation modifies a given state at a time.
 
 Conceptually:
 
@@ -232,7 +232,7 @@ It generally means Terraform will avoid displaying the value in certain command 
 
 ## Part 7 — Terraform Version Pinning
 
-Terraform configurations should not depend on whatever Terraform version happens to be installed on an engineer's laptop.
+Terraform configurations should not depend on whatever Terraform version happens to sit on an engineer's laptop.
 
 Pin the Terraform version where appropriate.
 
@@ -456,7 +456,7 @@ Apply
 Verification
 ```
 
-The Production pipeline should use the reviewed plan or otherwise ensure that the change being applied corresponds to the reviewed source and plan.
+The Production pipeline should use the reviewed plan, or otherwise make sure that the change it applies matches the reviewed source and plan.
 
 Do not casually run:
 
@@ -724,9 +724,9 @@ Runtime Identity
 Application Dependencies
 ```
 
-These should not be collapsed into one role.
+Do not collapse these into one role.
 
-If the application runtime identity is compromised, the attacker should not automatically gain the ability to modify the VPC.
+If the application runtime identity is compromised, the attacker should not automatically be able to modify the VPC.
 
 If the Terraform identity is compromised, the blast radius is potentially much larger, so its credentials and execution path need stronger controls.
 
@@ -760,7 +760,7 @@ Resume
 
 Do not simply create a new empty state file.
 
-That can cause Terraform to believe that existing infrastructure is unmanaged.
+That can cause Terraform to treat existing infrastructure as unmanaged.
 
 State recovery is therefore an operational runbook, not merely an S3 feature.
 
