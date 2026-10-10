@@ -1,12 +1,12 @@
 # Day 34 — Production Project 04: Reliability, Safe Deployments & Failure Containment
 
-Day 33 established the ShopSphere delivery pipeline. Day 34 changes the question from **“Can we deploy?”** to **“Can we change Production safely?”**. A reliable deployment is not simply a successful pipeline run: the new version must start correctly, pass meaningful health checks, receive traffic safely, remain observable, and have a recovery path if its behavior is wrong. Today you will connect deployment strategy, application behavior, load balancing, capacity, database compatibility, graceful shutdown, rollback, and incident response into one production model.
+Day 33 established the ShopSphere delivery pipeline. Day 34 changes the question from **“Can we deploy?”** to **“Can we change Production safely?”**. A reliable deployment is not simply a successful pipeline run. The new version must start correctly, pass meaningful health checks, and receive traffic safely. It must also remain observable and have a recovery path if its behavior is wrong. Today you will connect deployment strategy, application behavior, load balancing, capacity, database compatibility, graceful shutdown, rollback, and incident response into one production model.
 
 ---
 
 ## Part 1 — Reliability Starts Before Deployment
 
-Reliability is the ability of a system to continue providing its required behavior despite expected failures and changes. Deployment is one of the most common causes of application incidents because it deliberately changes running software, configuration, dependencies, and sometimes database schemas. A reliable release process therefore reduces the amount of change exposed at one time, verifies the new version before broad traffic exposure, and keeps a known-good recovery path. The exact strategy depends on the workload, but the reasoning pattern remains the same.
+Reliability is the ability of a system to continue providing its required behavior despite expected failures and changes. Deployment is one of the most common causes of application incidents because it deliberately changes running software, configuration, dependencies, and sometimes database schemas. A reliable release process therefore reduces the amount of change it exposes at one time. It verifies the new version before broad traffic exposure and keeps a known-good recovery path. The exact strategy depends on the workload, but the reasoning pattern remains the same.
 
 Think about a release as:
 
@@ -157,7 +157,7 @@ The major advantage is a relatively clear separation between the old and new env
 
 The trade-off is resource usage and state management. Running two application environments may cost more, and databases or external dependencies can make the switch more complicated.
 
-Blue/green is not automatically “safer.” Its safety depends on how validation, traffic switching, data compatibility, and rollback are designed.
+Blue/green is not automatically “safer.” Its safety depends on how you design validation, traffic switching, data compatibility, and rollback.
 
 ---
 
@@ -187,7 +187,7 @@ For example:
 
 The value is controlled blast radius.
 
-If v2 produces errors, only a portion of users may be affected before the rollout is stopped.
+If v2 produces errors, only a portion of users may be affected before you stop the rollout.
 
 Canary deployment becomes powerful when combined with measurable release signals:
 
@@ -249,7 +249,7 @@ A weak health check might only verify:
 HTTP process responds
 ```
 
-A more meaningful check may verify that the application is initialized and capable of serving its intended function.
+A more meaningful check may verify that the application has started and can serve its intended function.
 
 Think in layers:
 
@@ -279,7 +279,7 @@ Ask:
 
 ## Part 8 — Graceful Shutdown
 
-During a deployment, old application instances may be terminated.
+During a deployment, the platform may stop old application instances.
 
 If they immediately stop accepting and processing work, active requests can fail.
 
@@ -319,7 +319,7 @@ Graceful shutdown is therefore part of availability engineering, not simply an a
 
 Suppose the load balancer is sending traffic to an application instance that is about to be replaced.
 
-If the load balancer immediately removes the instance and the process exits immediately, active requests may be interrupted.
+If the load balancer immediately removes the instance and the process exits immediately, it can interrupt active requests.
 
 Connection draining gives existing connections time to complete.
 
@@ -343,7 +343,7 @@ The exact implementation differs between platforms and load balancers.
 
 The architectural principle is:
 
-**Stop new traffic before terminating capacity that may still be serving active requests.**
+**Stop new traffic before you stop capacity that may still serve active requests.**
 
 ---
 
@@ -400,7 +400,7 @@ customer_first_name
 customer_last_name
 ```
 
-If v2 is deployed while v1 is still running, v1 may fail.
+If you deploy v2 while v1 is still running, v1 may fail.
 
 A safer approach is often an additive migration:
 
@@ -463,7 +463,7 @@ First ask:
 
 ## Part 13 — Release Failure Scenario
 
-Suppose ShopSphere v2 is deployed.
+Suppose you deploy ShopSphere v2.
 
 Five minutes later:
 
@@ -523,7 +523,7 @@ Use evidence.
 
 ## Part 14 — Failure Containment
 
-Failure containment means limiting how much of the system is affected by a problem.
+Failure containment means limiting how much of the system a problem can affect.
 
 Examples include:
 
