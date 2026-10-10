@@ -1,6 +1,6 @@
 # Day 33 — Production Project 03: CI/CD, Artifact Promotion & Release Control
 
-Day 32 established the ShopSphere network and security foundation. Day 33 connects that foundation to the software delivery system. The goal is to build a pipeline that can take a specific source change, verify it, create one deployable artifact, store it, promote that same artifact through Dev and UAT, and then release it to Production through controlled automation. The important Senior/Lead principle is that **a deployment pipeline is a supply chain with trust boundaries**, not just a sequence of shell commands.
+Day 32 established the ShopSphere network and security foundation. Day 33 connects that foundation to the software delivery system. The goal is to build a pipeline that can take a specific source change, verify it, create one deployable artifact, and store it. The pipeline then promotes that same artifact through Dev and UAT and releases it to Production through controlled automation. The important Senior/Lead principle is that **a deployment pipeline is a supply chain with trust boundaries**, not just a sequence of shell commands.
 
 ---
 
@@ -32,7 +32,7 @@ Production
 Health Verification
 ```
 
-The infrastructure created on Day 32 is not recreated by the application pipeline.
+The application pipeline does not recreate the infrastructure from Day 32.
 
 Think of two related systems:
 
@@ -418,7 +418,7 @@ Now you can answer:
 
 and:
 
-**Is that exact artifact being promoted to Production?**
+**Does that exact artifact go to Production?**
 
 ---
 
@@ -528,7 +528,7 @@ Dependencies
 User Request
 ```
 
-Do not make a health check unnecessarily dependent on every external system if that causes healthy capacity to disappear during a partial dependency failure. Health semantics should be designed deliberately.
+Do not make a health check unnecessarily dependent on every external system, because healthy capacity can then disappear during a partial dependency failure. Design the health semantics deliberately.
 
 ---
 
@@ -601,7 +601,7 @@ Production:
 Deployed
 ```
 
-This can be implemented through pipeline metadata, deployment records, image metadata, or a release manifest.
+Pipeline metadata, deployment records, image metadata, or a release manifest can provide this.
 
 The exact implementation is less important than the capability.
 
@@ -1240,7 +1240,7 @@ Complete the day when you can demonstrate:
 
 The most important completion criterion is:
 
-**You can take one Git commit, follow its artifact through every environment, identify the identity used at each stage, prove what is running in Production, and recover safely when the release is bad.**
+**You can take one Git commit, follow its artifact through every environment, and identify the identity in use at each stage. You can prove what runs in Production and recover safely when the release is bad.**
 
 ---
 
