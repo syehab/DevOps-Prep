@@ -158,7 +158,7 @@ Separate Accounts
 Separate Clusters
 ```
 
-The choice should be based on:
+Base the choice on:
 
 ```text
 Security
@@ -270,7 +270,7 @@ stronger availability
 stricter access
 ```
 
-The architecture should be standardized while capacity and governance adapt to the environment.
+Standardize the architecture, while capacity and governance adapt to the environment.
 
 ---
 
@@ -450,7 +450,7 @@ Prod
 Central Logging Account
 ```
 
-If the central service becomes unavailable, visibility may be affected across many workloads.
+If the central service becomes unavailable, the outage can affect visibility across many workloads.
 
 Therefore:
 
@@ -462,7 +462,7 @@ Therefore:
 
 ShopSphere should continue to build the application once.
 
-The image should then be promoted across environments.
+Then promote that image across environments.
 
 Conceptually:
 
@@ -581,7 +581,7 @@ This is safer than one permanent superuser credential.
 
 ## Part 16 — Production Approval Boundary
 
-Production should not be just another automatic stage.
+Do not treat Production as just another automatic stage.
 
 The pipeline should create a clear control point:
 
@@ -669,7 +669,7 @@ Dev VPC       UAT VPC       Prod VPC
  isolated      isolated      isolated
 ```
 
-If shared services are required, establish explicit connectivity.
+If you need shared services, establish explicit connectivity.
 
 For example:
 
@@ -846,7 +846,7 @@ The lesson is simple:
 
 **Never assume the current cloud identity is the account you intended to modify.**
 
-Identity verification should be part of the pipeline.
+Make identity verification part of the pipeline.
 
 ---
 
@@ -1084,7 +1084,7 @@ FinOps / Platform
 
 These responsibilities may belong to different teams in a real organization.
 
-The important point is that ownership must be explicit.
+The important point: ownership must be explicit.
 
 If nobody owns a platform component, operational problems eventually become everyone's problem.
 
