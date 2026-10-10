@@ -4,7 +4,7 @@
 
 ## Part 1 — The Azure Compute Decision
 
-Azure provides several ways to run application workloads, and the Senior/Lead challenge is not memorizing their names. The important question is **how much of the infrastructure you want Azure to manage versus how much control your team needs to retain**. Azure Virtual Machines give you the most operating-system-level control, while services such as App Service, Container Apps, Functions, and AKS progressively move more operational responsibility to the platform. This is what **PaaS** (platform as a service) means in plain terms: Azure runs the servers, operating system, and much of the plumbing, and you bring only the application. The right choice depends on workload shape, runtime requirements, networking, scaling, operational complexity, security, and cost.
+Azure provides several ways to run application workloads, and the Senior/Lead challenge is not memorizing their names. The important question is **how much of the infrastructure you want Azure to manage versus how much control your team needs to retain**. Azure Virtual Machines give you the most operating-system-level control. Services such as App Service, Container Apps, Functions, and AKS progressively move more operational responsibility to the platform. This is what **PaaS** (platform as a service) means in plain terms: Azure runs the servers, operating system, and much of the plumbing. You bring only the application. The right choice depends on workload shape, runtime requirements, networking, scaling, operational complexity, security, and cost.
 
 A useful spectrum is:
 
@@ -62,7 +62,7 @@ VM
 
 Azure manages the underlying physical infrastructure, but your team still owns the guest OS and workload configuration.
 
-A VM can be inspected with Azure CLI:
+You can inspect a VM with Azure CLI:
 
 ```bash
 az vm list \
@@ -148,7 +148,7 @@ Practice: Imagine your Spring Boot application receives 10x normal traffic. Expl
 
 ## Part 4 — App Service
 
-Azure App Service is a managed platform for hosting web applications and APIs without requiring you to manage the underlying operating system in the same way as a VM. You deploy your application to an App Service app and Azure manages much of the platform infrastructure, patching, and runtime hosting. It is well suited to conventional web applications and APIs where you want PaaS operational simplicity without adopting Kubernetes.
+Azure App Service is a managed platform that hosts web applications and APIs. You do not manage the underlying operating system in the same way as a VM. You deploy your application to an App Service app and Azure manages much of the platform infrastructure, patching, and runtime hosting. It is well suited to conventional web applications and APIs where you want PaaS operational simplicity without adopting Kubernetes.
 
 The model is:
 
@@ -183,7 +183,7 @@ App Service can provide:
 
 The exact capabilities depend on the App Service plan and architecture.
 
-**Important correction to a common misconception:** App Service is not limited to deploying source code. Azure App Service also supports containerized web applications, so a container image can be used as the deployment artifact for supported App Service scenarios.
+**Important correction to a common misconception:** App Service is not limited to deploying source code. Azure App Service also supports containerized web applications, so a container image can serve as the deployment artifact for supported App Service scenarios.
 
 Practice: Compare these two designs:
 
@@ -205,7 +205,7 @@ Production
 Staging
 ```
 
-You can deploy a new version to the staging slot, validate it, and then perform a slot swap to production. This can reduce deployment risk because the application can be warmed and tested before production traffic is moved.
+You can deploy a new version to the staging slot, validate it, and then perform a slot swap to production. This can reduce deployment risk because you can warm and test the application before you move production traffic.
 
 Conceptually:
 
@@ -227,7 +227,7 @@ Conceptually:
 
 This is conceptually similar to blue-green deployment, although the exact mechanics and operational behavior differ.
 
-Slot configuration needs careful thought. Some settings can be configured as deployment-slot-specific so that environment-specific values do not unintentionally move during a swap.
+Slot configuration needs careful thought. You can mark some settings as deployment-slot-specific, so that environment-specific values do not unintentionally move during a swap.
 
 Practice: Explain how you would use a staging slot for a Spring Boot API and what you would verify before swapping it into production.
 
@@ -281,7 +281,7 @@ Practice: Take your Spring Boot container and explain what you would need to ope
 
 ## Part 7 — Azure Container Apps Scaling and the “Always Running” Question
 
-Container Apps can scale based on configured rules and workload behavior. Depending on configuration, an application can scale down substantially or potentially to zero for supported scenarios. However, “scale to zero” is not automatically appropriate for every backend because cold-start behavior, startup time, minimum replicas, ingress configuration, workload characteristics, and availability requirements affect the result. A **cold start** is the delay a scaled-to-zero application adds to its first request, because the platform must start the container before it can respond.
+Container Apps can scale based on configured rules and workload behavior. Depending on configuration, an application can scale down substantially or potentially to zero for supported scenarios. However, “scale to zero” is not automatically appropriate for every backend. Cold-start behavior, startup time, minimum replicas, ingress configuration, workload characteristics, and availability requirements all affect the result. A **cold start** is the delay a scaled-to-zero application adds to its first request, because the platform must start the container before it can respond.
 
 The decision is:
 
@@ -319,7 +319,7 @@ Explain the cost and latency trade-off.
 
 ## Part 8 — Azure Kubernetes Service (AKS)
 
-AKS is Azure's managed Kubernetes service. Azure manages the Kubernetes control-plane aspects of the service, while your team still manages many data-plane and workload concerns such as Pods, Deployments, Services, workloads, resource requests, node pools, application configuration, and cluster-level operational choices. AKS is therefore appropriate when Kubernetes itself provides capabilities you need, rather than simply because the application happens to be containerized.
+AKS is Azure's managed Kubernetes service. Azure manages the Kubernetes control-plane aspects of the service. Your team still manages many data-plane and workload concerns such as Pods, Deployments, Services, workloads, resource requests, node pools, application configuration, and cluster-level operational choices. AKS is therefore appropriate when Kubernetes itself provides capabilities you need, rather than simply because the application happens to be containerized.
 
 The architecture is:
 
