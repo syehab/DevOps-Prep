@@ -7,10 +7,13 @@ AWS senior roles ask for the same loop as Azure ones (Terraform plus a managed K
 ## What employers ask for
 
 - Terraform for AWS infrastructure (VPC, IAM, EKS, data stores)
+- "Everything as Code": some JDs say Terraform or OpenTofu. OpenTofu is the open-source fork of Terraform with the same workflow, so your Terraform skills transfer as they are
 - Running production workloads on EKS
 - CI/CD that builds images and deploys to the cluster
 - AWS account and network structure (who can reach what)
-- Observability on top of the cluster (often Prometheus or Datadog)
+- Networking fundamentals: senior platform interviews still ask OSI-layer basics, so keep Day-3 fresh
+- Observability on top of the cluster (often Prometheus, Grafana, or Datadog)
+- Lead roles add advisor work: explain and defend a design choice (accounts, IAM, network, security, cost) and its trade-offs to a client, not just build it
 
 ## Mental model
 
@@ -50,6 +53,7 @@ If you know AKS, you already know most of EKS. Translate the names:
 4. [Day-29-AWS-04-AWS-DevOps-Architecture-Clean-Style.md](../../Day-29-AWS-04-AWS-DevOps-Architecture-Clean-Style.md) - AWS delivery
 5. [Day-17-L17-AKS-EKS-Managed-Kubernetes-Architecture.md](../../Day-17-L17-AKS-EKS-Managed-Kubernetes-Architecture.md) - AKS vs EKS side by side
 6. [Day-14-L14-Kubernetes-Mental-Model.md](../../Day-14-L14-Kubernetes-Mental-Model.md) and [Day-15-L15-Kubernetes-Networking-Troubleshooting-v2.md](../../Day-15-L15-Kubernetes-Networking-Troubleshooting-v2.md) - the Kubernetes core
+7. [Day-3-L03-Networking-Fundamentals.md](../../Day-3-L03-Networking-Fundamentals.md) - the OSI basics that still show up in senior platform interviews
 
 ## Common interview question
 
@@ -67,4 +71,4 @@ If your daily cloud is Azure, say that, then prove the mapping: "I run AKS in pr
 
 ## Source tags
 
-EPAM Senior AWS DevOps · Sezzle SRE
+EPAM Senior AWS DevOps · Sezzle SRE · EPAM Lead AWS DevOps · Turkey product co Senior Platform (AWS)
