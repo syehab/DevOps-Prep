@@ -4,7 +4,7 @@
 
 Terraform State is one of the most important Terraform concepts for a Senior/Lead DevOps engineer because it affects collaboration, security, ownership, drift, and production safety.
 
-By the end of this lesson, you should be able to explain why Terraform needs state, how Terraform uses it, why teams move it to a remote backend, why state locking matters, how enterprises divide state between teams, workloads, and environments, and how to safely respond when infrastructure drifts from the Terraform configuration.
+By the end of this lesson, you should be able to explain why Terraform needs state and how Terraform uses it. You should be able to explain why teams move state to a remote backend and why state locking matters. Finally, you should be able to explain how enterprises divide state between teams, workloads, and environments, and how to respond safely when infrastructure drifts from the Terraform configuration.
 
 ---
 
@@ -12,7 +12,7 @@ By the end of this lesson, you should be able to explain why Terraform needs sta
 
 1. Why does Terraform need State?
 
-Terraform uses configuration to describe the infrastructure you want, but configuration alone does not tell Terraform everything about the infrastructure it is already managing. Terraform State keeps a record of the resources Terraform knows about and the relationship between those resources and your configuration. During `terraform plan`, Terraform uses the configuration, the state, and the real infrastructure to work out what has changed and what action is required. Without state, Terraform would have a much harder time determining whether an existing resource is the one represented by a particular configuration block.
+Terraform uses configuration to describe the infrastructure you want, but configuration alone does not tell Terraform everything about the infrastructure it is already managing. Terraform State keeps a record of the resources Terraform knows about and the relationship between those resources and your configuration. During `terraform plan`, Terraform uses the configuration, the state, and the real infrastructure to work out what has changed and what action is required. Without state, Terraform would have a much harder time to decide whether an existing resource matches a particular configuration block.
 
 **Practice**
 
@@ -28,7 +28,7 @@ Then compare the resources shown by Terraform with the resources you actually cr
 
 2. What is inside the State?
 
-A state file contains information Terraform needs to track managed resources, including resource addresses, provider information, resource identifiers, attributes, and relationships between resources. Depending on the resources and configuration, state can also contain values that should be treated as sensitive. This is why a state file should not be treated like an ordinary source-code file or committed casually to a Git repository.
+A state file contains information Terraform needs to track managed resources, including resource addresses, provider information, resource identifiers, attributes, and relationships between resources. Depending on the resources and configuration, state can also contain sensitive values. This is why you should not treat a state file like an ordinary source-code file or commit it casually to a Git repository.
 
 **Practice**
 
@@ -58,7 +58,7 @@ Observe whether Terraform detects the difference.
 
 4. What is Drift?
 
-Drift occurs when the real infrastructure no longer matches what Terraform expects from its configuration and state. A common example is an engineer changing a resource manually through the cloud portal after Terraform created it. During a later plan, Terraform may detect the difference and propose an update. Drift is important in production because unmanaged manual changes make infrastructure harder to understand, audit, reproduce, and troubleshoot.
+Drift occurs when the real infrastructure no longer matches what Terraform expects from its configuration and state. A common example: an engineer changes a resource manually through the cloud portal after Terraform created it. During a later plan, Terraform may detect the difference and propose an update. Drift is important in production because unmanaged manual changes make infrastructure harder to understand, audit, reproduce, and troubleshoot.
 
 **Practice**
 
@@ -68,15 +68,15 @@ Make one safe manual change to a lab resource and run:
 terraform plan
 ```
 
-Ask yourself: "Who changed this, why did they change it, and should Terraform or the manual change be considered the source of truth?"
+Ask yourself: "Who changed this, why did they change it, and which is the source of truth: Terraform or the manual change?"
 
 5. How do you mitigate Drift?
 
-When Terraform detects drift, the first step should not automatically be to run `terraform apply`. First determine what changed, why it changed, and whether the manual change was intentional. Run `terraform plan` to understand the difference, then choose the appropriate response. If the manual change was accidental or should not exist, Terraform can usually reconcile the resource back to the configuration. If the manual change was intentional and should become the new desired state, update the Terraform configuration to represent it and then apply the configuration. If another system legitimately manages a particular attribute, Terraform configuration may need to be designed so that Terraform does not continuously overwrite that attribute.
+When Terraform detects drift, the first step should not automatically be to run `terraform apply`. First determine what changed, why it changed, and whether the manual change was intentional. Run `terraform plan` to understand the difference, then choose the appropriate response. If the manual change was accidental or should not exist, Terraform can usually reconcile the resource back to the configuration. If the manual change was intentional and should become the new desired state, update the Terraform configuration to represent it and then apply the configuration. If another system legitimately manages a particular attribute, design the Terraform configuration so that Terraform does not continuously overwrite that attribute.
 
 **Practice**
 
-Use a safe lab resource and practice both scenarios: make an accidental manual change and use Terraform to restore the declared configuration; then make an intentional change, update the Terraform code to represent it, and run `terraform plan` again.
+Use a safe lab resource and practice both scenarios. First, make an accidental manual change and use Terraform to restore the declared configuration. Then make an intentional change, update the Terraform code to represent it, and run `terraform plan` again.
 
 **Remember:** Detect drift, investigate it, then decide whether to reconcile, codify, or deliberately manage the difference.
 
@@ -86,7 +86,7 @@ Use a safe lab resource and practice both scenarios: make an accidental manual c
 
 6. What is Local State?
 
-By default, Terraform stores state locally in a `terraform.tfstate` file in the working directory. Local state is convenient for learning and small personal projects because there is no additional backend to configure. The problem appears when several engineers or CI/CD pipelines need to manage the same infrastructure, because each person could otherwise end up with a different copy of state.
+By default, Terraform stores state locally in a `terraform.tfstate` file in the working directory. Local state is convenient for learning and small personal projects because there is no additional backend to configure. The problem appears when several engineers or CI/CD pipelines manage the same infrastructure. Each person could otherwise end up with a different copy of state.
 
 **Practice**
 
@@ -100,7 +100,7 @@ and locate `terraform.tfstate` after applying your lab.
 
 7. Why use Remote State?
 
-Remote State stores the Terraform state in a shared backend rather than on an individual engineer's laptop. This gives the team a common state location that both engineers and CI/CD systems can access. In a real organization, remote state is normally combined with access control, encryption, versioning or recovery capabilities, and locking so that the state becomes a controlled shared resource rather than an unmanaged file.
+Remote State stores the Terraform state in a shared backend rather than on an individual engineer's laptop. This gives the team a common state location that both engineers and CI/CD systems can access. In a real organization, teams normally combine remote state with access control, encryption, versioning or recovery capabilities, and locking. The state then becomes a controlled shared resource rather than an unmanaged file.
 
 **Practice**
 
@@ -114,7 +114,7 @@ A backend determines where Terraform stores state and how Terraform accesses tha
 
 **Practice**
 
-Find the backend configuration in a Terraform project and identify where the state is stored, who can access it, how it is protected, and how concurrent access is controlled.
+Find the backend configuration in a Terraform project. Identify where the state lives, who can access it, how it is protected, and how the backend controls concurrent access.
 
 9. Why is State Locking important?
 
@@ -132,7 +132,7 @@ Look up how the backend you are using implements Terraform state locking and ide
 
 10. Why shouldn't an enterprise use one giant State file?
 
-A small lab can manage many resources from one state file, but a large organization may have hundreds of resources owned by different teams. Putting everything into one state creates a large ownership and access boundary: many people may need access to state that they do not actually need, plans can become larger, and an error affecting one part of the infrastructure can have a wider blast radius. Splitting state allows the organization to create clearer ownership boundaries and reduce unnecessary coupling.
+A small lab can manage many resources from one state file, but a large organization may have hundreds of resources owned by different teams. One state for everything creates a large ownership and access boundary. Many people get access to state that they do not actually need, plans become larger, and an error in one part of the infrastructure can have a wider blast radius. When you split state, the organization gets clearer ownership boundaries and less unnecessary coupling.
 
 **Practice**
 
@@ -163,7 +163,7 @@ Design state boundaries for Dev, UAT, and Prod. Then decide which identities or 
 
 13. How should State access follow Least Privilege?
 
-Terraform state is an infrastructure asset, so access to it should be granted according to the work someone actually needs to perform. A Network engineer who manages network state does not automatically need access to application state, and a developer should not receive production state access merely because they can view application code. In enterprise environments, backend permissions, cloud IAM/RBAC, CI/CD identities, and environment controls should work together to restrict state access.
+Terraform state is an infrastructure asset, so access to it should be granted according to the work someone actually needs to perform. A Network engineer who manages network state does not automatically need access to application state. A developer should not receive production state access merely because they can view application code. In enterprise environments, backend permissions, cloud IAM/RBAC, CI/CD identities, and environment controls should work together to restrict state access.
 
 **Practice**
 
@@ -181,7 +181,7 @@ For each relationship, ask whether read, write, or administrative access is actu
 
 14. How does State design reduce Blast Radius?
 
-Blast radius describes how much infrastructure can potentially be affected by one change or failure. A Terraform state containing an entire enterprise can have a very large blast radius because one plan or apply operates against a huge collection of resources. Smaller, well-designed state boundaries reduce the amount of infrastructure exposed to one Terraform operation and make ownership, review, troubleshooting, and recovery easier.
+Blast radius describes how much infrastructure one change or failure can potentially affect. A Terraform state that contains an entire enterprise has a very large blast radius, because one plan or apply operates against a huge collection of resources. Smaller, well-designed state boundaries reduce the amount of infrastructure exposed to one Terraform operation and make ownership, review, troubleshooting, and recovery easier.
 
 **Practice**
 
@@ -203,7 +203,7 @@ Think about what happens when one application needs an infrastructure change.
 
 15. Why use a Saved Plan?
 
-In a controlled production workflow, Terraform can generate a plan that is reviewed before the exact plan is applied. This is useful because the team can inspect the proposed infrastructure changes before execution rather than allowing a later apply to recalculate a potentially different plan. A CI/CD pipeline can therefore build the plan, publish it for review or approval, and then apply the approved plan.
+In a controlled production workflow, Terraform generates a plan, the team reviews it, and Terraform applies that exact plan. This is useful because the team can inspect the proposed infrastructure changes before execution. A later apply then cannot recalculate a potentially different plan. A CI/CD pipeline can therefore build the plan, publish it for review or approval, and then apply the approved plan.
 
 **Practice**
 
@@ -248,9 +248,9 @@ Write down the stages you would include in a production Terraform pipeline and i
 
 18. How does Bicep work differently from Terraform?
 
-Terraform and Bicep are both Infrastructure as Code tools, but they manage infrastructure differently. Terraform keeps its own state file to map Terraform resources to real infrastructure and uses that state during planning and changes. Bicep is Azure-specific: a Bicep file is compiled into an ARM template, and Azure Resource Manager performs the deployment using Azure's resource model. Bicep therefore does not maintain a separate Terraform-style state file. The simple mental model is: Terraform uses configuration plus Terraform State and a provider, while Bicep uses Bicep code that is compiled to ARM and deployed through Azure Resource Manager.
+Terraform and Bicep are both Infrastructure as Code tools, but they manage infrastructure differently. Terraform keeps its own state file to map Terraform resources to real infrastructure and uses that state during planning and changes. Bicep is Azure-specific: the tooling compiles a Bicep file into an ARM template, and Azure Resource Manager runs the deployment with Azure's resource model. Bicep therefore does not keep a separate Terraform-style state file. The simple mental model is: Terraform uses configuration plus Terraform State and a provider. Bicep code compiles to ARM and deploys through Azure Resource Manager.
 
-This difference also affects operations. With Terraform, state becomes an important team-management concern: where it is stored, who can access it, how it is locked, and how it is divided between workloads and environments. With Bicep, deployment state and resource management are handled through Azure Resource Manager and Azure's access-control model. Bicep is therefore closely integrated with Azure, while Terraform provides a common IaC model across multiple cloud providers.
+This difference also affects operations. With Terraform, state becomes an important team-management concern: where it is stored, who can access it, how it is locked, and how it is divided between workloads and environments. With Bicep, Azure Resource Manager and Azure's access-control model handle deployment state and resource management. Bicep is therefore closely integrated with Azure, while Terraform provides a common IaC model across multiple cloud providers.
 
 **Practice**
 
