@@ -6,7 +6,7 @@
 
 ## Part 1 — The Security Mental Model
 
-1. Cloud security becomes much easier when you separate **identity, authentication, authorization and resource**. Identity answers “who or what is requesting access?”, authentication verifies that identity, authorization determines what that identity is allowed to do, and the resource is the thing being accessed. For example, a CI pipeline may authenticate as a deployment identity and then be authorized to deploy infrastructure, while a Spring Boot Pod may authenticate as its own workload identity and be authorized to read one secret. These are different identities because they have different jobs and therefore different required permissions.
+1. Cloud security becomes much easier when you separate **identity, authentication, authorization and resource**. Identity answers “who or what is requesting access?” Authentication verifies that identity. Authorization determines what that identity can do, and the resource is the thing the identity accesses. For example, a CI pipeline may authenticate as a deployment identity with authorization to deploy infrastructure. A Spring Boot Pod may authenticate as its own workload identity with authorization to read one secret. These are different identities because they have different jobs and therefore different required permissions.
 
 2. A useful model is:
 
@@ -28,7 +28,7 @@ What are you accessing?
 Resource
 ```
 
-A common interview mistake is saying “authentication means permission.” It does not. A valid token proves that the caller is associated with an identity; a separate authorization decision determines whether that identity can perform the requested action.
+A common interview mistake is to say “authentication means permission.” It does not. A valid token proves that the caller is associated with an identity; a separate authorization decision determines whether that identity can perform the requested action.
 
 3. A real DevOps platform can involve several identities in one delivery path:
 
@@ -52,7 +52,7 @@ Cloud Service / Database
 
 The developer should not need to give their personal credentials to the application. The CI pipeline should not normally use a developer's credentials. The application should not use the CI identity. Separating these identities creates smaller blast radii and makes audit logs meaningful.
 
-4. Trust boundaries matter just as much as identities. Moving from a developer workstation to Git, from Git to CI, from CI to a registry, from a cluster to a cloud service and from an application to a database crosses different security boundaries. At each boundary, ask what identity is presented, how it is authenticated, what permissions it has, how traffic is protected and what logs are generated.
+4. Trust boundaries matter just as much as identities. Each move crosses a different security boundary: developer workstation to Git, Git to CI, CI to a registry, cluster to cloud service, and application to database. At each boundary, ask: which identity does the caller present, how does it authenticate, what permissions does it have, how is the traffic protected, and what logs appear?
 
 5. Security is therefore best thought of as several controls working together:
 
@@ -74,7 +74,7 @@ Supply-chain Security
 Logging / Detection
 ```
 
-No single control should be expected to compensate for every other missing control. For example, private networking does not replace authentication, and strong IAM does not fix an exposed application vulnerability.
+Do not expect one control to compensate for every other missing control. For example, private networking does not replace authentication, and strong IAM does not fix an exposed application vulnerability.
 
 **Implementation example — identify the actors:** For the Spring Boot application used throughout this course, create a simple table in your notes with:
 
@@ -295,7 +295,7 @@ Then inspect the actual scope rather than assuming it from the role name.
 
 ## Part 4 — Service Principals, Managed Identities and Workload Identity
 
-1. Azure provides several ways for applications and automation to obtain an identity. A service principal represents an application identity and can authenticate using credentials such as a client secret or certificate. Managed identities allow Azure-managed credentials to be associated with supported resources, reducing the need to create and rotate application-managed secrets. Workload identity extends this principle to workloads such as Kubernetes applications so that a Pod can obtain cloud permissions without embedding a long-lived cloud credential in the container.
+1. Azure provides several ways for applications and automation to obtain an identity. A service principal represents an application identity and can authenticate using credentials such as a client secret or certificate. Managed identities allow Azure-managed credentials to be associated with supported resources, reducing the need to create and rotate application-managed secrets. Workload identity extends this principle to workloads such as Kubernetes applications. A Pod can then obtain cloud permissions without a long-lived cloud credential embedded in the container.
 
 2. The traditional secret-based pattern looks like:
 
@@ -311,7 +311,7 @@ Token
 Azure Service
 ```
 
-The secret must be created, stored, rotated and revoked. It can also accidentally appear in Git, CI variables, shell history, debugging output or logs.
+You must create, store, rotate and revoke the secret. It can also accidentally appear in Git, CI variables, shell history, debugging output or logs.
 
 3. A managed/workload identity model looks conceptually like:
 
@@ -345,9 +345,9 @@ Azure resource
 
 This lets the application access Azure resources using its own identity.
 
-5. In EKS, IAM roles for service accounts and newer EKS Pod Identity patterns provide the same broad goal: associate AWS permissions with workloads instead of embedding access keys in containers. The exact implementation depends on the EKS configuration and supported mechanism.
+5. In EKS, IAM roles for service accounts and newer EKS Pod Identity patterns provide the same broad goal. They associate AWS permissions with workloads instead of access keys embedded in containers. The exact implementation depends on the EKS configuration and supported mechanism.
 
-6. Never use a developer's personal cloud credentials inside an application. That creates a terrible ownership and blast-radius model: when the developer leaves, changes password or loses access, the application can break; if the credential leaks, the application inherits the developer's permissions.
+6. Never use a developer's personal cloud credentials inside an application. That creates a terrible ownership and blast-radius model. When the developer leaves, changes password or loses access, the application can break. If the credential leaks, the application inherits the developer's permissions.
 
 **Implementation example — AKS Workload Identity:** The conceptual setup is:
 
@@ -502,7 +502,7 @@ The Senior question is therefore:
 
 ## Part 6 — Kubernetes Secrets and External Secret Management
 
-1. Kubernetes Secrets provide a native way for workloads to consume sensitive configuration. A Secret can be referenced through environment variables or mounted as a file. However, access to Secrets is controlled through Kubernetes permissions, and administrators or identities with sufficient permissions may be able to retrieve their contents. Treating a Kubernetes Secret as automatically secure simply because its value is encoded rather than shown in plain text is a common misconception.
+1. Kubernetes Secrets provide a native way for workloads to consume sensitive configuration. A Secret can be referenced through environment variables or mounted as a file. However, Kubernetes permissions control access to Secrets, and administrators or identities with sufficient permissions can retrieve their contents. A common misconception is to treat a Kubernetes Secret as automatically secure simply because its value is encoded rather than shown in plain text.
 
 2. Create a test Secret:
 
@@ -763,9 +763,9 @@ Production
 
 The exact tools can differ, but each stage exists to catch a different category of risk.
 
-3. Container image provenance matters. If CI builds `myapp:1.5.0`, you should be able to establish which source commit produced it, which build ran, which dependencies were used, which security checks passed and which exact image content was deployed. Tags are useful human identifiers, but a digest identifies the exact image content.
+3. Container image provenance matters. If CI builds `myapp:1.5.0`, you should be able to establish which source commit produced it, which build ran and which dependencies it used. You should also know which security checks passed and which exact image content you deployed. Tags are useful human identifiers, but a digest identifies the exact image content.
 
-4. A secure pipeline should avoid long-lived credentials where possible. Federated or short-lived credentials can reduce the risk associated with leaked CI secrets. Production deployment identities should also be narrowly scoped, and pipeline logs should be reviewed to ensure secrets are not accidentally printed.
+4. A secure pipeline should avoid long-lived credentials where possible. Federated or short-lived credentials can reduce the risk associated with leaked CI secrets. Production deployment identities should also have a narrow scope. Review pipeline logs to make sure they do not accidentally print secrets.
 
 5. Software supply-chain security also includes dependencies. A Spring Boot application may depend on hundreds of transitive packages. A vulnerability in one dependency can become a production risk even when your application code itself is secure. Dependency scanning, controlled build environments, trusted registries and patch processes therefore belong in the DevOps security model.
 
@@ -809,7 +809,7 @@ For each stage, write the specific risk it reduces.
 
 ## Part 10 — Security Troubleshooting
 
-1. Security troubleshooting should preserve the existing security boundary while narrowing the problem. If a request is denied, do not immediately grant administrator permissions. First identify the caller, confirm the identity being used, determine whether authentication succeeded, inspect the applicable authorization policy, verify scope and then check the resource. This approach gives you evidence without weakening the environment unnecessarily.
+1. Security troubleshooting should preserve the existing security boundary while narrowing the problem. If a request is denied, do not immediately grant administrator permissions. First identify the caller and confirm the identity in use. Determine whether authentication succeeded and inspect the applicable authorization policy. Verify the scope and then check the resource. This approach gives you evidence without weakening the environment unnecessarily.
 
 2. Use this decision tree:
 
@@ -894,7 +894,7 @@ Service
 
 Only after network reachability is established should you move deeper into authentication and authorization.
 
-5. Audit logs provide another critical layer. During an incident, you want evidence about who attempted an action, what resource was targeted, whether the request was allowed or denied and what changed afterward. Security without detection and auditability leaves you with little ability to investigate a compromise.
+5. Audit logs provide another critical layer. During an incident, you want evidence about who attempted an action, which resource they targeted, whether the request passed or failed, and what changed afterward. Security without detection and auditability leaves you with little ability to investigate a compromise.
 
 **Implementation practice:** For Kubernetes authorization, use:
 
