@@ -11,7 +11,7 @@ Most Azure senior roles want one person who can describe infrastructure as code 
 - Azure DevOps pipelines: build, plan, approve, apply
 - Remote state, locking, and drift control
 - Secure defaults: identity, Key Vault, private networking baked into modules
-- Hybrid migration work: move existing systems onto this Azure platform
+- Migration work: move many existing on-prem apps (one JD counts 20+ Java and .NET systems) onto Azure; re-platforming means the same app on a new runtime, not a rewrite
 
 ## Mental model
 
@@ -51,6 +51,7 @@ The JD words differ (platform engineering, cloud automation, IaC engine). The lo
 4. [Day-6-L06-Azure-DevOps-Pipeline-in-Practice.md](../../Day-6-L06-Azure-DevOps-Pipeline-in-Practice.md) - the pipeline itself
 5. [Day-22-AZ-01-Azure-Platform-Architecture.md](../../Day-22-AZ-01-Azure-Platform-Architecture.md) - the Azure platform picture
 6. [Day-25-AZ-04-Azure-DevOps-IaC-Architecture-Expanded.md](../../Day-25-AZ-04-Azure-DevOps-IaC-Architecture-Expanded.md) - putting it together
+7. [Day-37-Production-Project-07-Kubernetes-Migration-Clean-Style.md](../../Day-37-Production-Project-07-Kubernetes-Migration-Clean-Style.md) - incremental migration with a rollback boundary (Parts 26 and 36)
 
 Interview-ready deep dives: [Day-08 v2](../../Day-08-IaC-Terraform-Bicep-Interview-Ready-Clean-v2.md), [Day-09 v2](../../Day-09-IaC-Modules-Environments-Interview-Ready-Clean-v2.md), [Day-10 v2](../../Day-10-Terraform-State-Enterprise-Interview-Ready-Clean-v2.md).
 
@@ -70,4 +71,4 @@ JDs sometimes name OpenTofu or Ansible. If you use Terraform daily, say so, and 
 
 ## Source tags
 
-EPAM Azure Lead (TR, KZ) · EPAM Senior Azure DevOps · EPAM Lead Azure Cloud
+EPAM Azure Lead (TR, KZ) · EPAM Senior Azure DevOps · EPAM Senior Azure DevOps (KZ, migration) · EPAM Senior Azure Engineer (KZ) · EPAM Lead Azure Cloud
