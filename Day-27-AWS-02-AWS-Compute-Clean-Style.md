@@ -95,7 +95,7 @@ Monitoring
 Scaling configuration
 ```
 
-An EC2 instance can be launched using the AWS CLI:
+You can launch an EC2 instance with the AWS CLI:
 
 ```bash
 aws ec2 run-instances \
@@ -156,7 +156,7 @@ EC2 Instance
 Application
 ```
 
-For repeatable infrastructure, you should avoid manually configuring every instance after launch. Instead, configuration can be automated using tools such as cloud-init, user data, configuration management, or image-building processes.
+For repeatable infrastructure, do not configure every instance by hand after launch. Instead, automate the configuration with tools such as cloud-init, user data, configuration management, or image-building processes.
 
 For example, EC2 user data can install software during first boot:
 
@@ -211,7 +211,7 @@ Explain which approach gives you more repeatability and why.
 
 ## Part 4 — Auto Scaling Groups
 
-Running one EC2 instance creates a single-instance failure point. Auto Scaling Groups, or ASGs, allow EC2 capacity to be managed as a group and can replace unhealthy instances or adjust capacity according to scaling policies.
+One EC2 instance creates a single-instance failure point. Auto Scaling Groups, or ASGs, let you manage EC2 capacity as a group. They can replace unhealthy instances or adjust capacity according to scaling policies.
 
 A common architecture is:
 
@@ -240,7 +240,7 @@ You can inspect ASGs using:
 aws autoscaling describe-auto-scaling-groups
 ```
 
-Scaling can be based on metrics such as CPU utilization, but CPU is not always the correct application signal. For a queue-driven system, queue depth may be more useful. For a web application, request count or latency can sometimes be better indicators.
+Scaling can use metrics such as CPU utilization, but CPU is not always the correct application signal. For a queue-driven system, queue depth may be more useful. For a web application, request count or latency can sometimes be better indicators.
 
 This is an important Senior/Lead concept:
 
@@ -276,9 +276,9 @@ Target Group
 EC2 instances
 ```
 
-The target group performs health checks so traffic can be directed toward healthy targets.
+The target group performs health checks so the load balancer can direct traffic toward healthy targets.
 
-A basic ALB can be inspected using:
+You can inspect a basic ALB with:
 
 ```bash
 aws elbv2 describe-load-balancers
@@ -740,7 +740,7 @@ The important question is:
 
 > “Can this workload be expressed as short-lived event-driven execution?”
 
-A continuously running Spring Boot API may fit better on ECS, EKS, App Runner, or another managed application platform depending on its requirements, while a small asynchronous processing function may fit Lambda well.
+A continuously running Spring Boot API may fit better on ECS, EKS, App Runner, or another managed application platform, depending on its requirements. A small asynchronous processing function may fit Lambda well.
 
 Practice:
 
@@ -771,7 +771,7 @@ RDS in private subnet
 
 may require VPC networking configuration.
 
-When Lambda functions are connected to a VPC, the networking path, security groups, subnets, DNS and available IP capacity become relevant.
+When you connect Lambda functions to a VPC, the networking path, security groups, subnets, DNS and available IP capacity become relevant.
 
 Another important concept is startup latency. A newly initialized execution environment can introduce additional latency, commonly referred to as a cold start.
 
@@ -970,7 +970,7 @@ The identity model changes slightly by compute platform, but the principle remai
 
 **The workload receives an identity and uses temporary credentials rather than storing permanent access keys in application configuration.**
 
-For ECS, distinguish the task execution role from the task role. The execution role is used by ECS for actions such as pulling images and sending logs, while the task role provides AWS permissions to the application running inside the container.
+For ECS, distinguish the task execution role from the task role. ECS uses the execution role for actions such as image pulls and log delivery. The task role provides AWS permissions to the application inside the container.
 
 Practice:
 
@@ -988,7 +988,7 @@ The application should receive only the permission it needs to perform its busin
 
 ## Part 18 — Storage and Compute
 
-Compute and storage should be treated as separate architectural concerns.
+Treat compute and storage as separate architectural concerns.
 
 EC2 has instance storage and can attach EBS volumes. Containers are generally ephemeral — their filesystem disappears when the container is replaced — so persistent application data should normally live outside the container filesystem.
 
@@ -1023,7 +1023,7 @@ Block storage:
 EBS
 ```
 
-In plain terms: EBS is a virtual disk attached to one instance, EFS is a shared network filesystem that many workloads can mount at once, and S3 stores files as objects accessed through an API rather than as a mounted disk.
+In plain terms: EBS is a virtual disk attached to one instance. EFS is a shared network filesystem that many workloads can mount at once. S3 stores files as objects that you access through an API, not as a mounted disk.
 
 Do not put a production database inside an ephemeral container simply because the application itself is containerized.
 
@@ -1570,7 +1570,7 @@ aws ecs update-service \
 
 Then remove the service and cluster when no longer required.
 
-For EKS, use the appropriate cluster deletion process and verify that associated resources such as load balancers, node groups, NAT gateways, and public IPs are not left behind.
+For EKS, use the appropriate cluster deletion process. Verify that associated resources such as load balancers, node groups, NAT gateways, and public IPs do not stay behind, because they continue to cost money.
 
 For ECR, remove lab images if appropriate:
 
