@@ -90,7 +90,7 @@ Do not confuse “two subnets” with high availability. If both are in one AZ, 
 
 ## Part 3 — Public and Private Subnets
 
-A subnet is not inherently public or private because of its name. Its effective behavior comes from routing. A subnet with a route to an Internet Gateway can support resources with appropriate public addressing for internet connectivity, while a private subnet has no direct route to the Internet Gateway for ordinary outbound internet access.
+A subnet is not inherently public or private because of its name. Its effective behavior comes from routing. A subnet with a route to an Internet Gateway can support resources with appropriate public addressing for internet connectivity. A private subnet has no direct route to the Internet Gateway for ordinary outbound internet access.
 
 A common architecture is:
 
@@ -114,7 +114,7 @@ Internet Gateway
 Internet
 ```
 
-The second path allows private workloads to initiate outbound connections without making them directly reachable from the internet.
+The second path lets private workloads start outbound connections while they stay unreachable from the internet.
 
 The important Senior/Lead point is:
 
@@ -266,13 +266,13 @@ APP-SG → DB : 5432
 
 Notice that the database rule refers to the application security group rather than allowing the entire internet.
 
-This is a much stronger design because the rule expresses **who should be allowed to initiate the connection**.
+This is a much stronger design because the rule expresses **who can start the connection**.
 
 ---
 
 ## Part 8 — Security Group Reasoning
 
-Security groups are stateful, which means that once an allowed connection is established, the return traffic for that same connection is handled automatically. Do not interpret this as "security groups allow everything back." They still determine which new connections are permitted; statefulness only spares you from writing a separate rule for each reply.
+Security groups are stateful, which means that once they allow a connection, they handle the return traffic for that same connection automatically. Do not interpret this as "security groups allow everything back." They still determine which new connections can start. Statefulness only spares you a separate rule for each reply.
 
 For troubleshooting, ask:
 
@@ -312,7 +312,7 @@ A successful DNS lookup alone proves very little.
 
 ## Part 9 — Network ACLs
 
-Network ACLs operate at the subnet boundary and are stateless, so return traffic needs to be explicitly allowed by a rule of its own. For this project, do not add complicated NACL rules merely to demonstrate the feature.
+Network ACLs operate at the subnet boundary and are stateless, so you must allow return traffic explicitly with a rule of its own. For this project, do not add complicated NACL rules merely to demonstrate the feature.
 
 First understand:
 
@@ -1042,7 +1042,7 @@ Do not destroy the core ShopSphere network if it will be reused on Day 33.
 
 Destroy only temporary resources created specifically for experiments.
 
-If you created expensive resources such as NAT Gateways, load balancers, or temporary databases solely for testing, remove them if they are not required for the next project day.
+If you created expensive resources such as NAT Gateways, load balancers, or temporary databases solely for testing, remove them unless the next project day needs them. They generate charges while they exist.
 
 Record the remaining infrastructure:
 
