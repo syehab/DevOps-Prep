@@ -183,7 +183,7 @@ Start with the request and recovery paths.
 
 ## Part 4 — Organization and Account Architecture
 
-Your enterprise boundary should look approximately like:
+Your enterprise boundary should look like:
 
 ```text
 AWS Organization
@@ -468,7 +468,7 @@ Production
 Health Verification
 ```
 
-The artifact should be promoted rather than rebuilt.
+Promote the artifact. Do not rebuild it.
 
 Traceability should look like:
 
@@ -484,7 +484,7 @@ Deployment
 Running Workload
 ```
 
-If an incident occurs, you should be able to identify exactly what version is running.
+If an incident occurs, identify exactly what version is running.
 
 ---
 
@@ -735,7 +735,7 @@ Checkout
 Authentication
 ```
 
-The architecture should allow this question to be answered quickly:
+The architecture must let you answer this question quickly:
 
 **Are users failing because the application, Kubernetes, network, database, or an external dependency is unhealthy?**
 
@@ -988,7 +988,7 @@ If Terraform state disappears, how do we recover it?
 If the Production account is compromised, what remains trustworthy?
 ```
 
-A DR plan is complete only when the entire recovery chain is understood.
+A DR plan is complete only when you understand the entire recovery chain.
 
 ---
 
@@ -1279,7 +1279,7 @@ Monitor
 Recover
 ```
 
-A Lead DevOps engineer must additionally think about:
+A Lead DevOps engineer must also think about:
 
 ```text
 Standards
