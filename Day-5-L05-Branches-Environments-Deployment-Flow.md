@@ -109,7 +109,7 @@ You can therefore have one `main` branch deployed to several environments.
        DEV       UAT       PROD
 ```
 
-The same branch does not mean that all three environments must always run the exact same version at the same moment. The pipeline can control which version is promoted into each environment.
+The same branch does not mean that all three environments must always run the exact same version at the same moment. The pipeline controls which version it promotes into each environment.
 
 For example:
 
@@ -136,7 +136,7 @@ Commit A → PROD
 
 This means Dev can be ahead of UAT, and UAT can be ahead of Production.
 
-> **Key idea:** **One branch can feed many environments.** The environment decides where a particular version is deployed.
+> **Key idea:** **One branch can feed many environments.** The environment decides where a particular version runs.
 
 ---
 
@@ -205,7 +205,7 @@ release → UAT
 main   → PROD
 ```
 
-Changes are merged or promoted between branches.
+Teams merge or promote changes between branches.
 
 This can work, but it creates another problem to manage: **code can become different between branches**. A fix may exist in one branch but not another.
 
@@ -289,13 +289,13 @@ UAT  → uat database + uat settings
 PROD → prod database + prod settings
 ```
 
-The application package does not need to be rebuilt just because the target environment changed.
+You do not need to rebuild the application package just because the target environment changed.
 
 ---
 
 ## 09 · Application Pipeline vs Infrastructure Pipeline · 9 min
 
-There are usually two different things being changed.
+A change usually touches one of two different things.
 
 **Application code** changes the software itself. **Infrastructure code** changes the resources that the software needs, such as networks, VMs, databases, Kubernetes clusters or storage.
 
@@ -575,7 +575,7 @@ Is that necessarily true?
 
 **No.**
 
-The branch is a moving pointer. Production may have been deployed from an earlier commit on that branch.
+The branch is a moving pointer. The pipeline may have deployed Production from an earlier commit on that branch.
 
 The correct question is:
 
