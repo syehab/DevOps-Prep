@@ -124,3 +124,37 @@ Fresh Senior/Lead Azure JDs ask for "Image Factory" pipelines (golden images, CI
 The sixth pass audited every canonical Day lesson (Day-1 to Day-41, using the README's canonical files for Days 8, 9, 10, and 24) against ASD-STE100 Simplified Technical English, applied about 80% of the way. The house rules now live in [STE-STYLE.md](STE-STYLE.md): short sentences (about 20 words for steps, about 25 for description), active voice with imperatives for steps, one term per meaning inside a Day, simple verbs over complex ones, one instruction per sentence, no long noun clusters, and warnings that carry their reason. The deliberate 20% deviation is also written down there: technical names stay, paragraphs stay flowing prose of 3 to 4 lines or more, teaching analogies and Remember anchors and diagrams stay, and code blocks are never touched.
 
 The mechanics follow the established pattern: one PR per Day, each touching only that Day's file, with a skip (fewer than 5 meaningful edits) recorded as a valid result. A prose-only scan (code blocks excluded) ranked the Days first: the heaviest sentence-length and passive-voice signal sits in Days 12, 13, 18, 19, and 26, while Days 1, 7, 40, and 41 are already close to the STE target after the earlier passes. Each Day PR reports its own counts: sentences split, passive-to-active fixes, verb swaps, and term-consistency fixes, with before and after examples.
+
+## JD coverage audit (2026-10-11)
+
+Date: 2026-10-11. Scope: every pattern card in `patterns/` plus INDEX.md, HOW-WE-UPDATE.md, STE-STYLE.md (already on main), and the apply logs in `log/`. PR #82 (`cursor/jd-insights-2026-10-08-373d`) is already merged, so the 2026-10-08 Turkey platform and Lead AWS notes are on main. Canonical Day files follow the README (Days 8, 9, 10, and 24 Expanded). The latest applied role noted in this pass is letgo Senior Platform Engineer (Turkey): production AWS with EC2, EKS, S3, RDS, IAM, OpenSearch, and ElastiCache.
+
+The lens is interview readiness with low cognitive load: one mental model before detail, jargon named at first use, Remember / Understand / Look-up split, and a retrieval exit check. Edits stay small and localized. Clear enough remains a valid result. STE PRs #43 to #81 are already on main, so this pass does not reformat whole Days.
+
+### Theme coverage
+
+| Theme | Days | Status |
+|:--|:--|:--|
+| Azure IaC + Pipelines | 6, 8, 9, 10, 22, 25, 37 | Fixed in [PR #83](https://github.com/syehab/DevOps-Prep/pull/83): Day-6 JD note mixed the application pipeline with the IaC plan-review-approve-apply loop. Days 8, 9, 10, 22, 25, and 37 already teach the IaC loop. |
+| AWS + EKS + Terraform (incl. letgo stack) | 3, 14, 17, 26, 27, 28, 29 | Fixed in [PR #85](https://github.com/syehab/DevOps-Prep/pull/85) (Day-17 names IRSA / EKS Pod Identity), [PR #86](https://github.com/syehab/DevOps-Prep/pull/86) (Day-26 S3 as a production product), and [PR #87](https://github.com/syehab/DevOps-Prep/pull/87) (Day-27 RDS / S3 / ElastiCache / OpenSearch model). EC2, EKS, IAM, and RDS connectivity were already interview-ready. Day-3 OSI and Day-28 private paths stay covered. |
+| Kubernetes in Production | 13, 14, 15, 17, 34, 37 | Covered. Day-15 walks the request path with evidence. Day-14 desired-state model and Day-17 ownership boundary stay as they are. |
+| GitOps + Platform Paved Roads | 5, 16, 19, 33, 34 | Fixed in [PR #84](https://github.com/syehab/DevOps-Prep/pull/84): Day-16 promised paved roads in the JD note but never defined the term. Two-loop GitOps, Day-33 promotion, and Day-34 DORA stay covered. |
+| SRE, SLOs, Observability | 20, 34, 35, 41 | Covered. Day-20 carries SLI / SLO / error budget and symptom alerting. Day-41 already includes the incident loop and synthetic checks. |
+| Landing Zones + Multi-Account | 11, 12, 18, 22, 38 | Covered. Day-11 parking-lot model and Azure-to-AWS table sit first. Day-38 is the hands-on boundary project. |
+| FinOps + Cost Awareness | 11, 30, 39 | Covered. Day-39 teaches attribution, unit cost, and the reliability-versus-cost trade-off. Day-30 asks cost in design review. |
+| Agentic AI in DevOps | 4, 19, 20 | Covered. Day-4 "fast junior engineer" note is the right-sized home. Day-19 keeps human-owned gates. Emerging AI-gateway / RAG names stay on the card as an early signal, not a new Day section. |
+| Lead vs Senior Signals | 21, 30, 40 | Covered. Day-21 points at the card. Day-40 grades defend-every-decision behaviour. |
+| Golden Images | 13, 19, 23, 27 | Covered on Day-23 (factory loop). Day-27 Part 3 now reuses the bake-do-not-patch Remember in [PR #87](https://github.com/syehab/DevOps-Prep/pull/87). |
+
+### Already well covered (no Day edit)
+
+Kubernetes request-path debugging, landing-zone hierarchy, FinOps cost loop, agentic-AI guardrails, Lead-versus-Senior ownership, SRE error budgets, Azure IaC modules and remote state, GitOps reconciliation, EC2 / EKS / IAM core, and OSI fundamentals on Day-3.
+
+### Gap noted (left alone)
+
+- Secure defaults inside Azure modules (identity, Key Vault, private networking) live across Day-18 and Day-25, not as a dedicated Day-9 box. The plan-apply loop is already clear.
+- Synthetic checks are taught in Day-41, not restated in Day-20. The core SLO lesson stays one idea per section.
+- `cloudbase-init` (Windows first boot) is a Look-up name on the golden-images card. Do not invent a Windows image lab.
+- No Terraform `aws_eks_cluster` resource sketch was added. The course teaches the shape (VPC, IAM, cluster, pipeline), not a new module.
+
+> **Remember:** Fresh JDs update the card first. Touch a Day only when the card exposes a missing model or a name the interview will ask out loud.
