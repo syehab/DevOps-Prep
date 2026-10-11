@@ -1035,7 +1035,7 @@ Search / log analytics:
 OpenSearch
 ```
 
-In plain terms: EBS is a virtual disk attached to one instance. EFS is a shared network filesystem that many workloads can mount at once. S3 stores files as objects that you access through an API, not as a mounted disk. Day 26 Part 5 covers the S3 production defaults (Block Public Access, encryption, versioning) and the three layers that can deny `GetObject`.
+In plain terms: EBS is a virtual disk attached to one instance. EFS is a shared network filesystem that many workloads can mount at once. S3 stores files as objects that you access through an API, not as a mounted disk. For S3 in production, keep Block Public Access on, encrypt objects at rest, and turn on versioning. Day 26 teaches the IAM and VPC-endpoint path to the bucket.
 
 RDS is the managed relational database. AWS runs the engine (PostgreSQL, MySQL, and others), applies engine patches in a maintenance window, and takes automated backups you can restore to a point in time. **Multi-AZ** keeps a standby in a second Availability Zone so an AZ failure does not take the database with it. Put RDS in a private subnet. Let the application reach it through the RDS DNS endpoint and a Security Group that allows only the app on the database port. Day 28 Part 15 walks that network path.
 
