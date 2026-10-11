@@ -16,7 +16,7 @@ description: "Build a simple multi-stage pipeline and understand how code become
 
 > *The lab is designed to use existing/free resources where possible. Azure DevOps usage and hosted-agent availability can depend on your account and organization.*
 
-> **JD note:** This pipeline flow is the most common ask in Azure senior JDs. See the [Azure IaC + pipelines pattern card](jd-insights/patterns/azure-iac-pipelines.md).
+> **JD note:** Azure senior JDs ask for two pipelines that look alike. This Day teaches the **application** pipeline: build, test, artifact, then DEV → UAT → PROD. The same card also asks for an **IaC** pipeline: plan, review, approve, apply. Study that loop on Day 8, Day 10, and Day 25. See the [Azure IaC + pipelines pattern card](jd-insights/patterns/azure-iac-pipelines.md).
 
 ---
 
@@ -40,7 +40,7 @@ UAT
 PROD
 ```
 
-The important part is not memorizing YAML. First understand **what each stage is doing and why it exists**.
+The important part is not memorizing YAML. First understand **what each stage is doing and why it exists**. This is the application path. An IaC pipeline uses the same Azure DevOps stages and approvals, but the artifact is a reviewed Terraform or Bicep plan, not a built application. Keep those two stories separate in interviews so you do not mix “we shipped the same JAR” with “we applied the same module.”
 
 ---
 
@@ -705,6 +705,7 @@ Answer without looking:
 11. What should happen if Dev validation fails?
 12. Why might Production require approval?
 13. What is the difference between deploying an artifact and verifying an application?
+14. What is the difference between this application pipeline and an IaC plan-review-approve-apply pipeline?
 
 ### Exit criteria
 
