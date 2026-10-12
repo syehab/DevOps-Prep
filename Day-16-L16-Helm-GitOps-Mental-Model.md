@@ -437,6 +437,10 @@ The CI pipeline may build and publish the image, while a GitOps controller handl
 
 > **Remember:** Two loops. The CI loop builds things (code → image). The CD loop applies things (Git state → cluster). GitOps means nobody pushes to the cluster: the cluster pulls from Git, so every change has a diff, an author, and an undo.
 
+The platform idea uses those same two loops and offers them as a product. A **paved road** (also called a golden path) is a ready path for a new service: a repo template, a pipeline, a deploy path, and monitoring defaults. Product teams ship on that path without opening a ticket for each step. Day 33 teaches the artifact-promotion half of the path. Day 25 Part 18 shows how a platform team owns the path and an application team consumes it.
+
+> **Remember:** A paved road is a template plus a pipeline plus a deploy path plus monitoring, so a new service ships without a ticket for each step.
+
 4. The controller continuously performs reconciliation:
 
 ```text
@@ -790,6 +794,8 @@ Without looking at the notes, explain these in your own words:
 19. Where would Terraform/Bicep normally fit relative to GitOps?
 
 20. Why is “deployment succeeded” still different from “application is healthy”?
+
+21. What is a paved road, and which two loops does it offer as a product?
 
 **Core mental model:**
 
