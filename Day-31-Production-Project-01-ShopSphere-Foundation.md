@@ -1385,3 +1385,544 @@ Expected cost
 ```
 
 This becomes the beginning of your real platform inventory.
+
+## Answers to practice
+
+### 1. Why did you choose this application runtime?
+
+<details>
+<summary>Answer</summary>
+
+ShopSphere is a long-running Spring Boot API in a container. Initial requirements do not need Kubernetes APIs, operators, or cluster networking. A managed container runtime (Container Apps or ECS Fargate) gives deploy, scale, and identity with less cluster work.
+
+Move to AKS/EKS only when a named Kubernetes capability or platform standard appears. “More powerful” is not a requirement.
+
+</details>
+
+### 2. Why is the database private?
+
+<details>
+<summary>Answer</summary>
+
+PostgreSQL holds orders and customer data. Internet users must not reach TCP 5432. Only the application subnet or Security Group may connect.
+
+Public database access is out of scope for this project’s security NFR.
+
+</details>
+
+### 3. How does application traffic reach the database?
+
+<details>
+<summary>Answer</summary>
+
+The app resolves the private DNS name to a private IP, routes inside the VPC/VNet, passes SG/NSG on 5432, then authenticates. No public route is required for that path.
+
+Can resolve, can route, can connect, can authenticate, and can query are five different checks.
+
+</details>
+
+### 4. Which identities exist?
+
+<details>
+<summary>Answer</summary>
+
+Developer, pipeline, infrastructure (Terraform), application runtime, and database. Humans use Identity Center or Entra. Workloads use roles or managed identity.
+
+Do not collapse these into one Contributor.
+
+</details>
+
+### 5. Which identity does the application use?
+
+<details>
+<summary>Answer</summary>
+
+The runtime identity on the task, revision, or Pod. It reads named secrets and talks to the database. It cannot apply Terraform or update the Production service.
+
+Compromise blast radius is secret-get plus app data, not the landing zone.
+
+</details>
+
+### 6. Which identity deploys the application?
+
+<details>
+<summary>Answer</summary>
+
+The application pipeline deploy identity. It updates the container app or ECS service with an already-built digest. It does not own the hub network.
+
+Production humans release through this pipeline, not with standing admin.
+
+</details>
+
+### 7. Where are secrets stored?
+
+<details>
+<summary>Answer</summary>
+
+Key Vault or Secrets Manager. The runtime identity retrieves them. Nothing in Git, Dockerfiles, or pipeline logs.
+
+`DATABASE_HOST` can be config. The password is a secret.
+
+</details>
+
+### 8. How does an image move from Git to Production?
+
+<details>
+<summary>Answer</summary>
+
+Commit → build, test, scan → image in ACR/ECR tagged with Git SHA and recorded digest → Dev → same digest to UAT → approval → same digest to Prod.
+
+Do not rebuild for Production.
+
+</details>
+
+### 9. How do you prove which commit is running?
+
+<details>
+<summary>Answer</summary>
+
+Read the running digest. Map it to the registry, build ID, and Git SHA recorded by the pipeline. An info endpoint can show non-secret `GIT_COMMIT`.
+
+A mutable `:latest` tag does not prove anything.
+
+</details>
+
+### 10. How do Dev, UAT, and Prod differ?
+
+<details>
+<summary>Answer</summary>
+
+Same architecture pattern, different inputs. Dev: small, cheap, fast deploys. UAT: production-like tests. Prod: Multi-AZ, stricter IAM, approvals, stronger monitoring.
+
+Do not fork three unrelated Terraform trees.
+
+</details>
+
+### 11. How does Terraform manage the infrastructure?
+
+<details>
+<summary>Answer</summary>
+
+Modules for network, database, runtime, and registry. Environment folders pass CIDR, SKU, and names. `fmt`, `validate`, plan, approval, apply.
+
+Read every plan resource: why, owner, dependency, delete impact.
+
+</details>
+
+### 12. Where is Terraform state stored?
+
+<details>
+<summary>Answer</summary>
+
+Remote backend: Azure Storage or S3 with versioning, encryption, tight IAM, and locking. Separate keys for `dev`, `uat`, and `prod`.
+
+State is a control system, not a scratch file.
+
+</details>
+
+### 13. How are infrastructure changes approved?
+
+<details>
+<summary>Answer</summary>
+
+Infra PR: `terraform fmt`, `validate`, policy checks, saved plan, review, then apply in the infra pipeline. Network and IAM changes do not ride the app pipeline.
+
+Prod apply is not a laptop command.
+
+</details>
+
+### 14. How does the application get observed?
+
+<details>
+<summary>Answer</summary>
+
+Logs, metrics (rate, errors, latency, CPU, memory, DB), health checks, load-balancer target health, deploy history, and audit logs. One dashboard and one real alert.
+
+Container `Running` is not the SLO.
+
+</details>
+
+### 15. What happens when the application fails its health check?
+
+<details>
+<summary>Answer</summary>
+
+The load balancer stops sending new traffic to that target. The orchestrator may replace the task. Users should keep hitting healthy replicas if capacity remains.
+
+A failed `/health` is a deploy signal. Capture digest, logs, and LB status before you patch.
+
+</details>
+
+### 16. How do you troubleshoot database connectivity?
+
+<details>
+<summary>Answer</summary>
+
+DNS → IP → route → security → port → database service → authentication → application. Prove each layer. Do not write “database was down” without evidence the engine itself failed.
+
+A blocked SG with a healthy RDS is a security failure, not an RDS outage.
+
+</details>
+
+### 17. How do you troubleshoot an IAM failure?
+
+<details>
+<summary>Answer</summary>
+
+Name the identity, resource, and action. Confirm authentication succeeded. Then find the deny: IAM, resource policy, SCP, or Azure RBAC/data plane. Restore the minimum allow.
+
+IAM failures often look like app or network bugs. Check the identity first.
+
+</details>
+
+### 18. How do you recover from a bad deployment?
+
+<details>
+<summary>Answer</summary>
+
+Detect via health and errors. Stop widening traffic. If schema allows, roll back to the previous digest. Verify LB health and a smoke test. Then RCA.
+
+Preserve logs. Do not destroy evidence with a cluster restart.
+
+</details>
+
+### 19. Largest blast radius of each major identity
+
+<details>
+<summary>Answer</summary>
+
+Developer: source and Dev, not Prod admin. Pipeline deploy: the app in one environment. Terraform identity: that environment’s infrastructure. Runtime: secrets and data the app needs. Database admin: data plane of the DB.
+
+A stolen runtime role must not be able to rewrite the VPC.
+
+</details>
+
+### 20. What would you change if traffic became 10× larger?
+
+<details>
+<summary>Answer</summary>
+
+Measure the limiter: LB, app CPU, connection pool, database, or a payment API. Scale that layer. Horizontal app replicas first if the API is CPU-bound. Database SKU, pooling, or cache if RDS saturates.
+
+Do not scale everything. 10× frontend CDN does not fix a 5432 bottleneck.
+
+</details>
+
+### 21. Write the ShopSphere business requirement before cloud or Terraform
+
+<details>
+<summary>Answer</summary>
+
+Customers browse products, authenticate, place orders, and view status. The frontend is internet-facing. Backend and PostgreSQL stay private. Teams deploy fast to Dev, promote to UAT, and release Production with an audit trail.
+
+These are requirements. Kubernetes, Kafka, and a service mesh are not requirements until a gap appears.
+
+</details>
+
+### 22. Document the non-functional requirements table
+
+<details>
+<summary>Answer</summary>
+
+Availability: survive one app instance failure. Deploy: minimal downtime. Recovery: app rollback possible. Security: no public DB. Identity: workload roles. Secrets: not in Git or images. IaC: Terraform. Observability: logs, metrics, health. Envs: Dev/UAT/Prod. Cost: cheap Dev. Traceability: Prod maps to a Git commit.
+
+Architecture comes from this table, not from a service wishlist.
+
+</details>
+
+### 23. Draw the first logical architecture plus DevOps layer
+
+<details>
+<summary>Answer</summary>
+
+Internet → DNS → frontend → load balancer → Spring Boot → secret store and private database. Developer → Git → CI/CD → registry and deploy. Around it: Terraform, identity, security, monitoring, logging, governance, cost.
+
+Boxes are responsibilities. Product names come after the drawing.
+
+</details>
+
+### 24. Justify managed containers vs Kubernetes for v1
+
+<details>
+<summary>Answer</summary>
+
+v1 needs a containerized long-running API, private DB, and CI promotion. It does not need custom controllers or cluster-wide NetworkPolicy. Managed containers reduce operational surface for the first production-style loop.
+
+Justify Kubernetes later with a specific capability or org standard, then compare operations in a later project day.
+
+</details>
+
+### 25. Define Dev/UAT/Prod on one architecture pattern
+
+<details>
+<summary>Answer</summary>
+
+One module set. Dev: small SKUs, no Multi-AZ requirement, automatic deploy. UAT: production-like config and tests. Prod: HA, approvals, stricter IAM, stronger alerts.
+
+Change inputs, not architecture copies.
+
+</details>
+
+### 26. Design network paths and outbound needs before implementation
+
+<details>
+<summary>Answer</summary>
+
+Public subnets: DNS/LB entry only. Private app subnets: containers. Private data subnets: PostgreSQL. App → DB is private. Outbound internet only if a real dependency needs it (payments, package pulls). Do not add NAT “just in case.”
+
+Draw the two paths: user → app, and app → database.
+
+</details>
+
+### 27. Security boundaries and five separate identities
+
+<details>
+<summary>Answer</summary>
+
+For each path answer who, what, why, which identity, which network, which rule. Developer: Git/Dev. Pipeline: build and deploy. Infra: Terraform. Runtime: secrets and DB. Database: engine auth.
+
+The app identity never inherits Terraform’s create-VPC power.
+
+</details>
+
+### 28. Repository structure: app, infra, pipelines, docs
+
+<details>
+<summary>Answer</summary>
+
+`backend/`, `frontend/`, `infra/modules` plus `environments/dev|uat|prod`, `pipelines/app` and `pipelines/infra`, `docs/adr`. README at the root.
+
+The split is ownership: application vs infrastructure vs pipelines vs documentation. Exact folder names can vary.
+
+</details>
+
+### 29. Run the backend locally with health, products, orders, and a DB-backed frontend
+
+<details>
+<summary>Answer</summary>
+
+Expose `GET /health`, `GET /api/products`, `POST /api/orders`, `GET /api/orders/{id}`. Seed enough rows that a failed DB is visible. Point the Angular app at the local API.
+
+`/health` must mean “ready for traffic,” because the load balancer will use it later. Do not gold-plate business features.
+
+</details>
+
+### 30. Containerize the backend; `docker run` and `/health`
+
+<details>
+<summary>Answer</summary>
+
+`mvn clean package`, then `docker build -t shopsphere-api:dev .`, then `docker run --rm -p 8080:8080 shopsphere-api:dev`. `curl http://localhost:8080/health` must succeed.
+
+Prove source → Maven → JAR → image → container → HTTP before any cloud deploy. Run as a non-root `USER`. Do not bake secrets into the Dockerfile.
+
+</details>
+
+### 31. Separate build-time vs runtime configuration
+
+<details>
+<summary>Answer</summary>
+
+One image for Dev, UAT, and Prod. Inject `DATABASE_HOST`, port, name, and `APPLICATION_ENV` at run. Pull passwords from the secret store.
+
+If UAT required a rebuild, the promotion design failed.
+
+</details>
+
+### 32. Terraform foundation: fmt, validate, plan, and review each resource
+
+<details>
+<summary>Answer</summary>
+
+Start with provider, account/RG context, and network. Run `terraform fmt`, `terraform validate`, and `terraform plan`. Do not apply because a plan file exists.
+
+For each resource in the plan: why, owner, dependency, delete impact.
+
+</details>
+
+### 33. Deploy the network via Terraform and inspect the IaC loop
+
+<details>
+<summary>Answer</summary>
+
+Apply public/ingress, application, and database subnets. Inspect the real VPC/VNet and compare with code. That is code → plan → apply → cloud → inspect → compare.
+
+Skip fancy UDRs until a traffic path needs them.
+
+</details>
+
+### 34. Deploy a private database; test connect vs deny paths
+
+<details>
+<summary>Answer</summary>
+
+Create PostgreSQL/MySQL with no public endpoint. From the app subnet, resolve, `nc` the port, authenticate, and query. From a public or unrelated subnet, the same port must fail.
+
+Write down which of resolve/route/connect/auth/query failed when you blocked it.
+
+</details>
+
+### 35. Push the image with a git-sha tag and record the digest
+
+<details>
+<summary>Answer</summary>
+
+Tag `shopsphere-api:<git-sha>` to ACR or ECR. Record `@sha256:...`. Deploy that digest, not `:dev`.
+
+The digest answers “which exact image is running?”
+
+</details>
+
+### 36. Deploy the app with identity, secrets, private DB, health, and LB — end to end
+
+<details>
+<summary>Answer</summary>
+
+Runtime pulls the digest, gets config and secrets, connects privately to the DB, passes `/health`, and the load balancer marks the target healthy. Then a user HTTP call returns products from the database.
+
+Stop only when that whole chain works. `Running` is step one, not the finish.
+
+</details>
+
+### 37. First application pipeline to Dev with traceability metadata
+
+<details>
+<summary>Answer</summary>
+
+Source → build → unit test → security checks → Docker → push → deploy Dev → health check. Record Git SHA, build ID, tag, digest, and deployment version.
+
+Do not automate Production yet. Prove Dev is reliable first.
+
+</details>
+
+### 38. Promote the same artifact to UAT without rebuild
+
+<details>
+<summary>Answer</summary>
+
+UAT deploys the Dev digest. If the UAT image differs, you rebuilt, used a mutable tag, or mixed build inputs.
+
+Promotion is the test. Rebuild is the bug.
+
+</details>
+
+### 39. Design Production deployment controls and access restrictions
+
+<details>
+<summary>Answer</summary>
+
+UAT validation → approval/policy → Prod → health → observe. Developers have no unrestricted Prod infra. The pipeline identity is the release path.
+
+Prod is a governed promotion, not a faster Dev.
+
+</details>
+
+### 40. Observability dashboard and one meaningful alert
+
+<details>
+<summary>Answer</summary>
+
+Dashboard: request count, error rate, latency, CPU, memory, app health, database health. One alert, for example error rate above a threshold after a deploy, with a first investigation step.
+
+Dozens of CPU warnings are noise. An alert must need a human.
+
+</details>
+
+### 41. Failure drill: bad release failing health check — evidence and recover
+
+<details>
+<summary>Answer</summary>
+
+Deploy a build that fails `/health`. Record commit, image, deployment, task, health output, app logs, and LB status. Then detect → diagnose → contain → rollback to previous digest → verify → RCA.
+
+The lesson is the recovery path, not a perfect first release.
+
+</details>
+
+### 42. Failure drill: break DB connectivity and walk DNS → app
+
+<details>
+<summary>Answer</summary>
+
+Use a wrong hostname or a blocked port. Walk DNS, IP, route, security, port, service, auth, app. Incident note: symptom, root cause, evidence, fix, prevention.
+
+“Database was down” is allowed only if the engine evidence says so.
+
+</details>
+
+### 43. Failure drill: remove a runtime IAM permission and restore the minimum
+
+<details>
+<summary>Answer</summary>
+
+Drop secret-get or `s3:GetObject`. Restart. Confirm auth succeeded and authorization denied. Restore only that action on that resource.
+
+Do not grant Administrator to “make it work.” IAM is not a network timeout.
+
+</details>
+
+### 44. Infrastructure pipeline separate from the application pipeline
+
+<details>
+<summary>Answer</summary>
+
+Terraform commit → fmt → validate → policy → plan → review → apply → verify. App code stays on the app pipeline. Network, DB infra, and IAM use this pipeline.
+
+Blast radius stays deliberate. A JAR bump must not apply a VPC change.
+
+</details>
+
+### 45. Five ADRs: runtime, network, DB connectivity, CI/CD, deployment
+
+<details>
+<summary>Answer</summary>
+
+Each ADR: context, decision, why, trade-offs, alternatives, consequences. Example: ADR-001 managed containers because v1 has no Kubernetes requirement; trade-off is less cluster control; alternative AKS/EKS later.
+
+Write why this project chose it, not a textbook paragraph.
+
+</details>
+
+### 46. Multi-team ownership model
+
+<details>
+<summary>Answer</summary>
+
+App team owns code and app incidents. Platform/DevOps owns Terraform modules, pipelines, and Prod network patterns. Security owns IAM standards and secret policy. Database team owns engine and backups. FinOps owns budgets.
+
+Who approves Prod deploy: product/platform via environment checks. Who modifies IAM: security plus infra pipeline, not every developer.
+
+</details>
+
+### 47. Cost review with a trade-off per optimization
+
+<details>
+<summary>Answer</summary>
+
+Ask why each billable resource exists, who owns it, whether Dev can be smaller or off after hours, and what 10× traffic does. NAT, LB, DB, and logs often burn idle money.
+
+Every cut needs an availability, performance, security, recovery, or complexity trade-off. Blind right-sizing of Prod HA is incomplete.
+
+</details>
+
+### 48. Final architecture review — failure impact for every component
+
+<details>
+<summary>Answer</summary>
+
+Walk user → DNS → frontend → LB → app → DB. Then Git → CI/CD → registry → deploy → observability. Then identity, security, Terraform, governance, cost, audit. For each box: what happens if it fails?
+
+If you cannot answer, the architecture is not finished. Document keep vs destroy for the next project days.
+
+</details>
+
+### 49. Senior/Lead scenarios A–F
+
+<details>
+<summary>Answer</summary>
+
+A: Find the real limiter (often DB or pool), do not scale every tier. B: Multi-AZ app, LB, NAT, and database; secrets and observability must survive the AZ. C: Health-gated rolling or blue/green, extra capacity, compatible schema, tested rollback. D: OIDC/federation; no long-lived keys in CI. E: Collect the bill by service before redesign; NAT, logs, and idle Dev are usual suspects. F: LB → target → runtime → container → app → dependency; digest vs expected.
+
+Each scenario is a requirement change. Revisit ADRs instead of bolting on services.
+
+</details>
