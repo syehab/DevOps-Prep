@@ -1761,3 +1761,445 @@ Final Review Date:
 Your final architecture is not the endpoint.
 
 It is the baseline from which you continue practicing architecture, troubleshooting, automation, security, and operational judgment.
+
+## Answers to practice
+
+### 1. Why AWS?
+
+<details>
+<summary>Answer</summary>
+
+The exercise sets cloud = AWS. Use it if the org already runs IAM, VPC, and EKS skills there. Azure can express the same boundaries.
+
+Pick the cloud from skills, compliance, and existing accounts, not from a service wishlist.
+
+</details>
+
+### 2. Why separate accounts?
+
+<details>
+<summary>Answer</summary>
+
+Accounts isolate security, IAM, billing, quotas, and blast radius. Dev must not modify Prod.
+
+Fewer accounts can work. Shared boundaries must still meet security and business rules. That is the trade-off.
+
+</details>
+
+### 3. Why EKS?
+
+<details>
+<summary>Answer</summary>
+
+Use EKS when you need a Kubernetes platform, standard tooling, or portability. ECS already covered v1 if those needs were absent.
+
+Managed control plane; you still own nodes, workloads, and platform config. Record the capability you accepted.
+
+</details>
+
+### 4. Why multi-AZ?
+
+<details>
+<summary>Answer</summary>
+
+99.9% availability needs more than one AZ. Place public, app, and data subnets, plus nodes, across AZs.
+
+One AZ is one failure domain. Multi-AZ is not multi-region.
+
+</details>
+
+### 5. Why private database?
+
+<details>
+<summary>Answer</summary>
+
+Orders and payments sit on PostgreSQL. Internet users must not reach 5432. Private subnets, no IGW route, `APP-SG → DB : 5432`.
+
+Public database access fails the security NFR.
+
+</details>
+
+### 6. How does traffic reach the application?
+
+<details>
+<summary>Answer</summary>
+
+User → DNS → load balancer / Ingress → Service → ready endpoints → Pod → Spring Boot → private database.
+
+Do not add NAT, endpoints, or extra LBs unless a named path needs them.
+
+</details>
+
+### 7. How does the application access AWS services?
+
+<details>
+<summary>Answer</summary>
+
+Workload identity: Service Account → IAM role → AWS API. No long-lived keys in the Pod.
+
+Scope the role to named secrets, logs, and required APIs. Prefer VPC endpoints over general internet when the destination is AWS.
+
+</details>
+
+### 8. How are secrets protected?
+
+<details>
+<summary>Answer</summary>
+
+Secrets Manager or Key Vault, per environment. Not Git, Dockerfiles, images, committed tfvars, or pipeline YAML.
+
+Protect Terraform state too; it can hold secrets. Runtime uses identity, not pasted keys.
+
+</details>
+
+### 9. Who can deploy Production?
+
+<details>
+<summary>Answer</summary>
+
+The Prod deployment role after UAT evidence and approval. Developers do not apply from a laptop.
+
+Trace who, which digest, which process, and which evidence.
+
+</details>
+
+### 10. Who can change infrastructure?
+
+<details>
+<summary>Answer</summary>
+
+The Prod Terraform role in the infra pipeline after `terraform fmt`, `terraform validate`, policy, plan review, and approval.
+
+Not the app runtime. Not standing human admin.
+
+</details>
+
+### 11. How is Terraform state protected?
+
+<details>
+<summary>Answer</summary>
+
+Remote S3, encryption, IAM, locking (`use_lockfile`), versioning, and recovery. Split `prod/network`, `prod/eks`, `prod/data`.
+
+Treat state as Production infrastructure.
+
+</details>
+
+### 12. How are Terraform changes reviewed?
+
+<details>
+<summary>Answer</summary>
+
+PR → format/validate → policy → plan → review → approval → pipeline apply → verify.
+
+A plan is evidence, not approval. Ask why, blast radius, and reversibility.
+
+</details>
+
+### 13. How does the same artifact reach Production?
+
+<details>
+<summary>Answer</summary>
+
+Git SHA → build → tests → scan → one image → ECR → Dev → UAT → approval → Prod. Deploy the digest.
+
+A rebuild for Prod breaks the UAT proof.
+
+</details>
+
+### 14. How are deployments rolled back?
+
+<details>
+<summary>Answer</summary>
+
+Stop widening traffic. Restore the previous digest if the schema still fits. Verify health, then a real checkout.
+
+App rollback is not a database rollback. Expand-and-contract keeps that door open.
+
+</details>
+
+### 15. How are database changes handled?
+
+<details>
+<summary>Answer</summary>
+
+Expand schema, deploy compatible code, migrate usage, contract later. v2 plus an incompatible column can block v1 rollback.
+
+The database is part of the release, not a side script.
+
+</details>
+
+### 16. How does the application scale?
+
+<details>
+<summary>Answer</summary>
+
+HPA changes replicas from metrics. Cluster autoscaling adds nodes when Pods cannot schedule.
+
+Scale the bottleneck. More API Pods on a saturated database worsen connections.
+
+</details>
+
+### 17. What happens if a node fails?
+
+<details>
+<summary>Answer</summary>
+
+Pods on that node die. Remaining nodes and AZs take the load if you spread replicas and keep a PDB for voluntary work.
+
+Three Pods on one node are not HA.
+
+</details>
+
+### 18. What happens if an AZ fails?
+
+<details>
+<summary>Answer</summary>
+
+Targets in that AZ go away. The load balancer sends traffic to healthy AZs. Database must be Multi-AZ if the NFR says so.
+
+NAT, nodes, and data must exist in more than one AZ.
+
+</details>
+
+### 19. What happens if the region fails?
+
+<details>
+<summary>Answer</summary>
+
+All AZs in that region fail. DNS or global routing sends users to DR. Recover database to RPO, rebuild EKS from Terraform and Git, deploy the known digest, verify a transaction.
+
+Standby cost follows the 60-minute RTO.
+
+</details>
+
+### 20. How do you detect application failure?
+
+<details>
+<summary>Answer</summary>
+
+Golden signals plus business metrics: 5xx, latency, checkout success, orders/minute. Logs and traces name the hop.
+
+Cluster green is not checkout healthy.
+
+</details>
+
+### 21. How do you detect infrastructure failure?
+
+<details>
+<summary>Answer</summary>
+
+Node, AZ, load-balancer, database, and Terraform drift signals. CloudTrail and plan diffs catch console changes.
+
+Correlate infra events with deploy time before you blame the app.
+
+</details>
+
+### 22. How do you recover?
+
+<details>
+<summary>Answer</summary>
+
+Detect → triage → contain → investigate → recover → verify a business path → communicate → RCA.
+
+Restore service with the smallest safe change. Prove root cause after users can order.
+
+</details>
+
+### 23. What does DR cost?
+
+<details>
+<summary>Answer</summary>
+
+Extra region, replication, transfer, standby EKS, backups, and tests. Tie it to RPO 15 minutes and RTO 60 minutes.
+
+“More reliable” is not a cost argument. The business target is.
+
+</details>
+
+### 24. What is the largest remaining blast radius?
+
+<details>
+<summary>Answer</summary>
+
+Often the CI/CD identity, the Prod Terraform role, shared registry trust, or a combined state file.
+
+Name it and add a control. Isolation is never complete.
+
+</details>
+
+### 25. What would you simplify if the budget dropped 30%?
+
+<details>
+<summary>Answer</summary>
+
+Shrink idle Dev, unjustified NAT, verbose log retention, and warm DR capacity if the RTO can move. Keep Multi-AZ Prod, private DB, and restore tests.
+
+Cut convenience first, not the NFRs the business still funds.
+
+</details>
+
+### 26. Incident drill: 5xx spike — decide
+
+<details>
+<summary>Answer</summary>
+
+Start at symptoms. Walk traffic → LB → Ingress → Service → endpoints → Pods → logs → database → external APIs. Correlate deploy, infra, config, and DB events.
+
+Do not roll back first. If evidence pins the new release, then roll back or mitigate.
+
+</details>
+
+### 27. Incident drill: database failure — decide
+
+<details>
+<summary>Answer</summary>
+
+Pods healthy, requests failing, database unavailable. Kubernetes health ≠ business health.
+
+Walk DNS → network → SG → route → endpoint → port → engine → credentials → pool. Recover the database, then prove a real order.
+
+</details>
+
+### 28. Incident drill: Terraform drift — decide
+
+<details>
+<summary>Answer</summary>
+
+A Prod SG changed by hand. `terraform plan` shows drift. Do not apply blindly.
+
+Ask who, why, authorization, traffic impact, and security impact. Restore or codify. Then add pipeline-only Prod and least privilege.
+
+</details>
+
+### 29. Incident drill: cost spike — decide
+
+<details>
+<summary>Answer</summary>
+
+Do not delete resources. Break account → service → resource → usage → change. Check HPA, DB, NAT, transfer, logs, storage, LBs, unexpected resources.
+
+Correlate with deploys. Find the architecture cause, not only the expensive line.
+
+</details>
+
+### 30. Whiteboard: ShopSphere from requirements
+
+<details>
+<summary>Answer</summary>
+
+Clarify users, criticality (orders/payments), 99.9%, RPO 15, RTO 60, Dev/UAT/Prod, audit, budget. Then: org → accounts → Multi-AZ VPC → EKS → private DB → IAM → Terraform → CI digest promotion → secrets → observability → DR.
+
+Do not start with service names. Business → NFRs → architecture → operations → failure → recovery → cost.
+
+</details>
+
+### 31. Architecture trade-offs (examples)
+
+<details>
+<summary>Answer</summary>
+
+EKS vs ECS: Kubernetes platform need vs less cluster ops. Separate accounts vs one account: isolation vs cost. Multi-AZ vs one AZ: availability. DR region vs rebuild: RTO vs spend.
+
+Write decision, why, alternative, benefit, cost, risk, operational load. Alternatives are not “bad.”
+
+</details>
+
+### 32. What would you simplify?
+
+<details>
+<summary>Answer</summary>
+
+Drop unused peering, extra clusters, unused replicas, unused telemetry, unused DR capacity, extra state splits, and custom automation nobody runs.
+
+Each box has cost, failure modes, maintenance, and security surface. Appropriate technology, not maximum technology.
+
+</details>
+
+### 33. Architecture failure review (prevent / detect / contain / recover / learn)
+
+<details>
+<summary>Answer</summary>
+
+Stolen CI identity: scoped roles, STS audit, revoke, rotate, tighten. Corrupt state: versioning, stop applies, restore, plan. Dev reading Prod secrets: separate stores. Bad image: digest gates, rollback. Region loss: DR runbook.
+
+For each scenario write those five verbs. That is operational engineering.
+
+</details>
+
+### 34. Senior vs Lead thinking
+
+<details>
+<summary>Answer</summary>
+
+Senior: build, deploy, troubleshoot, secure, monitor, recover. Lead also: standards, platform, ownership, governance, blast radius, cost, risk, developer experience.
+
+Make the safe path the easy path: a module plus policy that encrypts by default, rather than asking 50 teams nicely.
+
+</details>
+
+### 35. Interview simulation: modernize VMs
+
+<details>
+<summary>Answer</summary>
+
+Ask current architecture, traffic, availability, RPO/RTO, database, security, scale, owners, budget, and skills. Then propose accounts, Terraform modules, digest promotion, runtime (ECS or EKS from need), private DB, observability, and DR that match those answers.
+
+Do not prescribe EKS, GitOps, and multi-region before the requirements.
+
+</details>
+
+### 36. 10-minute recall: four perspectives
+
+<details>
+<summary>Answer</summary>
+
+Delivery: Git → CI → artifact → registry → promotion → approval → EKS → Service → app → DB. Infra: org → accounts → VPC → subnets → security → EKS → DB. Ops: observe → detect → investigate → recover → RCA → improve. Governance: identity, policy, Terraform, approval, cost, ownership.
+
+Connecting all four is Lead-level, not tool trivia.
+
+</details>
+
+### 37. Final architecture artifact (expected outcome)
+
+<details>
+<summary>Answer</summary>
+
+`Senior-DevOps-Production-Architecture.md` holds NFRs, diagrams, accounts, network, identity, Terraform, CI/CD, Kubernetes, security, observability, deploy, DR, cost, ownership, failures, recovery, ADRs, trade-offs, and risks.
+
+Each major decision: decision, reason, alternative, trade-off. This is the interview portfolio.
+
+</details>
+
+### 38. Organization, network, identity (expected design)
+
+<details>
+<summary>Answer</summary>
+
+Org: Security, Shared Services, Workloads (Dev/UAT/Prod). Prod VPC `10.20.0.0/16` with public/app/data in two AZs. Identities: human, Terraform, deploy, runtime, Kubernetes API.
+
+Least privilege, separation of duties, environment isolation. No extra network box without a path.
+
+</details>
+
+### 39. Terraform vs Kubernetes ownership
+
+<details>
+<summary>Answer</summary>
+
+Terraform: VPC, EKS, node groups, IAM, security, database, observability infra. Helm/GitOps: Namespace, Deployment, Service, Ingress, HPA, NetworkPolicy, PDB.
+
+Two systems must not fight over one object.
+
+</details>
+
+### 40. Security and observability layers
+
+<details>
+<summary>Answer</summary>
+
+Security: org → account → IAM → VPC → SG → RBAC → NetworkPolicy → Pod → app, plus the supply chain from source to runtime. Observability: golden signals plus orders, payments, checkout, auth.
+
+Answer quickly: is the user failing because of app, Kubernetes, network, database, or an external API?
+
+</details>
