@@ -1111,3 +1111,444 @@ Final Senior-DevOps-Production-Architecture.md
 
 These are more valuable for future revision than a large collection of copied commands.
 
+## Answers to practice
+
+### 1. Journey of an HTTP request from a user to Spring Boot
+
+<details>
+<summary>Answer</summary>
+
+User → DNS → load balancer or ingress → Service or target group → Pod/task/instance → Spring Boot on 8080. Then the app may call private PostgreSQL on 5432.
+
+Name every hop: who starts it, which name, which IP, which route, which security rule, which port. That is the production path, not a service catalog.
+
+</details>
+
+### 2. DNS is correct but the connection still fails
+
+<details>
+<summary>Answer</summary>
+
+Resolution succeeded. The packet still needs a route, an allow rule, an open port, a listening process, and a healthy app. Walk IP → route → security → port → service → application.
+
+A public IP from DNS when you expected a private endpoint is a different failure: the path is wrong even though “DNS worked.”
+
+</details>
+
+### 3. Authentication vs authorization
+
+<details>
+<summary>Answer</summary>
+
+Authentication proves who the principal is. Authorization decides what that principal may do.
+
+A federated pipeline can authenticate and still get `AccessDenied` if RBAC or IAM denies the action.
+
+</details>
+
+### 4. Why workload identity beats long-lived access keys
+
+<details>
+<summary>Answer</summary>
+
+Roles and managed identities vend short-lived tokens. Keys in Git, images, and YAML leak and stay valid.
+
+If the identity is stolen, blast radius is the role’s scope. Keys multiply that risk.
+
+</details>
+
+### 5. Why application and infrastructure pipelines are often separated
+
+<details>
+<summary>Answer</summary>
+
+A Java change should not run `terraform apply`. A node-pool change should not rebuild the JAR.
+
+Separate repos, identities, and approvals keep application risk off infrastructure state.
+
+</details>
+
+### 6. Why promote the same artifact across environments
+
+<details>
+<summary>Answer</summary>
+
+Production must run the bytes that passed UAT. A new build can differ even from the same Git SHA.
+
+Pin the image digest. Move that digest Dev → UAT → Prod.
+
+</details>
+
+### 7. Terraform state, remote state, and locking
+
+<details>
+<summary>Answer</summary>
+
+State maps config to real resources. Remote state (Azure Storage or S3) gives one team copy. Locking stops two applies from corrupting it.
+
+State can hold secrets. Restrict IAM, encrypt, version, and split by environment.
+
+</details>
+
+### 8. How you would investigate Terraform drift
+
+<details>
+<summary>Answer</summary>
+
+Do not auto-apply. Ask what changed, who changed it, whether it was intentional. Accidental: reconcile to code. Intentional: update Terraform. External owner: stop fighting that attribute.
+
+Detect → investigate → reconcile or codify → prevent recurrence.
+
+</details>
+
+### 9. Load balancer vs route table vs security rule
+
+<details>
+<summary>Answer</summary>
+
+A load balancer distributes traffic to healthy targets. A route table chooses the next hop. A security rule (NSG or Security Group) allows or denies the packet.
+
+Wrong path is routing. Correct path but dropped is security. Healthy targets are a load-balancer concern.
+
+</details>
+
+### 10. How a private application reaches a public internet endpoint
+
+<details>
+<summary>Answer</summary>
+
+Private subnet default route to NAT (or hub firewall SNAT) → Internet Gateway → public API. The app has no public IP.
+
+Inbound still uses the load balancer. Outbound is a different path.
+
+</details>
+
+### 11. How a private application reaches a managed cloud service privately
+
+<details>
+<summary>Answer</summary>
+
+Private Endpoint or VPC endpoint plus private DNS so the usual hostname returns a private IP. Route locally. Filter with NSG or Security Group.
+
+If DNS is still public, you never take the private path.
+
+</details>
+
+### 12. Why a container can be running while the application is unhealthy
+
+<details>
+<summary>Answer</summary>
+
+`Running` means the process has not exited. The app can still return 503, fail `/health`, or miss the database.
+
+Use probes, target health, and logs. Do not trust process state alone.
+
+</details>
+
+### 13. Readiness vs liveness vs startup probes
+
+<details>
+<summary>Answer</summary>
+
+Readiness: stop sending traffic until ready. Liveness: restart if stuck. Startup: give a slow JVM time before liveness fires.
+
+Wrong probes either flap Pods or send users to a booting app.
+
+</details>
+
+### 14. How Kubernetes Services give stable access to temporary Pods
+
+<details>
+<summary>Answer</summary>
+
+A Service keeps a stable name and virtual IP. Endpoints track ready Pods. Pods can die and be replaced.
+
+Clients talk to the Service, not to Pod IPs.
+
+</details>
+
+### 15. How HPA differs from node scaling
+
+<details>
+<summary>Answer</summary>
+
+HPA adds or removes Pods. Cluster autoscaler or node pools add nodes when Pods cannot schedule.
+
+More Pods on a full node does nothing. Scale the layer that is actually short.
+
+</details>
+
+### 16. Why Helm and GitOps are not the same thing
+
+<details>
+<summary>Answer</summary>
+
+Helm packages and templates Kubernetes YAML. GitOps (Argo CD or Flux) continuously reconciles cluster state from Git.
+
+You can Helm without GitOps. You can GitOps without Helm. Together they are a delivery model.
+
+</details>
+
+### 17. Pipeline identity vs runtime identity
+
+<details>
+<summary>Answer</summary>
+
+Pipeline identity builds, pushes, and deploys. Runtime identity is the app’s role for Key Vault, S3, or RDS.
+
+Do not give the Spring Boot task the permission to update ECS.
+
+</details>
+
+### 18. How you would secure a CI/CD supply chain
+
+<details>
+<summary>Answer</summary>
+
+Protect `main`, review PRs, SAST/SCA and image scan, federated identities, no Prod creds on untrusted PRs, digest pinning, and environment approvals.
+
+The pipeline is part of the product. Treat YAML and agents as attack surface.
+
+</details>
+
+### 19. Zero or minimal-downtime deployment
+
+<details>
+<summary>Answer</summary>
+
+Roll new instances or tasks behind health checks, or use blue/green or slots, then shift traffic. Keep enough old capacity until new is ready.
+
+Schema must stay compatible. Command success is not user success.
+
+</details>
+
+### 20. Why database migrations complicate rollback
+
+<details>
+<summary>Answer</summary>
+
+Application v2 may require schema v2. Reverting the app to v1 does not undo an irreversible migration.
+
+Plan backward-compatible migrations, expand/contract, or a data rollback path before you ship.
+
+</details>
+
+### 21. Investigate a sudden increase in HTTP 5xx
+
+<details>
+<summary>Answer</summary>
+
+Check deploy time, error rate, which endpoint, which instances, target health, logs, traces, and one dependency. Do not restart everything.
+
+CPU normal does not mean the app is healthy. Start with evidence.
+
+</details>
+
+### 22. How metrics, logs, and traces complement each other
+
+<details>
+<summary>Answer</summary>
+
+Metrics show what is happening (rate, errors, latency). Logs show the exception. Traces show which span ate the time.
+
+Use a correlation ID across all three.
+
+</details>
+
+### 23. Dev/UAT/Prod isolation in Azure
+
+<details>
+<summary>Answer</summary>
+
+Entra tenant → management groups → separate subscriptions (or strongly split RGs) → resource groups. Tighter RBAC and Policy on Prod. Separate Terraform state and pipeline identities.
+
+Subscriptions isolate billing, quota, and blast radius better than names in one subscription.
+
+</details>
+
+### 24. Dev/UAT/Prod isolation in AWS
+
+<details>
+<summary>Answer</summary>
+
+Organization → OUs → separate accounts. SCPs on Prod. IAM Identity Center permission sets. Separate VPCs, roles, and state.
+
+Accounts are stronger isolation than three VPCs in one account.
+
+</details>
+
+### 25. Cross-account AWS deployment
+
+<details>
+<summary>Answer</summary>
+
+CI in a tooling account assumes a deploy role in the target account via STS or OIDC. Trust is tight. IAM on the role is least privilege. SCP still applies.
+
+The pipeline is not org admin.
+
+</details>
+
+### 26. Terraform for multiple environments
+
+<details>
+<summary>Answer</summary>
+
+One module, environment folders or workspaces with separate backends: `dev/`, `uat/`, `prod/`. Different variable files and roles. Plan then approved apply.
+
+Never one state file for all environments.
+
+</details>
+
+### 27. Reduce cloud cost without blindly cutting capacity
+
+<details>
+<summary>Answer</summary>
+
+Find the driver: compute, NAT, logs, idle non-prod, data transfer. Right-size, schedule non-prod, cap log retention, use endpoints instead of NAT where it fits.
+
+Do not drop Production HA to save money. Cost is a constraint next to reliability.
+
+</details>
+
+### 28. Azure VNet vs AWS VPC
+
+<details>
+<summary>Answer</summary>
+
+Both are the private IP network boundary with subnets, routes, and filtering. Azure uses NSGs and UDRs. AWS uses route tables, Security Groups, and NACLs.
+
+Same job, different knobs. Do not force one-to-one product names.
+
+</details>
+
+### 29. Azure RBAC vs AWS IAM
+
+<details>
+<summary>Answer</summary>
+
+Azure RBAC is scope-based roles on management groups, subscriptions, RGs, and resources. AWS IAM is identity policies plus resource policies plus SCPs.
+
+Both separate authentication from authorization. Evaluation layers differ.
+
+</details>
+
+### 30. AKS vs EKS at an architectural level
+
+<details>
+<summary>Answer</summary>
+
+Both are managed Kubernetes control planes. You still own node pools or Fargate, CNI, IAM/workload identity, ingress, and workloads.
+
+Azure wraps VNet, AAD/Entra, and ACR. AWS wraps VPC, IAM, and ECR. Kubernetes concepts stay; the cloud attachments change.
+
+</details>
+
+### 31. Design ShopSphere modernization from Part 2 requirements
+
+<details>
+<summary>Answer</summary>
+
+Users → DNS → load balancer → containerized Spring Boot (managed containers unless Kubernetes is required) → private relational database. Angular on static hosting or the same ingress. Dev/UAT/Prod isolated. IaC with Terraform. Secrets in Key Vault or Secrets Manager. CI builds once and promotes a digest. Prod needs approval, HA across AZs, monitoring, alerts, and traceability.
+
+Do not add Kafka, mesh, or microservices without a requirement. Every extra box is a failure mode. Map the same design onto Azure or AWS products second.
+
+</details>
+
+### 32. Incident: post-deploy partial 5xx, CPU normal, then `UnknownHostException: payments.internal`
+
+<details>
+<summary>Answer</summary>
+
+Do not restart everything. Correlate 10:15 deploy with 10:18 errors. Check which instances, target health, same digest, which endpoint, and logs. When logs show `UnknownHostException: payments.internal`, switch to DNS → private DNS → route → security → payments service.
+
+This is not a CPU incident. Observability plus the network sequence finds it.
+
+</details>
+
+### 33. Pipeline success, users see 503
+
+<details>
+<summary>Answer</summary>
+
+Deployment success is not application success. Walk load balancer → target health → Service/Deployment → Pod/task → process → logs. Compare running digest with the expected digest and Git SHA.
+
+You may be debugging the wrong version if the digest does not match.
+
+</details>
+
+### 34. Unexpected Terraform plan — drift
+
+<details>
+<summary>Answer</summary>
+
+Do not apply. Identify the attribute, actor, and intent. Accidental portal edit: apply to restore code. Intentional ops change: update Terraform. Another controller owns it: change ownership.
+
+Locking and pipeline-only Prod applies prevent a class of this drift.
+
+</details>
+
+### 35. Monthly bill too high
+
+<details>
+<summary>Answer</summary>
+
+Name the top services first: compute, database, NAT, logs, idle non-prod. Right-size, sleep Dev, shorten log retention, private endpoints to cut NAT. Keep Prod HA.
+
+A cheaper runtime that doubles incidents is not cheaper. Cost sits beside security and reliability.
+
+</details>
+
+### 36. Guardrails for 50 teams on Azure and AWS
+
+<details>
+<summary>Answer</summary>
+
+Azure: management groups, Policy, RBAC, tags, budgets. AWS: OUs, SCPs, IAM, Config, tags, budgets. Platform owns templates, identity patterns, and network hub. Teams own app code and resource-group or account-scoped delivery.
+
+Guardrails without a ticket for every VM. Central governance, local ownership.
+
+</details>
+
+### 37. Why managed containers instead of Kubernetes?
+
+<details>
+<summary>Answer</summary>
+
+The app is containerized and long-running. Current requirements do not need Kubernetes APIs, operators, or cluster networking. A managed container platform gives deploy, scale, identity, and observability with less cluster work.
+
+If Kubernetes becomes a platform standard or a real capability need, reconsider AKS/EKS. Requirement → decision → reason → trade-off → alternative.
+
+</details>
+
+### 38. Why separate Production into another account or subscription?
+
+<details>
+<summary>Answer</summary>
+
+The boundary reduces blast radius for identity, governance, quotas, billing, and access. Production can use stricter permissions and approvals than Dev.
+
+A naming convention in one account is weaker isolation.
+
+</details>
+
+### 39. 10-minute whiteboard: ShopSphere production from memory
+
+<details>
+<summary>Answer</summary>
+
+Draw users → DNS → LB → app → private DB. Add CI/CD, Terraform, identity, secrets, monitoring, logs, security, network, Dev/UAT/Prod, backup, cost. For each box say why, owner, communication, security, scale, failure, detection, recovery, cost, and 10× change.
+
+If you cannot explain a box, it does not belong on the board.
+
+</details>
+
+### 40. `Senior-DevOps-Production-Architecture.md` with the 20 sections
+
+<details>
+<summary>Answer</summary>
+
+Write the document from your own design, not copied lessons: business, diagram, Azure, AWS, network, identity, security, Terraform, CI/CD, deploy, secrets, observability, HA, DR, cost, governance, failures, troubleshooting, ADRs, and 10× scale.
+
+That file is the course proof. Keep it as a revision artifact with diagrams and decisions, not a command dump.
+
+</details>
