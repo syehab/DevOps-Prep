@@ -1649,3 +1649,346 @@ Known-Good Commit:
 Do not retire the previous managed runtime yet.
 
 The next project will use the Kubernetes environment while introducing **multi-environment and multi-account architecture**, forcing us to decide where cluster boundaries, account boundaries, state boundaries, and team ownership should exist.
+
+## Answers to practice
+
+### 1. Why does ShopSphere need Kubernetes?
+
+<details>
+<summary>Answer</summary>
+
+Record a real need: Kubernetes-native workloads, a common enterprise platform, portability, advanced scheduling, or an ecosystem requirement.
+
+If the managed container runtime already meets the NFRs, Kubernetes adds operations without enough benefit. “It is standard” is not a reason.
+
+</details>
+
+### 2. What did the previous managed runtime already provide?
+
+<details>
+<summary>Answer</summary>
+
+Scheduling, service execution, scaling primitives, health integration, and parts of deploy management.
+
+Kubernetes keeps those jobs but makes you design workloads, networking, identity, policies, and upgrades yourself.
+
+</details>
+
+### 3. What operational responsibilities did Kubernetes add?
+
+<details>
+<summary>Answer</summary>
+
+Node pools, namespaces, Ingress, NetworkPolicy, requests/limits, HPA, cluster autoscaling, PDBs, RBAC, secrets wiring, upgrades, and workload observability.
+
+EKS/AKS manage the control plane. You still run the rest.
+
+</details>
+
+### 4. Why use managed Kubernetes instead of self-managed Kubernetes?
+
+<details>
+<summary>Answer</summary>
+
+EKS or AKS run the API server and etcd. You avoid operating the control plane yourself.
+
+Say: the provider manages the control plane; we still own nodes, workloads, and cluster-integrated platform config.
+
+</details>
+
+### 5. How will Pods receive cloud identities?
+
+<details>
+<summary>Answer</summary>
+
+Use workload identity, not keys in the Pod. AWS: Service Account → IAM role → AWS API. Azure: workload identity → Entra → Azure resource.
+
+Grant only the actions the app needs.
+
+</details>
+
+### 6. How will Secrets reach the application?
+
+<details>
+<summary>Answer</summary>
+
+Keep the image environment-neutral. ConfigMaps hold non-secret config. Do not treat Kubernetes Secrets as a full secret store.
+
+Prefer Secrets Manager or Key Vault into the workload. Never bake secrets into images or Git.
+
+</details>
+
+### 7. How will traffic reach Pods?
+
+<details>
+<summary>Answer</summary>
+
+User → DNS → cloud load balancer / Ingress → Ingress controller → Service → ready endpoints → Pod → app.
+
+Ingress is HTTP routing. The cloud load balancer is the network entry. A Service with a bad selector has no backends.
+
+</details>
+
+### 8. How will the application scale?
+
+<details>
+<summary>Answer</summary>
+
+HPA changes replica count from metrics. If nodes are full, cluster autoscaling adds nodes, then the scheduler places Pods.
+
+Scale the bottleneck. More API Pods on a saturated database make connections worse.
+
+</details>
+
+### 9. What happens when a node fails?
+
+<details>
+<summary>Answer</summary>
+
+Pods on that node die. Three replicas on one node all die together. Spread across nodes and AZs with topology spread or anti-affinity.
+
+A PDB does not save you from a crash. It limits voluntary disruption.
+
+</details>
+
+### 10. What happens when a Pod becomes unhealthy?
+
+<details>
+<summary>Answer</summary>
+
+Failed readiness removes the Pod from Service endpoints. Traffic goes to ready Pods. Failed liveness can restart the container.
+
+Running ≠ ready. Check `kubectl get endpoints` and `kubectl describe pod`.
+
+</details>
+
+### 11. How will deployments be rolled back?
+
+<details>
+<summary>Answer</summary>
+
+`kubectl rollout status`, `kubectl rollout history`, then `kubectl rollout undo deployment/shopsphere-api`.
+
+Safe only if the previous image still fits current schema and infra. App rollback is not a database rollback.
+
+</details>
+
+### 12. How will database changes remain compatible?
+
+<details>
+<summary>Answer</summary>
+
+Use expand-and-contract so v1 and v2 can overlap during a rolling update.
+
+A Kubernetes rollout is a release strategy. Schema must fit both versions in that window.
+
+</details>
+
+### 13. Who can deploy to Production?
+
+<details>
+<summary>Answer</summary>
+
+The Production deploy identity through Helm or GitOps, after promotion and approval. Developers do not apply YAML on the Prod cluster from a laptop.
+
+RBAC plus cloud IAM enforce that.
+
+</details>
+
+### 14. Who can read Kubernetes Secrets?
+
+<details>
+<summary>Answer</summary>
+
+Only identities that need them: the workload and a tight operator role. Broad `get secrets` in Prod is a data leak.
+
+Prefer cloud secret stores and least privilege on the Kubernetes API.
+
+</details>
+
+### 15. How are namespaces isolated?
+
+<details>
+<summary>Answer</summary>
+
+A namespace is an org and policy boundary, not an account. Add RBAC, NetworkPolicy, ResourceQuota, LimitRange, and cloud identity.
+
+Dev/UAT/Prod as namespaces in one cluster still share cluster blast radius.
+
+</details>
+
+### 16. How are workloads protected from unnecessary network access?
+
+<details>
+<summary>Answer</summary>
+
+Allow Frontend→API, API→database, required AWS paths, and monitoring. Deny other namespaces.
+
+NetworkPolicy adds a layer. It does not replace security groups, firewalls, or IAM.
+
+</details>
+
+### 17. What does Terraform own?
+
+<details>
+<summary>Answer</summary>
+
+Platform infrastructure: VPC, EKS/AKS, node groups, IAM, security groups, load-balancer integration, cloud resources.
+
+Do not put every Kubernetes object in Terraform just because you can.
+
+</details>
+
+### 18. What does Helm/GitOps own?
+
+<details>
+<summary>Answer</summary>
+
+Application objects: Namespace, Deployment, Service, Ingress, ConfigMap, HPA, NetworkPolicy, PDB.
+
+Helm packages charts and values. GitOps reconciles Git desired state to the cluster. Keep one owner per resource.
+
+</details>
+
+### 19. How will cluster upgrades be handled?
+
+<details>
+<summary>Answer</summary>
+
+Upgrade the managed control plane, then node pools, with PDBs and capacity so ShopSphere keeps minAvailable. Test in Dev/UAT first.
+
+Upgrades are planned operations, not a surprise node recycle.
+
+</details>
+
+### 20. How will you know Kubernetes is actually improving the platform?
+
+<details>
+<summary>Answer</summary>
+
+Measure checkout success, latency, deploy safety, and engineering time, not “the cluster is green.”
+
+If capability gained does not beat operational cost and complexity, the ADR is wrong.
+
+</details>
+
+### 21. Rehost vs re-platform vs refactor — which is Day 37?
+
+<details>
+<summary>Answer</summary>
+
+This project is a re-platform: the same ShopSphere image moves from the managed container runtime to Kubernetes with small platform changes.
+
+Rehost moves a VM as-is. Refactor changes app design. More change unlocks more benefit and more risk. Move in waves with a rollback boundary.
+
+</details>
+
+### 22. Failure drill: Service has no backends
+
+<details>
+<summary>Answer</summary>
+
+Break the selector. `kubectl get svc`, `kubectl get endpoints`, `kubectl get pods --show-labels`, `kubectl describe svc shopsphere-api`.
+
+DNS and the Service exist. Endpoints are empty. Healthy Pods do not help if the Service cannot select them. Fix the selector.
+
+</details>
+
+### 23. Failure drill: Pod running but traffic fails
+
+<details>
+<summary>Answer</summary>
+
+Fail readiness. Pod is Running, Ready is False. `kubectl get endpoints shopsphere-api` omits it.
+
+Process exists; Kubernetes keeps it off traffic. This is production traffic control.
+
+</details>
+
+### 24. Failure drill: deployment causes 5xx
+
+<details>
+<summary>Answer</summary>
+
+Deploy a broken version in non-prod. Use `kubectl rollout status`, `history`, `kubectl get pods`, `describe`, `logs`. Then `kubectl rollout undo`.
+
+Ask what failed, when, why Kubernetes called it available, what detected it, why undo worked, and which gate should have caught it.
+
+</details>
+
+### 25. Failure drill: database connectivity
+
+<details>
+<summary>Answer</summary>
+
+Walk app → DNS → network → security → port → engine → credentials. Check cloud SG/NACL and `kubectl get networkpolicy`.
+
+`kubectl exec` into the Pod to test. Pod-to-Pod success does not prove Pod-to-database.
+
+</details>
+
+### 26. Failure drill: resource exhaustion
+
+<details>
+<summary>Answer</summary>
+
+Set low limits. Watch pressure, OOM, throttling. `kubectl describe pod`, `kubectl top pod`, `kubectl top node`.
+
+Name the bottleneck: container, Pod, node, cluster, database, or external API. Do not scale blindly.
+
+</details>
+
+### 27. Hands-on migration (expected outcome)
+
+<details>
+<summary>Answer</summary>
+
+Deploy the same image into a namespace with Deployment, Service, probes, requests/limits, ConfigMap, secret integration, workload identity, Ingress, NetworkPolicy, HPA, and PDB.
+
+Prove DNS → Ingress → Service → endpoints → Pods → app → database → telemetry. `Running` is not the finish.
+
+</details>
+
+### 28. Production migration plan (expected outcome)
+
+<details>
+<summary>Answer</summary>
+
+Runbook: pre-checks, capacity, schema, image, manifests, secrets, identity, network, DNS, observability, rollback, traffic shift, verify, retire old runtime.
+
+Before shift, old runtime stays up. If Kubernetes is unhealthy, return traffic. Migration is not irreversible.
+
+</details>
+
+### 29. 5-minute recall: user request path
+
+<details>
+<summary>Answer</summary>
+
+User → DNS → load balancer / Ingress → Service → ready Pod → application → private database.
+
+ShopSphere gained node, network, identity, policy, upgrade, and rollout operations. The provider did not take those.
+
+</details>
+
+### 30. Cost and operational trade-off
+
+<details>
+<summary>Answer</summary>
+
+Bill: control plane, nodes, LBs, storage, logs, traffic. Also engineer time, upgrades, and platform work.
+
+Compare capability gained against that cost. “Kubernetes is better” is not an architecture argument.
+
+</details>
+
+### 31. Azure ↔ AWS mapping (Kubernetes)
+
+<details>
+<summary>Answer</summary>
+
+AKS↔EKS, VNet↔VPC, Azure LB/App Gateway↔AWS LB/ALB, workload identity↔IRSA/Pod Identity, Key Vault↔Secrets Manager, ACR↔ECR.
+
+Map the Kubernetes concept to cloud integration, then security, networking, and operations. Names are secondary.
+
+</details>
