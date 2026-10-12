@@ -77,5 +77,4 @@ Backstage appears in EPAM platform JDs, and newer ones also name Crossplane, Pul
 
 ## Source tags
 
-EPAM Lead Platform / Unified Automation (Backstage) · EPAM Senior DevOps Azure · RedCloud Platform · EPAM Senior/Lead Platform Engineer
-EPAM Lead Platform / Unified Automation (Backstage) · EPAM Lead Cloud (IDP) · EPAM Senior DevOps Azure · RedCloud Platform
+EPAM Lead Platform / Unified Automation (Backstage) · EPAM Lead Cloud (IDP) · EPAM Senior DevOps Azure · RedCloud Platform · EPAM Senior/Lead Platform Engineer · Turkey banking platform (Terraform account vending)

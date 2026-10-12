@@ -14,6 +14,8 @@ AWS senior roles ask for the same loop as Azure ones (Terraform plus a managed K
 - Networking fundamentals: senior platform interviews still ask OSI-layer basics, so keep Day-3 fresh
 - Observability on top of the cluster (often Prometheus, Grafana, or Datadog)
 - Lead roles add advisor work: explain and defend a design choice (accounts, IAM, network, security, cost) and its trade-offs to a client, not just build it
+- Data and messaging operations: RDS (PostgreSQL), ElastiCache (Redis), MSK (Kafka). JDs ask backups, replication, failover, and DR with RTO and RPO. Multi-region is a plus. Service knobs are Look-up
+- Some product roles want a Terraform module per tenant, applied only by a pipeline, with a check after apply
 
 ## Mental model
 
@@ -41,6 +43,8 @@ If you know AKS, you already know most of EKS. Translate the names:
 | Image registry | ACR | ECR |
 | Monitoring | Azure Monitor | CloudWatch |
 
+RPO is how much recent data you can afford to lose. RTO is how quickly the service must return. Think of a shop fire: RPO is how many days of receipts you can lose. RTO is how many hours until the shop opens again. Backups, replicas, and failover exist to meet those two numbers. They are not the same control. Day 27 places the stores. Day 39 teaches the recovery numbers.
+
 ## Remember
 
 > **Clouds change the names, not the shape. Learn the shape once (network, identity, cluster, pipeline) and map the names.**
@@ -54,6 +58,7 @@ If you know AKS, you already know most of EKS. Translate the names:
 5. [Day-17-L17-AKS-EKS-Managed-Kubernetes-Architecture.md](../../Day-17-L17-AKS-EKS-Managed-Kubernetes-Architecture.md) - AKS vs EKS side by side
 6. [Day-14-L14-Kubernetes-Mental-Model.md](../../Day-14-L14-Kubernetes-Mental-Model.md) and [Day-15-L15-Kubernetes-Networking-Troubleshooting-v2.md](../../Day-15-L15-Kubernetes-Networking-Troubleshooting-v2.md) - the Kubernetes core
 7. [Day-3-L03-Networking-Fundamentals.md](../../Day-3-L03-Networking-Fundamentals.md) - the OSI basics that still show up in senior platform interviews
+8. [Day-39-Production-Project-09-Disaster-Recovery-Cost-Engineering-Clean-Style.md](../../Day-39-Production-Project-09-Disaster-Recovery-Cost-Engineering-Clean-Style.md) - RTO, RPO, backup, replication, and failover
 
 ## Common interview question
 
@@ -71,4 +76,4 @@ If your daily cloud is Azure, say that, then prove the mapping: "I run AKS in pr
 
 ## Source tags
 
-EPAM Senior AWS DevOps · Sezzle SRE · EPAM Lead AWS DevOps · Turkey product co Senior Platform (AWS)
+EPAM Senior AWS DevOps · Sezzle SRE · EPAM Lead AWS DevOps · Turkey product co Senior Platform (AWS) · Turkey / Central Asia Senior DevOps (MSK, RDS, ElastiCache DR) · Turkey / Central Asia Platform (module per tenant)

@@ -13,6 +13,7 @@ Lead cloud roles expect you to design the structure around workloads: how subscr
 - Cost and security isolation between workloads
 - Azure Landing Zone with hub-spoke networks; workloads like AKS live in spokes
 - Interview style: design questions, not commands ("how would you structure...")
+- Per-team or per-customer environment factory: one Terraform module stamps compute, data stores, IAM, and VPC. The pipeline applies it. Nobody clicks the console. IAM is least-privilege for that stack. A check after apply proves the pieces exist
 
 ## Mental model
 
@@ -30,6 +31,18 @@ Management / Org root
 
 Guardrails (policy) apply from the top down.
 New workload = stamp out a spoke, inherit the rules.
+```
+
+The same stamp becomes a factory when many teams or customers need it:
+
+```text
+Pipeline (no console)
+   ↓
+Module × team / customer
+   ↓
+VPC · IAM · compute · data
+   ↓
+Validate (does it exist? can it reach?)
 ```
 
 | Concept | Azure | AWS |
@@ -51,6 +64,7 @@ New workload = stamp out a spoke, inherit the rules.
 3. [Day-18-L18-Identity-Secrets-Cloud-Security-v2.md](../../Day-18-L18-Identity-Secrets-Cloud-Security-v2.md) - identity and secrets
 4. [Day-22-AZ-01-Azure-Platform-Architecture.md](../../Day-22-AZ-01-Azure-Platform-Architecture.md) - Azure platform view
 5. [Day-38-Production-Project-08-Multi-Environment-Multi-Account-Architecture-Clean-Style.md](../../Day-38-Production-Project-08-Multi-Environment-Multi-Account-Architecture-Clean-Style.md) - hands-on project
+6. [Day-36-Production-Project-06-Terraform-Enterprise-Hardening-Infrastructure-Governance-Clean-Style.md](../../Day-36-Production-Project-06-Terraform-Enterprise-Hardening-Infrastructure-Governance-Clean-Style.md) - the plan, apply, and validate pipeline that stamps the factory
 
 ## Common interview question
 
@@ -60,7 +74,7 @@ Outline:
 1. Separate platform (identity, connectivity, logging) from workloads.
 2. Per team, per environment subscriptions; prod isolated from non-prod.
 3. Management groups carry policy: allowed regions, required tags, no public IPs where forbidden.
-4. New team onboarding is a repeatable IaC stamp, not a bespoke build.
+4. New team onboarding is a repeatable IaC stamp, not a bespoke build. After apply, a check proves the VPC, IAM, and data stores exist.
 5. Mention the trade-off: more subscriptions means more structure to manage, so automate it.
 
 ## Honest gap note
@@ -69,4 +83,4 @@ Few people have built a full landing zone alone. It is honest to say you worked 
 
 ## Source tags
 
-EPAM Lead Azure Cloud · EPAM Lead Platform · EPAM Senior Azure DevOps (migration) · EPAM Senior Azure Cloud (KZ)
+EPAM Lead Azure Cloud · EPAM Lead Platform · EPAM Senior Azure DevOps (migration) · EPAM Senior Azure Cloud (KZ) · Turkey / Central Asia Platform (per-tenant environment factory) · Turkey banking platform (account vending)
