@@ -45,9 +45,9 @@ Easy wins to name in interviews:
 
 ## Study these days first
 
-1. [Day-39-Production-Project-09-Disaster-Recovery-Cost-Engineering-Clean-Style.md](../../Day-39-Production-Project-09-Disaster-Recovery-Cost-Engineering-Clean-Style.md) - cost engineering project
-2. [Day-11-L11-Cloud-Architecture-Enterprise-Structure.md](../../Day-11-L11-Cloud-Architecture-Enterprise-Structure.md) - structure enables attribution
-3. [Day-30-Senior-Lead-DevOps-Final-Assessment-Architecture-Challenge.md](../../Day-30-Senior-Lead-DevOps-Final-Assessment-Architecture-Challenge.md) - cost shows up in design reviews
+1. [Day-39/01-concepts.md](../../Day-39/01-concepts.md) - cost engineering project
+2. [Day-11/01-concepts.md](../../Day-11/01-concepts.md) - structure enables attribution
+3. [Day-30/01-concepts.md](../../Day-30/01-concepts.md) - cost shows up in design reviews
 
 Also note: every hands-on Day lesson ends with a cost check and cleanup section. That habit is FinOps in miniature.
 

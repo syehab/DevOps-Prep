@@ -51,14 +51,14 @@ RPO is how much recent data you can afford to lose. RTO is how quickly the servi
 
 ## Study these days first
 
-1. [Day-26-AWS-01-AWS-Enterprise-Architecture-Clean-Style.md](../../Day-26-AWS-01-AWS-Enterprise-Architecture-Clean-Style.md) - AWS big picture
-2. [Day-27-AWS-02-AWS-Compute-Clean-Style.md](../../Day-27-AWS-02-AWS-Compute-Clean-Style.md) - compute choices
-3. [Day-28-AWS-03-AWS-Networking-Clean-Style.md](../../Day-28-AWS-03-AWS-Networking-Clean-Style.md) - VPC and routing
-4. [Day-29-AWS-04-AWS-DevOps-Architecture-Clean-Style.md](../../Day-29-AWS-04-AWS-DevOps-Architecture-Clean-Style.md) - AWS delivery
-5. [Day-17-L17-AKS-EKS-Managed-Kubernetes-Architecture.md](../../Day-17-L17-AKS-EKS-Managed-Kubernetes-Architecture.md) - AKS vs EKS side by side
-6. [Day-14-L14-Kubernetes-Mental-Model.md](../../Day-14-L14-Kubernetes-Mental-Model.md) and [Day-15-L15-Kubernetes-Networking-Troubleshooting-v2.md](../../Day-15-L15-Kubernetes-Networking-Troubleshooting-v2.md) - the Kubernetes core
-7. [Day-3-L03-Networking-Fundamentals.md](../../Day-3-L03-Networking-Fundamentals.md) - the OSI basics that still show up in senior platform interviews
-8. [Day-39-Production-Project-09-Disaster-Recovery-Cost-Engineering-Clean-Style.md](../../Day-39-Production-Project-09-Disaster-Recovery-Cost-Engineering-Clean-Style.md) - RTO, RPO, backup, replication, and failover
+1. [Day-26/01-concepts.md](../../Day-26/01-concepts.md) - AWS big picture
+2. [Day-27/01-concepts.md](../../Day-27/01-concepts.md) - compute choices
+3. [Day-28/01-concepts.md](../../Day-28/01-concepts.md) - VPC and routing
+4. [Day-29/01-concepts.md](../../Day-29/01-concepts.md) - AWS delivery
+5. [Day-17/01-concepts.md](../../Day-17/01-concepts.md) - AKS vs EKS side by side
+6. [Day-14/01-concepts.md](../../Day-14/01-concepts.md) and [Day-15/01-concepts.md](../../Day-15/01-concepts.md) - the Kubernetes core
+7. [Day-03/01-concepts.md](../../Day-03/01-concepts.md) - the OSI basics that still show up in senior platform interviews
+8. [Day-39/01-concepts.md](../../Day-39/01-concepts.md) - RTO, RPO, backup, replication, and failover
 
 ## Common interview question
 

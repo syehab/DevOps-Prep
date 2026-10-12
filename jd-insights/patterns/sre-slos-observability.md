@@ -60,12 +60,12 @@ Zero Trust means verify every request by identity, not by network location. A VP
 
 ## Study these days first
 
-1. [Day-20-L20-Observability-Production-Incident.md](../../Day-20-L20-Observability-Production-Incident.md) - the core lesson, read this first
-2. [Day-3-L03-Networking-Fundamentals.md](../../Day-3-L03-Networking-Fundamentals.md) - the request path; the edge is the first hop
-3. [Day-18-L18-Identity-Secrets-Cloud-Security-v2.md](../../Day-18-L18-Identity-Secrets-Cloud-Security-v2.md) - verify the caller by identity, not by network location
-4. [Day-35-Production-Project-05-Observability-Incident-Response-Clean-Style.md](../../Day-35-Production-Project-05-Observability-Incident-Response-Clean-Style.md) - hands-on project
-5. [Day-34-Production-Project-04-Reliability-Safe-Deployments-Failure-Containment.md](../../Day-34-Production-Project-04-Reliability-Safe-Deployments-Failure-Containment.md) - safe deployments, canary with health signals, rollback
-6. [Day-41-Production-Simulation-01-Production-Deployment-Incident-Clean-Style.md](../../Day-41-Production-Simulation-01-Production-Deployment-Incident-Clean-Style.md) - full incident simulation
+1. [Day-20/01-concepts.md](../../Day-20/01-concepts.md) - the core lesson, read this first
+2. [Day-03/01-concepts.md](../../Day-03/01-concepts.md) - the request path; the edge is the first hop
+3. [Day-18/01-concepts.md](../../Day-18/01-concepts.md) - verify the caller by identity, not by network location
+4. [Day-35/01-concepts.md](../../Day-35/01-concepts.md) - hands-on project
+5. [Day-34/01-concepts.md](../../Day-34/01-concepts.md) - safe deployments, canary with health signals, rollback
+6. [Day-41/01-concepts.md](../../Day-41/01-concepts.md) - full incident simulation
 
 ## Common interview question
 

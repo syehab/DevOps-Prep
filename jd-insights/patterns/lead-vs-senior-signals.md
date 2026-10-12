@@ -43,9 +43,9 @@ Task → System → Team's way of working
 
 ## Study these days first
 
-1. [Day-21-L21-Senior-Lead-DevOps-Capstone.md](../../Day-21-L21-Senior-Lead-DevOps-Capstone.md) - the capstone, senior-to-lead thinking
-2. [Day-30-Senior-Lead-DevOps-Final-Assessment-Architecture-Challenge.md](../../Day-30-Senior-Lead-DevOps-Final-Assessment-Architecture-Challenge.md) - design under assessment
-3. [Day-40-Production-Project-10-Lead-DevOps-Architecture-Review-Clean-Style.md](../../Day-40-Production-Project-10-Lead-DevOps-Architecture-Review-Clean-Style.md) - running an architecture review
+1. [Day-21/01-concepts.md](../../Day-21/01-concepts.md) - the capstone, senior-to-lead thinking
+2. [Day-30/01-concepts.md](../../Day-30/01-concepts.md) - design under assessment
+3. [Day-40/01-concepts.md](../../Day-40/01-concepts.md) - running an architecture review
 
 ## Common interview question
 

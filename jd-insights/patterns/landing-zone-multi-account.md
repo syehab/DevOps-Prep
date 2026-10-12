@@ -59,12 +59,12 @@ Validate (does it exist? can it reach?)
 
 ## Study these days first
 
-1. [Day-11-L11-Cloud-Architecture-Enterprise-Structure.md](../../Day-11-L11-Cloud-Architecture-Enterprise-Structure.md) - enterprise structure
-2. [Day-12-L12-Cloud-Networking-Azure-AWS.md](../../Day-12-L12-Cloud-Networking-Azure-AWS.md) - hub-spoke networking
-3. [Day-18-L18-Identity-Secrets-Cloud-Security-v2.md](../../Day-18-L18-Identity-Secrets-Cloud-Security-v2.md) - identity and secrets
-4. [Day-22-AZ-01-Azure-Platform-Architecture.md](../../Day-22-AZ-01-Azure-Platform-Architecture.md) - Azure platform view
-5. [Day-38-Production-Project-08-Multi-Environment-Multi-Account-Architecture-Clean-Style.md](../../Day-38-Production-Project-08-Multi-Environment-Multi-Account-Architecture-Clean-Style.md) - hands-on project
-6. [Day-36-Production-Project-06-Terraform-Enterprise-Hardening-Infrastructure-Governance-Clean-Style.md](../../Day-36-Production-Project-06-Terraform-Enterprise-Hardening-Infrastructure-Governance-Clean-Style.md) - the plan, apply, and validate pipeline that stamps the factory
+1. [Day-11/01-concepts.md](../../Day-11/01-concepts.md) - enterprise structure
+2. [Day-12/01-concepts.md](../../Day-12/01-concepts.md) - hub-spoke networking
+3. [Day-18/01-concepts.md](../../Day-18/01-concepts.md) - identity and secrets
+4. [Day-22/01-concepts.md](../../Day-22/01-concepts.md) - Azure platform view
+5. [Day-38/01-concepts.md](../../Day-38/01-concepts.md) - hands-on project
+6. [Day-36/01-concepts.md](../../Day-36/01-concepts.md) - the plan, apply, and validate pipeline that stamps the factory
 
 ## Common interview question
 
