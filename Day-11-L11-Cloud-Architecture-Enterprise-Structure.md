@@ -222,6 +222,14 @@ A practical enterprise design starts with the identity and governance layer, the
 
 > **Remember:** This ready-to-use foundation is what JDs call a **landing zone**. Think of it as a paved parking lot: each workload parks in its own numbered spot, and the lights, gates, and cameras are already there.
 
+The landing zone becomes a factory when many teams or customers need the same foundation. One Terraform module describes the stack (network, IAM, compute, and data stores), and a pipeline applies that module for each team or customer. Nobody provisions in the console. IAM stays least-privilege for that stack, and a check after apply proves the pieces exist and can reach each other.
+
+Some product JDs call each customer stack a tenant. That is a product tenant, not the Entra ID tenant you met earlier in this lesson. Day 16 calls the self-service version of this a paved road. Day 36 shows the plan, apply, and validate pipeline.
+
+**Practice:** A product gives each customer their own VPC, IAM role, and RDS instance. Write the factory loop (module, pipeline, check). Then say what you refuse to do in the console.
+
+> **Remember:** A factory stamps a landing zone: one module, a pipeline, least-privilege IAM, then a check that it worked. No console clicks.
+
 **Practice**
 
 Design the following fictional enterprise:
@@ -292,6 +300,7 @@ Before moving on, you should be able to answer these without looking at the note
 12. How do enterprise boundaries reduce blast radius?
 13. How should Terraform state map to cloud ownership?
 14. Why should infrastructure and application pipelines have different responsibilities?
+15. How does an environment factory differ from building one landing zone by hand?
 
 **Core Mental Model**
 
