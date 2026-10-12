@@ -375,10 +375,11 @@ The ADR says managed containers. The code says Kubernetes. The decision that cha
 mkdir -p "$BROKEN_DIR/modules/app"
 ```
 
-Copy `modules/app` from the good lab, or write the same three files you wrote in step 8. Update `environments/dev/main.tf` so it calls `module.app` and does not call `module.k8s`. Then:
+Copy `modules/app` from the good lab, or write the same three files you wrote in step 8. Update `environments/dev/main.tf` so it calls `module.app` and does not call `module.k8s`. Run `terraform init` again because the module source changed. Then plan and apply.
 
 ```bash
 cd "$BROKEN_DIR/environments/dev"
+terraform init
 terraform plan
 terraform apply
 cat app-dev.txt
