@@ -1394,3 +1394,291 @@ Open Incidents:
 If you intentionally retain logs and telemetry for later exercises, document their retention and expected cost.
 
 Do not leave intentionally broken alerts, health checks, or application versions active.
+
+## Answers to practice
+
+### 1. What question does each telemetry signal answer?
+
+<details>
+<summary>Answer</summary>
+
+Metrics answer what is happening (rate, errors, latency). Logs answer what happened (events and context). Traces answer where this request went.
+
+Together: 5xx rose → log shows `DatabaseTimeout` → trace shows checkout waited on the DB.
+
+</details>
+
+### 2. What are the four golden signals?
+
+<details>
+<summary>Answer</summary>
+
+Latency, traffic, errors, saturation. For ShopSphere: requests/minute, p50/p95/p99, HTTP 5xx, and CPU/memory/DB connections/thread pools.
+
+Do not use averages alone.
+
+</details>
+
+### 3. Why average latency can hide a problem, and which percentiles to watch
+
+<details>
+<summary>Answer</summary>
+
+Average 200 ms can hide p99 at 4 seconds. A slice of users is already failing the SLO.
+
+Watch p50, p95, and p99. Set targets from this service, not a copied number.
+
+</details>
+
+### 4. Why start investigation from user impact, not CPU graphs?
+
+<details>
+<summary>Answer</summary>
+
+The symptom is “customers cannot place orders,” not “CPU looks interesting.” Map the failing action: login, browse, order, payment.
+
+Then follow that path. CPU-first work often repairs a healthy box.
+
+</details>
+
+### 5. Difference between SLI, SLO, and SLA
+
+<details>
+<summary>Answer</summary>
+
+SLI is the measurement (successful checkouts / total checkouts). SLO is the target (99.9% successful). SLA is the formal commitment with consequences.
+
+Do not use the three words as synonyms.
+
+</details>
+
+### 6. What operational decision does an error budget support?
+
+<details>
+<summary>Answer</summary>
+
+Some failure is allowed under the SLO. If the budget burns fast, slow risky releases and do reliability work.
+
+Reliability and delivery speed are one trade-off, not two separate teams.
+
+</details>
+
+### 7. What makes an alert actionable, and what happens when engineers ignore alerts?
+
+<details>
+<summary>Answer</summary>
+
+Good alerts are actionable, relevant, understandable, and tied to impact. `CPU > 70%` with no user harm is noise.
+
+If people ignore alerts, the monitoring system has failed operationally. Prefer checkout error rate or no successful orders.
+
+</details>
+
+### 8. Correlation ID vs distributed tracing
+
+<details>
+<summary>Answer</summary>
+
+A request ID joins logs for one call across frontend, API, DB, and payment. Tracing adds spans and timings so you see which hop ate 2.7 of 3.0 seconds.
+
+OpenTelemetry is the common instrumentation model. One user request should be traceable.
+
+</details>
+
+### 9. Why 99.9% HTTP success is not proof the business is healthy
+
+<details>
+<summary>Answer</summary>
+
+HTTP 200 can still mean orders created at 70%. Watch orders/minute, payment success, checkout completion, cart failures, and login success.
+
+Healthy servers are not healthy checkout.
+
+</details>
+
+### 10. During an incident, recovery first or full RCA?
+
+<details>
+<summary>Answer</summary>
+
+Restore service and limit impact first. Do not spend 45 minutes on perfect root cause while checkout is down.
+
+RCA continues after users can order again.
+
+</details>
+
+### 11. Deploy at 14:00, errors at 14:03 — what correlation gives you
+
+<details>
+<summary>Answer</summary>
+
+Strong reason to inspect that release. It does not prove the exact bug.
+
+Still read the diff, logs, traces, error types, endpoints, config, and schema. Correlation points; evidence convicts.
+
+</details>
+
+### 12. Besides the root cause, what should an RCA contain?
+
+<details>
+<summary>Answer</summary>
+
+Impact, start/end, detection path, contributing factors, recovery action, and gaps in detection, process, and recovery. Then corrective and preventive actions.
+
+It is not a blame document.
+
+</details>
+
+### 13. Why is high-cardinality telemetry a problem?
+
+<details>
+<summary>Answer</summary>
+
+Using `user_id`, `order_id`, or `request_id` as a metric label explodes series count and cost. Keep those fields in logs and traces.
+
+Ask what you need, how long, who uses it, and what to sample.
+
+</details>
+
+### 14. Incident drill: high 5xx rate — decide
+
+<details>
+<summary>Answer</summary>
+
+Traffic, CPU, and memory are normal. Logs show `PaymentClient timeout`. Trace: API 2.8s, DB 120 ms, payment 2.5s. The payment dependency is the suspect, not saturation.
+
+Then choose wait, bounded retry, circuit-break, shed load, disable payment flow, or rollback from architecture and business rules.
+
+</details>
+
+### 15. Incident drill: latency increase — decide
+
+<details>
+<summary>Answer</summary>
+
+p50 normal, p95 up, p99 very high. CPU and DB CPU normal. Trace shows a slow external API.
+
+Do not scale app compute. Investigate that dependency. Percentiles and traces beat the average.
+
+</details>
+
+### 16. Incident drill: no orders — decide
+
+<details>
+<summary>Answer</summary>
+
+HTTP success 99.9% and orders created 0. Infrastructure looks fine. Walk checkout → order API → create → payment → confirmation.
+
+Logs such as `Order confirmation failed` are a business or dependency failure. This is why business metrics exist.
+
+</details>
+
+### 17. Incident drill: deployment correlation — decide
+
+<details>
+<summary>Answer</summary>
+
+v2 at 14:00, errors at 14:03, rollback at 14:07, metrics normal at 14:10. Treat the release as the investigation start, then prove the cause with logs and traces.
+
+Rollback recovered users. RCA still names the defect.
+
+</details>
+
+### 18. Incident drill: database saturation — decide
+
+<details>
+<summary>Answer</summary>
+
+App “healthy,” connections near max, latency and 5xx up. Walk pool → slow queries → locks → DB CPU/memory → connection limit.
+
+Do not resize first. A leak, a bad query, or a traffic spike need different fixes.
+
+</details>
+
+### 19. Five Whys example (checkout / payment timeout)
+
+<details>
+<summary>Answer</summary>
+
+Checkout failed because payment timed out. Payment was slow. The app waited because the timeout was too high. The timeout was never set from an SLO. Dependency behavior missed the design review.
+
+The last why is often a process gap, not “payment was slow.”
+
+</details>
+
+### 20. Corrective vs preventive actions
+
+<details>
+<summary>Answer</summary>
+
+Immediate: rollback or restore the path. Permanent: fix timeout handling. Prevention: integration test. Detection: dependency latency alert. Recovery: document failover.
+
+“Restarted the app” is not an RCA close.
+
+</details>
+
+### 21. Hands-on observability (expected outcome)
+
+<details>
+<summary>Answer</summary>
+
+Instrument request rate, errors, latency, app and DB health, and deploy version. Add structured logs and correlation IDs. Add tracing if practical.
+
+Dashboard plus two actionable alerts. Observe before, during, and after a controlled change.
+
+</details>
+
+### 22. Production incident lab (expected outcome)
+
+<details>
+<summary>Answer</summary>
+
+Incident 1: app defect → metrics → logs → trace → deploy → recover. Incident 2: slow dependency → percentiles → trace → recover. Incident 3: DB pressure → connections/queries/locks → recover.
+
+Use a controlled environment. Do not destroy Production.
+
+</details>
+
+### 23. Incident command exercise
+
+<details>
+<summary>Answer</summary>
+
+Incident Commander coordinates. Technical Lead investigates. Communications updates stakeholders. Scribe records timeline and decisions.
+
+Even alone, think in those roles. The commander does not run every command.
+
+</details>
+
+### 24. Senior/Lead observability review
+
+<details>
+<summary>Answer</summary>
+
+You must detect user impact, name the running version, and correlate a request. You must find the slow hop and split infra vs app vs business failure. You must mark start time, what changed, blast radius, recovery, prevention, cost, and secret-free telemetry.
+
+Each “no” is a missing capability.
+
+</details>
+
+### 25. Dashboard and incident timeline (expected outcome)
+
+<details>
+<summary>Answer</summary>
+
+Dashboard: rate, errors, p95, health, CPU, memory, DB, orders/minute, payment success, current version, digest, deploy time.
+
+Timeline example: deploy 10:00, 5xx 10:05, alert 10:07, rollback 10:17, normal 10:20. Write it down. Do not rely on memory.
+
+</details>
+
+### 26. Observability security and cost
+
+<details>
+<summary>Answer</summary>
+
+Logs, labels, traces, dashboards, alerts, and RCA docs must not hold passwords, tokens, keys, or extra personal data. Restrict who reads Prod telemetry.
+
+Do not keep every debug log forever. Sample traces. Keep high-cardinality IDs out of metric labels.
+
+</details>
