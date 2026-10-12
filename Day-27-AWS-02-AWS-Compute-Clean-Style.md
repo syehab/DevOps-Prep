@@ -193,6 +193,10 @@ Change configuration
 Hope every server remains consistent
 ```
 
+This is the same **golden image** factory you met on Day 23. On AWS the published artifact is an AMI instead of an Azure Compute Gallery version. The loop stays: start from a base OS, configure it as code (cloud-init or Ansible), harden it (for example a CIS baseline), scan it, publish the AMI, then launch new instances and replace the old ones. Do not SSH into a live server to apply a fix.
+
+> **Remember:** Bake, do not patch in place. The AMI is the cake. Rebuild the image and replace the instance.
+
 Practice:
 
 Compare two approaches:
@@ -1000,6 +1004,8 @@ S3
 EFS
 RDS
 DynamoDB
+ElastiCache
+OpenSearch
 ```
 
 The right service depends on the type of data.
@@ -1021,9 +1027,27 @@ EFS
 
 Block storage:
 EBS
+
+Cache / session:
+ElastiCache
+
+Search / log analytics:
+OpenSearch
 ```
 
-In plain terms: EBS is a virtual disk attached to one instance. EFS is a shared network filesystem that many workloads can mount at once. S3 stores files as objects that you access through an API, not as a mounted disk.
+In plain terms: EBS is a virtual disk attached to one instance. EFS is a shared network filesystem that many workloads can mount at once. S3 stores files as objects that you access through an API, not as a mounted disk. For S3 in production, keep Block Public Access on, encrypt objects at rest, and turn on versioning. Day 26 teaches the IAM and VPC-endpoint path to the bucket.
+
+RDS is the managed relational database. AWS runs the engine (PostgreSQL, MySQL, and others), applies engine patches in a maintenance window, and takes automated backups you can restore to a point in time. **Multi-AZ** keeps a standby in a second Availability Zone so an AZ failure does not take the database with it. Put RDS in a private subnet. Let the application reach it through the RDS DNS endpoint and a Security Group that allows only the app on the database port. Day 28 Part 15 walks that network path.
+
+Two more managed data services appear on Senior Platform JDs, including production AWS roles that list them next to EC2, EKS, S3, RDS, and IAM.
+
+**ElastiCache** is a managed cache, usually Redis. The application stores session data or hot query results there so it does not hit RDS on every request. The cache is not the source of truth: if the cluster disappears, you can rebuild it from the database. Place it in a private subnet. Open the cache port (6379 for Redis) from the application Security Group only.
+
+**OpenSearch** is a managed search and analytics service (the open-source fork of Elasticsearch). Applications use it to search documents or to query logs and traces. It is not a replacement for RDS. Place the domain in a VPC. Control access with IAM and the domain access policy, the same layered idea you used for S3.
+
+> **Remember:** RDS holds the records. S3 holds the objects. ElastiCache holds a copy you can lose. OpenSearch holds what you need to search. All four stay private. The application reaches them through Security Groups and IAM, not through the Internet.
+
+**Look-up when a JD names them:** RDS Proxy (connection pooling when many Pods open database connections), ElastiCache cluster mode, and OpenSearch fine-grained access control. Learn the product names, then map them onto the private-data pattern above.
 
 Do not put a production database inside an ephemeral container simply because the application itself is containerized.
 
@@ -1037,9 +1061,11 @@ Uploaded profile image
 Database records
 Temporary files
 Shared generated reports
+Session tokens
+Product search queries
 ```
 
-Then select the appropriate storage model.
+Then select the appropriate storage model. Map session tokens to ElastiCache and product search to OpenSearch, and say why neither replaces RDS.
 
 ---
 
@@ -1528,7 +1554,7 @@ Without looking at the notes, explain:
 15. What is ECR used for?
 16. Why should workloads use IAM roles rather than embedded AWS access keys?
 17. What is the difference between ECS task role and task execution role?
-18. Why should application state normally live outside containers?
+18. Why should application state normally live outside containers? What does RDS keep that ElastiCache does not, and what problem does OpenSearch solve that RDS does not?
 19. How does deployment differ across EC2, ECS, EKS and Lambda?
 20. Why does “container is running” not prove application health?
 21. Why can scaling the application make a database problem worse?
