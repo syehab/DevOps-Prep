@@ -71,4 +71,4 @@ Emerging note: some Azure cloud JDs now name Azure AI or RAG next to the usual c
 
 ## Source tags
 
-Sezzle SRE (AI tooling expected) · EPAM Azure AI/GenAI DevOps themes · EPAM Lead Azure (AI gateway) · EPAM Senior Azure (GenAI/RAG on AKS) · EPAM Lead Cloud (Copilot standard) · EPAM Azure Cloud (KZ, Azure AI / RAG named) · EPAM Senior AI DevOps/SRE (LLM + RAG in production) · Turkey / CA Senior DevOps (daily AI assistants) · Turkey / CA Principal / AI Solution (LLM evaluation, emerging)
+Sezzle SRE (AI tooling expected) · EPAM Azure AI/GenAI DevOps themes · EPAM Lead Azure (AI gateway) · EPAM Senior Azure (GenAI/RAG on AKS) · EPAM Lead Cloud (Copilot standard) · EPAM Azure Cloud (KZ, Azure AI / RAG named) · EPAM Senior AI DevOps/SRE (LLM + RAG in production) · Turkey / Central Asia Senior DevOps (daily AI assistants) · Turkey / Central Asia Principal / AI Solution (LLM evaluation, emerging)

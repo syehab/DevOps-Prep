@@ -83,4 +83,4 @@ Few people have built a full landing zone alone. It is honest to say you worked 
 
 ## Source tags
 
-EPAM Lead Azure Cloud · EPAM Lead Platform · EPAM Senior Azure DevOps (migration) · EPAM Senior Azure Cloud (KZ) · Turkey / CA Platform (per-tenant environment factory) · Turkey banking platform (account vending)
+EPAM Lead Azure Cloud · EPAM Lead Platform · EPAM Senior Azure DevOps (migration) · EPAM Senior Azure Cloud (KZ) · Turkey / Central Asia Platform (per-tenant environment factory) · Turkey banking platform (account vending)

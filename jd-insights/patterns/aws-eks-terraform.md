@@ -76,4 +76,4 @@ If your daily cloud is Azure, say that, then prove the mapping: "I run AKS in pr
 
 ## Source tags
 
-EPAM Senior AWS DevOps · Sezzle SRE · EPAM Lead AWS DevOps · Turkey product co Senior Platform (AWS) · Turkey / CA Senior DevOps (MSK, RDS, ElastiCache DR) · Turkey / CA Platform (module per tenant)
+EPAM Senior AWS DevOps · Sezzle SRE · EPAM Lead AWS DevOps · Turkey product co Senior Platform (AWS) · Turkey / Central Asia Senior DevOps (MSK, RDS, ElastiCache DR) · Turkey / Central Asia Platform (module per tenant)

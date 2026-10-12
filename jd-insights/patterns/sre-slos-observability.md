@@ -83,4 +83,4 @@ Sezzle-style JDs name Prometheus or Datadog daily use, sometimes Golang. If your
 
 ## Source tags
 
-Sezzle SRE · EPAM Senior SRE · EPAM Senior SRE (Grafana + EKS) · Fundraise Up DevOps · EPAM Senior AI DevOps/SRE · Turkey / CA Senior SRE (edge, CDN, Zero Trust)
+Sezzle SRE · EPAM Senior SRE · EPAM Senior SRE (Grafana + EKS) · Fundraise Up DevOps · EPAM Senior AI DevOps/SRE · Turkey / Central Asia Senior SRE (edge, CDN, Zero Trust)
