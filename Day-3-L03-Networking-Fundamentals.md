@@ -25,6 +25,8 @@ User
  ↓
 DNS
  ↓
+Edge (CDN / WAF / TLS)
+ ↓
 IP address
  ↓
 Route
@@ -37,6 +39,16 @@ Application
 ```
 
 Each step answers a different question: **Who is the destination? Where is it? Can traffic get there? Is it allowed? Which application should receive it?**
+
+The path often starts one hop earlier than your load balancer. Many production sites put a CDN or a WAF at the **edge**. That edge answers DNS, finishes the TLS handshake, rate-limits floods and bots, then forwards only the requests that pass. When users say the site is down, prove this hop first.
+
+Ask three questions: does the name resolve, does TLS complete, and what HTTP status does the edge return? Then walk inward to the firewall, the load balancer, and the application. DNS often lives on the same edge product as the CDN and the WAF, but you still test it as its own question. A wrong name sends users to the wrong place even when the application is healthy.
+
+**Zero Trust** means you verify every request by identity, not by network location. A VPN trusts anyone who joined the network. ZTNA (Zero Trust Network Access) checks who the caller is on each request, whether they sit in the office or at home. Product names such as Cloudflare One (Access, Tunnel, WARP, Secure Web Gateway) and Akamai CDN, WAF, and Edge DNS are Look-up items. Remember the idea. Look up the product when a JD names it.
+
+**Practice:** Draw the path for a user who opens `api.example.com` behind a CDN. Mark the first hop you prove when they report an outage.
+
+> **Remember:** The edge is the first hop of the request path. Zero Trust verifies the caller, not the network they came from.
 
 > **Key idea:** Networking troubleshooting is mostly about finding **where the request stopped**.
 
@@ -256,6 +268,8 @@ Start from the outside and move inward:
 ```text
 Does DNS resolve?
       ↓
+Does the edge complete TLS and return a status?
+      ↓
 Does the client have a route?
       ↓
 Can traffic reach the load balancer?
@@ -317,6 +331,7 @@ Answer without looking:
 4. Where can a network request be blocked?
 5. Why can a server be healthy while the application is unreachable?
 6. What is the first failed layer in a network troubleshooting path?
+7. What sits at the edge of the request path, and how is Zero Trust different from a VPN?
 
 ### Exit criteria
 
@@ -324,6 +339,8 @@ You should be able to trace:
 
 ```text
 Name
+ ↓
+Edge (CDN / WAF / TLS)
  ↓
 IP
  ↓
