@@ -1415,3 +1415,346 @@ Known-Good Commit:
 The most important operational habit from today is simple:
 
 **Before changing infrastructure, know exactly which account, environment, identity, state, and cluster you are changing.**
+
+## Answers to practice
+
+### 1. Why are Dev, UAT, and Prod separate?
+
+<details>
+<summary>Answer</summary>
+
+Dev is fast feedback. UAT is controlled validation. Production serves real users and needs stronger availability, security, and change control.
+
+Same architecture pattern, different capacity and governance. One shared cluster hides blast radius.
+
+</details>
+
+### 2. Why are they separate accounts?
+
+<details>
+<summary>Answer</summary>
+
+An account isolates security, permissions, billing, quotas, and blast radius. A Dev mistake must not modify Production.
+
+Developers can be broad in Dev and restricted in Prod. Tags are not that boundary.
+
+</details>
+
+### 3. Why are clusters separated?
+
+<details>
+<summary>Answer</summary>
+
+A namespace is logical. A cluster shares nodes, API, and admin blast radius. An account is wider still.
+
+Prod in its own namespace is not Prod isolation. Dedicated EKS per account is the ShopSphere default, at higher cost.
+
+</details>
+
+### 4. Where does Terraform state live?
+
+<details>
+<summary>Answer</summary>
+
+Separate remote keys: `shopsphere/dev/platform.tfstate`, `uat`, `prod`. Split further by domain if ownership needs it.
+
+A Prod apply must not touch Dev state.
+
+</details>
+
+### 5. Who can assume the Production Terraform role?
+
+<details>
+<summary>Answer</summary>
+
+The infrastructure pipeline identity, through STS, into a narrowly scoped Prod Terraform role.
+
+Not every developer. Not the application runtime. Not a standing laptop admin.
+
+</details>
+
+### 6. Who can deploy to Production?
+
+<details>
+<summary>Answer</summary>
+
+The Prod deployment role after UAT evidence and approval. Record who, which digest, which process, and which evidence.
+
+Production is not another automatic stage.
+
+</details>
+
+### 7. How does the same image move across environments?
+
+<details>
+<summary>Answer</summary>
+
+Git SHA → build → scan → one image → registry → Dev → UAT → approval → Prod. Pin the digest.
+
+Do not rebuild for Production. Shared or per-account ECR is a security vs operations choice; trust must be explicit.
+
+</details>
+
+### 8. How are secrets isolated?
+
+<details>
+<summary>Answer</summary>
+
+Same variable names (`DATABASE_URL`), different stores per account. Dev workload reads Dev secrets only.
+
+A compromised Dev identity must not read Prod secrets. Do not copy Prod values into Dev.
+
+</details>
+
+### 9. How do networks communicate with shared services?
+
+<details>
+<summary>Answer</summary>
+
+Keep Dev, UAT, and Prod VPCs isolated. If logging or DNS is central, use an explicit path such as Transit Gateway to a shared-services VPC.
+
+Do not peer “just in case.” Every link widens trust.
+
+</details>
+
+### 10. What happens if the Dev account is compromised?
+
+<details>
+<summary>Answer</summary>
+
+Blast radius should stay in Dev: its VPC, EKS, secrets, and roles. SCPs, separate IAM, and no Prod secrets in Dev stop the jump.
+
+If Dev can assume Prod or read Prod state, the account boundary failed.
+
+</details>
+
+### 11. What happens if the central CI/CD identity is compromised?
+
+<details>
+<summary>Answer</summary>
+
+That identity can assume env deploy and Terraform roles. Scope each role tightly, require Prod approval, and audit STS.
+
+One permanent superuser across accounts is the failure mode to avoid.
+
+</details>
+
+### 12. What happens if the shared observability platform fails?
+
+<details>
+<summary>Answer</summary>
+
+Workloads may still serve traffic while you lose metrics, logs, and traces across accounts. Detection and RCA suffer.
+
+Centralize for consistency; keep enough local telemetry that a central outage does not blind Production.
+
+</details>
+
+### 13. How do you detect a deployment to the wrong account?
+
+<details>
+<summary>Answer</summary>
+
+Run `aws sts get-caller-identity` before apply. Confirm account ID, principal, and environment against the intended backend and cluster.
+
+Never assume the current identity is the one you meant. Make this a pipeline step.
+
+</details>
+
+### 14. How do you prevent cross-environment access?
+
+<details>
+<summary>Answer</summary>
+
+Separate accounts, roles, secrets, state, and VPCs. Add SCP/policy and CI checks. Distinct DNS names (`api.dev` vs `api.shopsphere.example`).
+
+Fix the path that allowed leakage, not only one variable.
+
+</details>
+
+### 15. Where is the largest remaining blast radius?
+
+<details>
+<summary>Answer</summary>
+
+Often the CI/CD identity, a shared registry trust, a shared logging account, or an SCP gap. Shared modules without versions are another.
+
+Name it, then add a control. Isolation is never complete.
+
+</details>
+
+### 16. SCP vs IAM
+
+<details>
+<summary>Answer</summary>
+
+IAM grants what an identity may do. An SCP sets the maximum allowed in the account. If the SCP denies a region, IAM cannot grant it back.
+
+Use SCPs as org guardrails above team IAM.
+
+</details>
+
+### 17. Why shouldn't Dev, UAT, and Prod be namespaces in one cluster?
+
+<details>
+<summary>Answer</summary>
+
+They share the API server, nodes, cluster IAM, and admin roles. A cluster outage or a privileged RBAC mistake hits all three.
+
+Namespaces help org and policy. They do not give account-level security, billing, or blast-radius isolation.
+
+</details>
+
+### 18. Failure drill: wrong account — decide
+
+<details>
+<summary>Answer</summary>
+
+Credentials point at UAT while you meant Dev. Stop. Run `aws sts get-caller-identity`. Check the Terraform provider and backend key.
+
+Do not apply. Identity check is part of the pipeline, not a memory trick.
+
+</details>
+
+### 19. Failure drill: cross-account AccessDenied — decide
+
+<details>
+<summary>Answer</summary>
+
+Walk source identity → `sts:AssumeRole` → trust policy → IAM → resource policy → resource. Name the layer that denied.
+
+Do not add Administrator. Same identity model as Day 18, now across accounts.
+
+</details>
+
+### 20. Failure drill: environment leakage — decide
+
+<details>
+<summary>Answer</summary>
+
+Dev referenced a UAT or Prod secret. Ask how the reference existed, which identity allowed it, which config, which boundary failed.
+
+Then separate accounts, roles, secrets, state, policy, CI validation, and names. Repair the architecture path.
+
+</details>
+
+### 21. Failure drill: Terraform state boundary — decide
+
+<details>
+<summary>Answer</summary>
+
+Dev Terraform should not read Prod state unless a rare, documented reason exists. If needed, record why, owner, change impact, permissions, and blast radius.
+
+Cross-env state dependencies must be deliberate.
+
+</details>
+
+### 22. Environment promotion exercise (expected outcome)
+
+<details>
+<summary>Answer</summary>
+
+Promote one digest Dev → UAT → Prod. Record Git SHA, digest, each deploy, approval, and verification.
+
+Production image must match the UAT artifact. That chain is the proof.
+
+</details>
+
+### 23. Terraform multi-account lab (expected outcome)
+
+<details>
+<summary>Answer</summary>
+
+Common modules (`vpc`, `eks`, `database`, `observability`). Env folders with their own account, state, tfvars, and execution role.
+
+`dev.tfvars` / `uat.tfvars` / `prod.tfvars` change size and HA, not architecture copies.
+
+</details>
+
+### 24. Kubernetes multi-environment lab (expected outcome)
+
+<details>
+<summary>Answer</summary>
+
+Dev/UAT/Prod each have EKS plus their own namespace, Ingress, Service, secrets, workload identity, HPA, NetworkPolicy, and observability.
+
+Manifests stay consistent. Values differ. Same app, independent platforms.
+
+</details>
+
+### 25. Ownership model
+
+<details>
+<summary>Answer</summary>
+
+Platform: accounts, EKS, network, Terraform modules. App team: ShopSphere, workload config, app alerts. Security: guardrails and access. FinOps: budgets and cost.
+
+If nobody owns a component, incidents become everyone’s problem.
+
+</details>
+
+### 26. Blast radius review: one cluster vs separate accounts
+
+<details>
+<summary>Answer</summary>
+
+One account/one cluster is cheaper and simpler. Separate accounts, clusters, state, and roles cost more and isolate better.
+
+Choose from the failure you must survive, isolation you need, complexity you can run, and business rules. There is no universal winner.
+
+</details>
+
+### 27. Provider aliases
+
+<details>
+<summary>Answer</summary>
+
+Aliases let one config talk to more than one account, for example `provider "aws" { alias = "shared" }` with `assume_role`.
+
+Do not use them because you can. Ask why resources must be managed together, who owns them, and the blast radius.
+
+</details>
+
+### 28. Shared registry vs per-account ECR
+
+<details>
+<summary>Answer</summary>
+
+Central ECR simplifies promotion. Per-account registries strengthen isolation. Decide from security, promotion, network, ownership, complexity, and compliance.
+
+If images cross accounts, scope the trust. Keep immutable digests.
+
+</details>
+
+### 29. Cost ownership
+
+<details>
+<summary>Answer</summary>
+
+Account plus tags: Application, Environment, Owner, CostCenter, ManagedBy, Criticality. Accounts make attribution easier.
+
+Tags are metadata. Accounts, IAM, networks, and policies are the real controls.
+
+</details>
+
+### 30. 5-minute recall: delivery path
+
+<details>
+<summary>Answer</summary>
+
+Developer → Git → CI/CD → artifact → Dev account → UAT account → Production approval → Prod account → EKS → ShopSphere.
+
+Boundaries exist so each hop has a named identity, state, cluster, and secret store. Verify them before you change anything.
+
+</details>
+
+### 31. Azure ↔ AWS mapping (org)
+
+<details>
+<summary>Answer</summary>
+
+Tenant↔Organization, Management Groups↔OUs, Subscriptions↔Accounts, Entra↔IAM Identity Center, Azure Policy↔SCP/Config, AKS↔EKS, ACR↔ECR, Key Vault↔Secrets Manager.
+
+The questions stay: owner, access, boundary, traffic, deploy, govern, observe, blast radius.
+
+</details>
