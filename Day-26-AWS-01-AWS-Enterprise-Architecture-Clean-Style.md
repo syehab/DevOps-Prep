@@ -282,6 +282,14 @@ CreateBucket? No
 
 This is least privilege in practice.
 
+S3 is more than an IAM target. In production, treat it as its own product with a short default checklist. Three layers can deny an S3 request, and any one of them is enough. An IAM policy on the caller grants or denies the API call. A bucket policy on the bucket can allow or deny the same call for that bucket. An SCP on the account can cap both. When an interview asks why `GetObject` failed, walk those three layers before you change the application.
+
+Keep three defaults on unless a published exception exists. Turn on Block Public Access so a mistaken ACL cannot open the bucket. Encrypt objects at rest with SSE-S3 or SSE-KMS. Turn on versioning so a bad overwrite has an undo. Prefer a VPC gateway endpoint for private-subnet access so S3 traffic does not need NAT (Part 13).
+
+> **Remember:** S3 access is three layers (IAM, bucket policy, SCP) plus three defaults (Block Public Access, encryption, versioning).
+
+**Look-up when a JD names them:** lifecycle rules, Cross-Region Replication, and Object Lock. You do not need those details for the core story.
+
 ---
 
 ## Part 6 — IAM Roles and Trust Policies
@@ -1410,7 +1418,7 @@ Without looking at the notes, explain:
 18. Why centralize CloudTrail/security logs?
 19. How would you enforce an approved-Region requirement?
 20. How would Azure DevOps deploy to AWS without storing permanent AWS access keys?
-21. How would you troubleshoot `AccessDenied`?
+21. How would you troubleshoot `AccessDenied`? If the call is `s3:GetObject`, which three layers can deny it, and which three S3 defaults should already be on?
 22. How would you troubleshoot a private subnet internet timeout?
 23. Why separate Terraform state by environment/account?
 24. What is the blast radius of an AWS account?
