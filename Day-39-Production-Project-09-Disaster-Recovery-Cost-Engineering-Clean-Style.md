@@ -1256,3 +1256,368 @@ Measured Recovery Point:
 The key operational lesson from today is:
 
 **Reliability is a business requirement expressed through engineering, and every reliability decision has a cost.**
+
+## Answers to practice
+
+### 1. What is RPO?
+
+<details>
+<summary>Answer</summary>
+
+Recovery Point Objective is the maximum acceptable data loss measured in time. ShopSphere example: 15 minutes.
+
+If the database fails at 14:00 and the latest recoverable state is 13:50, you lost 10 minutes and still meet a 15-minute RPO.
+
+</details>
+
+### 2. What is RTO?
+
+<details>
+<summary>Answer</summary>
+
+Recovery Time Objective is the target maximum time to restore service after a qualifying outage. ShopSphere example: 60 minutes.
+
+Restore at 14:40 after a 14:00 failure is 40 minutes and meets a 60-minute RTO. Do not mix RPO and RTO.
+
+</details>
+
+### 3. Difference between HA and DR
+
+<details>
+<summary>Answer</summary>
+
+High availability keeps the service running through expected failures: Pod, node, AZ. Disaster recovery restores service after a failure that exceeds that design, such as a region loss.
+
+HA is survive. DR is recover.
+
+</details>
+
+### 4. Why is multi-AZ not multi-region?
+
+<details>
+<summary>Answer</summary>
+
+Three AZs in one region share that region. If the region fails, all three AZs fail.
+
+Multi-region needs a primary plus a DR region. That costs more and adds operations.
+
+</details>
+
+### 5. Difference between backup and replication
+
+<details>
+<summary>Answer</summary>
+
+Backup makes historical copies you restore later. Replication keeps a second copy near current state.
+
+Replication can copy corruption or a bad delete. It is not a replacement for backups.
+
+</details>
+
+### 6. Why must backups be restore-tested?
+
+<details>
+<summary>Answer</summary>
+
+An untested backup is an assumption. Restore, validate data, point the app, then run a business transaction.
+
+Measure actual RPO and RTO, not the brochure number.
+
+</details>
+
+### 7. How would you recover a Kubernetes platform?
+
+<details>
+<summary>Answer</summary>
+
+Rebuild compute from definitions: Terraform creates infra, initialize the platform, Helm/GitOps restores workloads, wire secrets and identity, then start the app.
+
+The cluster is reproducible. Persistent data is not.
+
+</details>
+
+### 8. Why should stateless compute be rebuildable?
+
+<details>
+<summary>Answer</summary>
+
+Prefer rebuild over irreplaceable servers. Image in ECR, infra in Terraform, Kubernetes in Git, secrets in the secret store.
+
+Protect the database with backup and replication. That is where durable state lives.
+
+</details>
+
+### 9. How would you recover Terraform state?
+
+<details>
+<summary>Answer</summary>
+
+Stop Terraform changes. Restore the correct versioned S3 object. Validate, run `terraform plan`, confirm no surprise diffs, then resume.
+
+Do not apply against empty state over live infrastructure.
+
+</details>
+
+### 10. What happens if the primary region is unavailable?
+
+<details>
+<summary>Answer</summary>
+
+Users must reach a DR region through DNS or global routing. That region needs network, EKS, a database recovery target, image access, secrets, and observability.
+
+Standby level follows RTO and cost. Full active secondary costs more than rebuild-on-demand.
+
+</details>
+
+### 11. How does DNS participate in regional failover?
+
+<details>
+<summary>Answer</summary>
+
+Health checks can move `api.shopsphere.example` from primary to DR. TTL, client caches, resolver behavior, and connection reuse delay the real cutover.
+
+Test actual failover time. Do not trust TTL alone.
+
+</details>
+
+### 12. What happens to secrets during DR?
+
+<details>
+<summary>Answer</summary>
+
+DR needs Production secrets through a designed replica or authorized path, not a paste into the DR cluster.
+
+The DR workload identity gets scoped access. The whole DR env must not read every secret.
+
+</details>
+
+### 13. Where does the Production container image come from during DR?
+
+<details>
+<summary>Answer</summary>
+
+From the registry, with replication or alternate access into the DR region. Do not rebuild during the outage.
+
+Record repository, digest, deployment version, and Git SHA.
+
+</details>
+
+### 14. How do you preserve artifact traceability during recovery?
+
+<details>
+<summary>Answer</summary>
+
+Deploy the same digest you ran in primary. Map Git SHA → digest → DR deployment.
+
+A new build during DR breaks the “same artifact” guarantee from Day 33.
+
+</details>
+
+### 15. What does active/active mean?
+
+<details>
+<summary>Answer</summary>
+
+Both regions serve traffic. Failover can be faster and capacity is used.
+
+Cost: data consistency, routing, coordinated deploys, config, observability, and money.
+
+</details>
+
+### 16. What does active/passive mean?
+
+<details>
+<summary>Answer</summary>
+
+Primary serves traffic. Secondary stands by. Operations are simpler.
+
+Capacity sits idle until disaster. Choose from RTO/RPO, not popularity.
+
+</details>
+
+### 17. Why is observability part of DR?
+
+<details>
+<summary>Answer</summary>
+
+If metrics, logs, and alerts live only in the failed region, you go blind when you need evidence.
+
+Keep telemetry independently available. The runbook must say how you know the recovered env is healthy.
+
+</details>
+
+### 18. What are ShopSphere's major cloud cost drivers?
+
+<details>
+<summary>Answer</summary>
+
+EKS, worker nodes, load balancers, database, storage, NAT, data transfer, ECR, logs, metrics, traces, backups, and DR infra.
+
+Ask which of those exist because of reliability: Multi-AZ, DR region, replication, central telemetry.
+
+</details>
+
+### 19. How can Kubernetes autoscaling affect cost?
+
+<details>
+<summary>Answer</summary>
+
+Scale down idle Pods and nodes to save money. Unexpected demand can scale cost up fast.
+
+Set min/max, requests/limits, HPA thresholds, and cluster scale limits. Cost controls sit next to reliability.
+
+</details>
+
+### 20. Why can excessive logging become a cost problem?
+
+<details>
+<summary>Answer</summary>
+
+Volume, retention, and high-cardinality metrics drive ingest and storage cost.
+
+Collect what you need, keep hot what operators search, archive the rest. Do not keep every debug line forever.
+
+</details>
+
+### 21. What is unit economics in cloud?
+
+<details>
+<summary>Answer</summary>
+
+Cost per business unit: per 1,000 orders, per 1,000 customers, per million API requests.
+
+If the bill rises 20% and orders rise 100%, cost per order fell. Absolute spend is not the whole story.
+
+</details>
+
+### 22. How would you optimize cost without reducing required availability?
+
+<details>
+<summary>Answer</summary>
+
+Right-size nodes from usage data, not one graph. Replace unjustified NAT with VPC endpoints. Cut idle Dev. Shorten debug retention.
+
+Do not shrink Prod HA or skip restore tests to hit a budget.
+
+</details>
+
+### 23. Why is DR architecture a business decision?
+
+<details>
+<summary>Answer</summary>
+
+RPO, RTO, criticality, and downtime cost come from the business. Engineering then picks backup, replication, and standby.
+
+Do not pick multi-region because it sounds reliable. Map it to the 60-minute RTO if that is the requirement.
+
+</details>
+
+### 24. What would you test during a DR exercise?
+
+<details>
+<summary>Answer</summary>
+
+Backup restore, database recovery, node and AZ loss, region simulation, DNS failover, app recovery, Terraform rebuild, secret recovery.
+
+Start controlled: restore DB, start app, run an order test, measure actual RPO/RTO, manual steps, and gaps.
+
+</details>
+
+### 25. How would you prove ShopSphere meets RPO and RTO?
+
+<details>
+<summary>Answer</summary>
+
+Run the restore, time it, and compare the recovered data timestamp with the failure time. Record measured RPO and RTO in the runbook.
+
+Documentation is not proof. The last successful test is.
+
+</details>
+
+### 26. Recovery tiers
+
+<details>
+<summary>Answer</summary>
+
+Tier 1: orders, payment, authentication — tightest RPO/RTO and tests. Tier 2: browse and search. Tier 3: analytics and reporting.
+
+Do not spend Tier 1 money on reporting.
+
+</details>
+
+### 27. Failure domains and largest survivable domain
+
+<details>
+<summary>Answer</summary>
+
+Container → Pod → node → AZ → region → account → provider. Kubernetes heals Pods. Other nodes cover a node. Multi-AZ covers an AZ.
+
+Region loss needs DR. Ask: what is the largest domain this design can survive?
+
+</details>
+
+### 28. NAT Gateway as a cost example
+
+<details>
+<summary>Answer</summary>
+
+Private egress through NAT is controlled and billed. If traffic is mostly AWS APIs, VPC endpoints can cut that path.
+
+Do not delete NAT to save money until you know which flows need it.
+
+</details>
+
+### 29. Cost optimization exercise (expected outcome)
+
+<details>
+<summary>Answer</summary>
+
+List at least ten drivers. For each: resource, why it exists, cost driver, optimization, reliability impact, risk, owner.
+
+Example: warm DR EKS exists for regional recovery; shrink standby; risk is longer RTO; owner is platform.
+
+</details>
+
+### 30. DR failure drill — decide the chain
+
+<details>
+<summary>Answer</summary>
+
+Primary region is gone. Answer: how users reach DR, where the database, image, secrets, and Terraform state live, how EKS is recreated, how DNS changes, how you verify health.
+
+“We have backups” is not a chain. Walk every hop.
+
+</details>
+
+### 31. Regional recovery runbook (expected outcome)
+
+<details>
+<summary>Answer</summary>
+
+Declare the incident. Confirm region loss and freeze changes. Pick the recovery point, activate DR, and recover the database. Validate secrets and identity, deploy the known digest, then check network and health.
+
+Shift traffic, run a business transaction, monitor, and communicate. Then restore the primary. Each step needs owner, action, expected result, failure condition, and escalation.
+
+</details>
+
+### 32. Design A vs Design B reliability/cost
+
+<details>
+<summary>Answer</summary>
+
+A: single region, Multi-AZ, backups, rebuild DR — cheaper, slower regional recovery. B: multi-region active/passive with replication and warm standby — faster, costlier, more ops.
+
+Document RPO, RTO, expected failure, cost, complexity, and business impact. Pick from requirements.
+
+</details>
+
+### 33. DR + cost architecture review
+
+<details>
+<summary>Answer</summary>
+
+Draw primary and DR: EKS, database, ECR, secrets, Terraform state, DNS, observability, network, CI/CD.
+
+Annotate each with RPO, RTO, failure domain, recovery method, cost driver, and owner. Every DR box needs a why.
+
+</details>
