@@ -339,6 +339,10 @@ The exact integration mechanism depends on the platform configuration, but the s
 
 3. Workload identity is different from human access. A Spring Boot Pod may need to access Azure Key Vault or an AWS service without storing a long-lived cloud access key inside the container. Managed workload identity mechanisms allow the workload to obtain cloud credentials through an identity associated with the workload. This is much safer than putting static cloud credentials in a Kubernetes Secret merely to allow an application to call a cloud API.
 
+On Azure, that mechanism is **Workload Identity**: a Kubernetes ServiceAccount maps to a Microsoft Entra ID identity, and the Pod obtains a token to call Azure APIs. On AWS, the same idea has two current names. **IRSA** (IAM Roles for Service Accounts) lets a ServiceAccount assume an IAM role through an OIDC trust. **EKS Pod Identity** is the newer AWS-managed way to attach an IAM role to a ServiceAccount without you wiring the OIDC provider by hand. Both replace long-lived access keys inside the Pod. The CI/CD role that deploys the app is a different identity from the runtime role the Pod assumes. Day 26 teaches how to debug the trust policy when that assumption fails.
+
+> **Remember:** Workload identity maps a ServiceAccount to a cloud role. Azure calls it Workload Identity. AWS calls it IRSA or EKS Pod Identity. No access keys live in the Pod.
+
 4. This creates three questions you should ask in every managed Kubernetes design:
 
 ```text
@@ -444,6 +448,7 @@ The exact order and supported upgrade path depend on the managed service and ver
 | Managed Kubernetes | AKS | EKS |
 | Container registry | ACR | ECR |
 | Cloud identity | Microsoft Entra ID / Azure RBAC | IAM |
+| Workload identity | Workload Identity | IRSA / EKS Pod Identity |
 | Virtual network | VNet | VPC |
 | Load balancing | Azure Load Balancer / Application Gateway | ELB family |
 | Monitoring | Azure Monitor | CloudWatch |
@@ -598,7 +603,7 @@ Without looking at the notes, explain these in your own words:
 
 10. What is the difference between cloud IAM/Entra identity and Kubernetes RBAC?
 
-11. What is workload identity, and why is it preferable to static cloud credentials inside Pods?
+11. What is workload identity, and why is it preferable to static cloud credentials inside Pods? What are the Azure and AWS names for that mechanism?
 
 12. How would a Pod in AKS/EKS reach a private database?
 
