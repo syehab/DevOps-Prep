@@ -201,7 +201,7 @@ cd "$LAB/environments/prod"
 terraform plan -var-file="prod.tfvars"
 ```
 
-Both plans should show an update to `local_file.note` because the content changed in the module. Copy one change line from each plan into the notes. Write: the `.tfvars` files did not change. The shared module did. That is why both environments would change.
+Both plans should show that `module.note.local_file.note` must be replaced. Terraform recreates `local_file` when content changes. Copy the replacement line from each plan into the notes. Write: the `.tfvars` files did not change. The shared module did. That is why both environments would change.
 
 Do not apply this break. Plan is enough evidence. If a plan shows no change, check that you edited `modules/file_writer/main.tf` and that both environment `source` paths still point at that folder.
 
