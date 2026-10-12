@@ -49,9 +49,9 @@ If you have not run one of these gateways, say so. Describe it as gateway skills
 
 AI assists existing loops, so study the loops:
 
-1. [Day-4-L04-CICD-Mental-Model.md](../../Day-4-L04-CICD-Mental-Model.md) - the delivery loop AI plugs into
-2. [Day-19-L19-Secure-CICD-Software-Supply-Chain.md](../../Day-19-L19-Secure-CICD-Software-Supply-Chain.md) - the gates that stay human-owned
-3. [Day-20-L20-Observability-Production-Incident.md](../../Day-20-L20-Observability-Production-Incident.md) - the ops loop AI can summarise
+1. [Day-04/01-concepts.md](../../Day-04/01-concepts.md) - the delivery loop AI plugs into
+2. [Day-19/01-concepts.md](../../Day-19/01-concepts.md) - the gates that stay human-owned
+3. [Day-20/01-concepts.md](../../Day-20/01-concepts.md) - the ops loop AI can summarise
 
 ## Common interview question
 

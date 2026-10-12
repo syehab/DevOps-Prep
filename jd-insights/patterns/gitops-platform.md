@@ -47,7 +47,7 @@ Platform JDs now ask you to measure the paved road, not just build it. The four 
 - Change failure rate: what share of deploys cause a problem
 - Mean time to recovery: how fast users are OK again after a bad deploy
 
-A good paved road pushes the first two up and the last two down. [Day-34-Production-Project-04-Reliability-Safe-Deployments-Failure-Containment.md](../../Day-34-Production-Project-04-Reliability-Safe-Deployments-Failure-Containment.md) walks through these four (it calls them release metrics, not DORA).
+A good paved road pushes the first two up and the last two down. [Day-34/01-concepts.md](../../Day-34/01-concepts.md) walks through these four (it calls them release metrics, not DORA).
 
 ## Remember
 
@@ -55,10 +55,10 @@ A good paved road pushes the first two up and the last two down. [Day-34-Product
 
 ## Study these days first
 
-1. [Day-16-L16-Helm-GitOps-Mental-Model.md](../../Day-16-L16-Helm-GitOps-Mental-Model.md) - Helm and GitOps core
-2. [Day-5-L05-Branches-Environments-Deployment-Flow.md](../../Day-5-L05-Branches-Environments-Deployment-Flow.md) - branches and environments
-3. [Day-33-Production-Project-03-CICD-Artifact-Promotion-Release-Control.md](../../Day-33-Production-Project-03-CICD-Artifact-Promotion-Release-Control.md) - artifact promotion
-4. [Day-19-L19-Secure-CICD-Software-Supply-Chain.md](../../Day-19-L19-Secure-CICD-Software-Supply-Chain.md) - securing the chain
+1. [Day-16/01-concepts.md](../../Day-16/01-concepts.md) - Helm and GitOps core
+2. [Day-05/01-concepts.md](../../Day-05/01-concepts.md) - branches and environments
+3. [Day-33/01-concepts.md](../../Day-33/01-concepts.md) - artifact promotion
+4. [Day-19/01-concepts.md](../../Day-19/01-concepts.md) - securing the chain
 
 ## Common interview question
 

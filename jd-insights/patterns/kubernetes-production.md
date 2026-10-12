@@ -45,12 +45,12 @@ Can the pod get out?       → network policy, DNS, creds
 
 ## Study these days first
 
-1. [Day-13-L13-Docker-Container-Fundamentals-v3.md](../../Day-13-L13-Docker-Container-Fundamentals-v3.md) - containers first
-2. [Day-14-L14-Kubernetes-Mental-Model.md](../../Day-14-L14-Kubernetes-Mental-Model.md) - the core model
-3. [Day-15-L15-Kubernetes-Networking-Troubleshooting-v2.md](../../Day-15-L15-Kubernetes-Networking-Troubleshooting-v2.md) - debugging the path
-4. [Day-17-L17-AKS-EKS-Managed-Kubernetes-Architecture.md](../../Day-17-L17-AKS-EKS-Managed-Kubernetes-Architecture.md) - managed clusters
-5. [Day-37-Production-Project-07-Kubernetes-Migration-Clean-Style.md](../../Day-37-Production-Project-07-Kubernetes-Migration-Clean-Style.md) - a real migration
-6. [Day-34-Production-Project-04-Reliability-Safe-Deployments-Failure-Containment.md](../../Day-34-Production-Project-04-Reliability-Safe-Deployments-Failure-Containment.md) - safe deployments
+1. [Day-13/01-concepts.md](../../Day-13/01-concepts.md) - containers first
+2. [Day-14/01-concepts.md](../../Day-14/01-concepts.md) - the core model
+3. [Day-15/01-concepts.md](../../Day-15/01-concepts.md) - debugging the path
+4. [Day-17/01-concepts.md](../../Day-17/01-concepts.md) - managed clusters
+5. [Day-37/01-concepts.md](../../Day-37/01-concepts.md) - a real migration
+6. [Day-34/01-concepts.md](../../Day-34/01-concepts.md) - safe deployments
 
 ## Common interview question
 

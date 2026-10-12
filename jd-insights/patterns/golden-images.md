@@ -41,10 +41,10 @@ The same loop you already know from containers (build, scan, push, deploy) appli
 
 ## Study these days first
 
-1. [Day-27-AWS-02-AWS-Compute-Clean-Style.md](../../Day-27-AWS-02-AWS-Compute-Clean-Style.md) - Part 3: machine images and the immutable loop (build image, test, launch new, replace old)
-2. [Day-23-AZ-02-Azure-Compute-PaaS.md](../../Day-23-AZ-02-Azure-Compute-PaaS.md) - Part 3: VM Scale Sets, where an image or model update rolls across instances
-3. [Day-13-L13-Docker-Container-Fundamentals-v3.md](../../Day-13-L13-Docker-Container-Fundamentals-v3.md) - how container images are built from layers
-4. [Day-19-L19-Secure-CICD-Software-Supply-Chain.md](../../Day-19-L19-Secure-CICD-Software-Supply-Chain.md) - image scanning, digests, and provenance (the "scan and publish" steps)
+1. [Day-27/01-concepts.md](../../Day-27/01-concepts.md) - Part 3: machine images and the immutable loop (build image, test, launch new, replace old)
+2. [Day-23/01-concepts.md](../../Day-23/01-concepts.md) - Part 3: VM Scale Sets, where an image or model update rolls across instances
+3. [Day-13/01-concepts.md](../../Day-13/01-concepts.md) - how container images are built from layers
+4. [Day-19/01-concepts.md](../../Day-19/01-concepts.md) - image scanning, digests, and provenance (the "scan and publish" steps)
 
 ## Common interview question
 

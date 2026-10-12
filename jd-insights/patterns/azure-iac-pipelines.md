@@ -45,13 +45,13 @@ The JD words differ (platform engineering, cloud automation, IaC engine). The lo
 
 ## Study these days first
 
-1. [Day-8-L08-Infrastructure-as-Code.md](../../Day-8-L08-Infrastructure-as-Code.md) - why IaC exists
-2. [Day-9-L09-IaC-Modules-Environments.md](../../Day-9-L09-IaC-Modules-Environments.md) - modules and environments
-3. [Day-10-L10-Terraform-State-Enterprise-Workflow-Final.md](../../Day-10-L10-Terraform-State-Enterprise-Workflow-Final.md) - state and team workflow
-4. [Day-6-L06-Azure-DevOps-Pipeline-in-Practice.md](../../Day-6-L06-Azure-DevOps-Pipeline-in-Practice.md) - the pipeline itself
-5. [Day-22-AZ-01-Azure-Platform-Architecture.md](../../Day-22-AZ-01-Azure-Platform-Architecture.md) - the Azure platform picture
-6. [Day-25-AZ-04-Azure-DevOps-IaC-Architecture-Expanded.md](../../Day-25-AZ-04-Azure-DevOps-IaC-Architecture-Expanded.md) - putting it together
-7. [Day-37-Production-Project-07-Kubernetes-Migration-Clean-Style.md](../../Day-37-Production-Project-07-Kubernetes-Migration-Clean-Style.md) - incremental migration with a rollback boundary (Parts 26 and 36)
+1. [Day-08/01-concepts.md](../../Day-08/01-concepts.md) - why IaC exists
+2. [Day-09/01-concepts.md](../../Day-09/01-concepts.md) - modules and environments
+3. [Day-10/01-concepts.md](../../Day-10/01-concepts.md) - state and team workflow
+4. [Day-06/01-concepts.md](../../Day-06/01-concepts.md) - the pipeline itself
+5. [Day-22/01-concepts.md](../../Day-22/01-concepts.md) - the Azure platform picture
+6. [Day-25/01-concepts.md](../../Day-25/01-concepts.md) - putting it together
+7. [Day-37/01-concepts.md](../../Day-37/01-concepts.md) - incremental migration with a rollback boundary (Parts 26 and 36)
 
 Interview-ready deep dives: [Day-08 v2](../../Day-08-IaC-Terraform-Bicep-Interview-Ready-Clean-v2.md), [Day-09 v2](../../Day-09-IaC-Modules-Environments-Interview-Ready-Clean-v2.md), [Day-10 v2](../../Day-10-Terraform-State-Enterprise-Interview-Ready-Clean-v2.md).
 

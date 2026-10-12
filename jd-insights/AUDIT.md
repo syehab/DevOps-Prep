@@ -54,6 +54,8 @@ Agentic AI in DevOps, the newest JD theme, had no home in any Day at all; the pa
 
 Duplicate files were the biggest remaining source of doubt. Day 8, 9, and 10 each exist twice (a lesson version and an Interview-Ready v2 version) and Day 24 exists twice (plain and Expanded), so a new learner could not tell which file to open first. The second pass added a one-line "which file to open" note to the README pointing at the INDEX-canonical files, which removes the doubt without any rename. Actually renaming or merging the duplicate files is still deferred, because that is a destructive decision the repo owner should make.
 
+Canonical lessons now live in `Day-NN/01-concepts.md`. INDEX and pattern cards link to those paths. The Interview-Ready v2 copies for Days 8, 9, and 10, and the non-Expanded Day 24 file, stay at the repo root for reference.
+
 The two smaller items from the first pass are now closed: Day-19 received the same goal-line and model-first treatment Day-20 got, and Day-32 and Day-35 received explicit recall sections, so retrieval practice is now universal across the project Days.
 
 ## Deeper language and learning pass (second pass, 2026-10-01)
