@@ -2,188 +2,541 @@
 
 This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [02-questions-and-answers.md](02-questions-and-answers.md). Then do this lab.
 
-Day 12 teaches one cloud networking model: name, IP, route, security, then destination. This lab makes you write that model on paper for `10.20.0.0/16`. You plan three `/24` subnets for web, app, and database. You also draw the request path and the NSG or Security Group flows.
+Day 12 teaches one cloud networking model: name, IP, route, security, then destination. The old lab planned `10.20.0.0/16` on paper and pinged two Docker containers. This lab writes a **real `azurerm` VNet module** with three `/24` subnets and NSG rules. You run `terraform test`. You apply the VNet only after a budget alert exists, and you never create a NAT Gateway. Day 24 adds peering and Private DNS on top of this module. Day 32 adds a Private Endpoint.
 
-If Docker is present, you then prove the same idea on a local user-defined network. You create one Docker network, run two containers, and ping across it. You then disconnect one container so the path breaks. If Docker is missing, the address plan and the path diagram are the lab. Say that in your notes and stop after Verify. Do not create Azure or AWS resources.
+Work in **your ShopSphere repository**, not in `/tmp`, and not inside this course clone. You need the Day 8 `modules/rg` layout if you will apply. If it is missing, create it from [Day-08/03-implementation.md](../Day-08/03-implementation.md) first.
 
 ---
 
 ## Goal
 
-Write a CIDR plan for `10.20.0.0/16` with Web `10.20.1.0/24`, App `10.20.2.0/24`, and DB `10.20.3.0/24`. Record which subnet may talk to which other subnet. Draw the user request path through DNS, a public load balancer, private web, private app, and private database.
+Add `infra/azure/modules/network` that describes one VNet `10.20.0.0/16` with Web `10.20.1.0/24`, App `10.20.2.0/24`, and DB `10.20.3.0/24`. Attach one NSG per subnet. Allow HTTPS to Web, TCP `8080` from Web to App, and TCP `5432` from App to DB. Deny Internet sources to the database port. Run `terraform test`. Apply only when the estimate stays under USD 5 and a budget exists.
 
-If `docker` works on this machine, create a local Docker network and run two Alpine or BusyBox containers on it. Ping from one container to the other. Disconnect one container from the network so ping fails. Reconnect it so ping works again. When you finish, you can explain address planning, routing versus security, and why a missing path stops traffic, without a cloud bill.
+When you finish, you can explain address planning, routing versus security, and why a NAT Gateway is the wrong default for this lab.
 
-Time box: 45 to 75 minutes. Cost stays at ₹0. Stop when the notes file is complete and, if you used Docker, the containers and network are gone.
+Time box: 60 to 90 minutes. Destroy the VNet the same session if you apply.
+
+---
+
+## Capstone stage
+
+| Path in ShopSphere | What it adds |
+|:--|:--|
+| `infra/azure/modules/network/` | VNet, three subnets, three NSGs |
+| `infra/azure/modules/network/tests/network.tftest.hcl` | CIDR and NSG asserts |
+| `infra/azure/environments/net-dev/` | Optional apply root (destroy-safe) |
+| `docs/day-12-network-lab.md` | Test output, allow table, destroy evidence |
+
+Do not add a NAT Gateway, a public IP, or a load balancer today. Day 24 adds peering. Day 32 adds a Private Endpoint.
 
 ---
 
 ## What you need
 
-You need a shell and a text editor. You do not need Azure, AWS, Terraform, or a paid account. Cost stays at ₹0.
-
-Docker is optional. Check it first:
+You need Terraform 1.16.5 (or 1.9+) and a shell.
 
 ```bash
-docker version
+terraform version
 ```
 
-If that command fails, skip every Docker step. The address plan and the path diagram are then the full lab. Write `docker missing` in your notes. Do not invent a substitute tool.
+Expected first line: `Terraform v1.16.5` or another 1.9+ release. Install 1.16.5 from [releases.hashicorp.com/terraform/1.16.5](https://releases.hashicorp.com/terraform/1.16.5/) if the command is missing.
 
-If Docker is present, use only these real commands and flags:
+Azure CLI is optional. The apply path needs a logged-in account and a budget alert. The test path does not.
 
-- `docker network create` to make a user-defined network
-- `docker run --network` to attach a container to that network
-- `docker exec` plus `ping` to test reachability by container name
-- `docker network disconnect` to break the path
-- `docker network connect` to restore the path
-- `docker rm` and `docker network rm` to clean up
+```bash
+az account show --query name -o tsv
+```
 
-Create the lab under `/tmp`, not under this course clone. Keep a notes file named `day-12-network-lab.md` in that temp directory. Record the address plan, the path, the allow rules, and whether Docker ran.
+If that command fails, stay on the local path: write the module, run `terraform test`, draw the request path, and skip apply. Do not invent an AWS VPC module today. Azure is the default track. Map VNet → VPC and NSG → Security Group in the notes.
+
+`kind` is the local network stand-in when you want a live path and you have no Azure account. A `kind` extra network is **not** a VNet. Write that limit.
+
+```bash
+kind version
+kind get clusters
+```
+
+---
+
+## Cost
+
+| Path | Estimated USD (1–2 hours, then destroy) | Why it is not always zero |
+|:--|:--|:--|
+| `terraform test` + notes | **0.00** | Local only |
+| Empty VNet + 3 subnets + 3 NSGs | **0.00–0.10** | VNet and NSG control-plane objects do not bill. A leftover public IP or peering would. |
+| NAT Gateway, Application Gateway, or Standard Load Balancer | **Stop. Change the code.** | Often more than USD 5 if left on. |
+
+Create a budget alert before you apply. See [../capstone/COST.md](../capstone/COST.md). Do not write "cost stays at INR 0" if you created Azure resources. An empty VNet is cheap. Say so in the notes if you keep it on purpose.
+
+Teardown:
+
+```bash
+terraform -chdir=infra/azure/environments/net-dev destroy
+az network vnet show --resource-group rg-shopsphere-net-dev --name vnet-shopsphere-dev
+```
 
 ---
 
 ## Steps
 
-1. Create a throwaway directory and enter it. Use a unique folder name so you do not collide with another lab. Confirm the path is under `/tmp`.
+1. Open ShopSphere. Confirm you are not inside DevOps-Prep.
 
 ```bash
-LAB_DIR="/tmp/day-12-network-lab-$$"
-mkdir -p "$LAB_DIR"
-cd "$LAB_DIR"
 pwd
+git rev-parse --show-toplevel
+mkdir -p infra/azure/modules/network/tests
+mkdir -p infra/azure/environments/net-dev
+mkdir -p docs
 ```
 
-2. Create `day-12-network-lab.md`. Put the date at the top. Write one sentence: you will plan `10.20.0.0/16` for web, app, and database, then prove a local network path only if Docker is present.
+Write one sentence in `docs/day-12-network-lab.md`: this Day manages the ShopSphere address plan as desired state. It does not manage AKS.
 
-3. Write the address plan into the notes file. Copy this block, then fill the usable-host note in your own words.
+2. Write the module variables. Put this in `infra/azure/modules/network/variables.tf`.
 
-```text
-VNet/VPC: 10.20.0.0/16
-Web:      10.20.1.0/24
-App:      10.20.2.0/24
-DB:       10.20.3.0/24
+```hcl
+variable "name" {
+  type        = string
+  description = "VNet name, for example vnet-shopsphere-dev."
+}
+
+variable "location" {
+  type        = string
+  description = "Azure region, for example eastus."
+}
+
+variable "resource_group_name" {
+  type        = string
+  description = "Existing resource group that owns the VNet."
+}
+
+variable "address_space" {
+  type        = list(string)
+  description = "VNet CIDR list."
+  default     = ["10.20.0.0/16"]
+}
+
+variable "web_prefix" {
+  type    = string
+  default = "10.20.1.0/24"
+}
+
+variable "app_prefix" {
+  type    = string
+  default = "10.20.2.0/24"
+}
+
+variable "db_prefix" {
+  type    = string
+  default = "10.20.3.0/24"
+}
 ```
 
-The `/16` is the whole private network. Each `/24` is one subnet inside it. Cloud platforms reserve some addresses in each subnet, so usable host counts sit below 256. Write that these ranges do not overlap. Overlapping CIDR blocks make peering and hybrid links hard later.
+3. Write `infra/azure/modules/network/versions.tf`. Do **not** put a `provider` block in the module. The apply root owns the provider.
 
-4. Write the allowed flows. Web may receive traffic from a public load balancer. Web may reach App on the application port. App may reach DB on TCP `5432`. Web must not talk to DB. DB must not start connections to Web. This is segmentation, not a full mesh.
+```hcl
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "5.9.0"
+    }
+  }
+}
+```
 
-5. Draw the request path in the notes file:
+4. Write `infra/azure/modules/network/main.tf`. These resource types and arguments are valid on `hashicorp/azurerm` 5.9.0. `azurerm_subnet` uses `address_prefixes` (plural). There is no NAT Gateway.
+
+```hcl
+resource "azurerm_virtual_network" "this" {
+  name                = var.name
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  address_space       = var.address_space
+  tags = {
+    project = "shopsphere"
+    purpose = "network"
+    day     = "12"
+  }
+}
+
+resource "azurerm_subnet" "web" {
+  name                 = "snet-web"
+  resource_group_name  = var.resource_group_name
+  virtual_network_name = azurerm_virtual_network.this.name
+  address_prefixes     = [var.web_prefix]
+}
+
+resource "azurerm_subnet" "app" {
+  name                 = "snet-app"
+  resource_group_name  = var.resource_group_name
+  virtual_network_name = azurerm_virtual_network.this.name
+  address_prefixes     = [var.app_prefix]
+}
+
+resource "azurerm_subnet" "db" {
+  name                 = "snet-db"
+  resource_group_name  = var.resource_group_name
+  virtual_network_name = azurerm_virtual_network.this.name
+  address_prefixes     = [var.db_prefix]
+}
+
+resource "azurerm_network_security_group" "web" {
+  name                = "nsg-web"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+
+  security_rule {
+    name                       = "allow-https-in"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "*"
+    destination_address_prefix = var.web_prefix
+  }
+}
+
+resource "azurerm_network_security_group" "app" {
+  name                = "nsg-app"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+
+  security_rule {
+    name                       = "allow-web-to-app"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "8080"
+    source_address_prefix      = var.web_prefix
+    destination_address_prefix = var.app_prefix
+  }
+}
+
+resource "azurerm_network_security_group" "db" {
+  name                = "nsg-db"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+
+  security_rule {
+    name                       = "allow-app-postgres"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "5432"
+    source_address_prefix      = var.app_prefix
+    destination_address_prefix = var.db_prefix
+  }
+
+  security_rule {
+    name                       = "deny-internet-postgres"
+    priority                   = 200
+    direction                  = "Inbound"
+    access                     = "Deny"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "5432"
+    source_address_prefix      = "Internet"
+    destination_address_prefix = var.db_prefix
+  }
+}
+
+resource "azurerm_subnet_network_security_group_association" "web" {
+  subnet_id                 = azurerm_subnet.web.id
+  network_security_group_id = azurerm_network_security_group.web.id
+}
+
+resource "azurerm_subnet_network_security_group_association" "app" {
+  subnet_id                 = azurerm_subnet.app.id
+  network_security_group_id = azurerm_network_security_group.app.id
+}
+
+resource "azurerm_subnet_network_security_group_association" "db" {
+  subnet_id                 = azurerm_subnet.db.id
+  network_security_group_id = azurerm_network_security_group.db.id
+}
+```
+
+Write the allowed flows into the notes. Web may receive TCP `443`. Web may reach App on `8080`. App may reach DB on `5432`. Web must not talk to DB. DB must not start connections to Web. This is segmentation, not a full mesh.
+
+5. Write `infra/azure/modules/network/outputs.tf`.
+
+```hcl
+output "vnet_id" {
+  value = azurerm_virtual_network.this.id
+}
+
+output "vnet_name" {
+  value = azurerm_virtual_network.this.name
+}
+
+output "web_subnet_id" {
+  value = azurerm_subnet.web.id
+}
+
+output "app_subnet_id" {
+  value = azurerm_subnet.app.id
+}
+
+output "db_subnet_id" {
+  value = azurerm_subnet.db.id
+}
+```
+
+6. Write `infra/azure/modules/network/tests/network.tftest.hcl`. `mock_provider` does not call Azure.
+
+```hcl
+mock_provider "azurerm" {}
+
+run "cidr_and_nsg" {
+  command = plan
+
+  variables {
+    name                = "vnet-shopsphere-dev"
+    location            = "eastus"
+    resource_group_name = "rg-shopsphere-net-dev"
+  }
+
+  assert {
+    condition     = contains(azurerm_virtual_network.this.address_space, "10.20.0.0/16")
+    error_message = "VNet must be 10.20.0.0/16"
+  }
+
+  assert {
+    condition     = azurerm_subnet.web.address_prefixes[0] == "10.20.1.0/24"
+    error_message = "web subnet must be 10.20.1.0/24"
+  }
+
+  assert {
+    condition     = azurerm_subnet.app.address_prefixes[0] == "10.20.2.0/24"
+    error_message = "app subnet must be 10.20.2.0/24"
+  }
+
+  assert {
+    condition     = azurerm_subnet.db.address_prefixes[0] == "10.20.3.0/24"
+    error_message = "db subnet must be 10.20.3.0/24"
+  }
+
+  assert {
+    condition = anytrue([
+      for r in azurerm_network_security_group.db.security_rule :
+      r.name == "allow-app-postgres" && r.source_address_prefix == "10.20.2.0/24" && r.destination_port_range == "5432"
+    ])
+    error_message = "postgres source must be the app subnet on 5432"
+  }
+
+  assert {
+    condition = anytrue([
+      for r in azurerm_network_security_group.db.security_rule :
+      r.name == "deny-internet-postgres" && r.access == "Deny"
+    ])
+    error_message = "internet must be denied to postgres"
+  }
+}
+```
+
+`address_space` and `security_rule` are sets on azurerm 5.9.0. The test uses `contains` and `for`. Do not index them with `[0]`. `address_prefixes` on a subnet is a list, so `[0]` is valid.
+
+7. Test the module. This does not create Azure resources.
+
+```bash
+cd infra/azure/modules/network
+terraform init
+terraform fmt
+terraform validate
+terraform test
+```
+
+Expected: `Success! 1 passed, 0 failed.` Copy that line into `docs/day-12-network-lab.md`.
+
+This was executed on Terraform 1.16.5 / azurerm 5.9.0 in the authoring environment.
+
+8. Draw the request path in the notes:
 
 ```text
 User → DNS → Public Load Balancer → Web 10.20.1.0/24 → App 10.20.2.0/24 → DB 10.20.3.0/24
 ```
 
-Write where each decision sits. DNS answers the name. The route table answers where the packet goes. The NSG or Security Group answers whether the packet is allowed. The database port must be listening. These are separate checks.
+Write where each decision sits. DNS answers the name. The route table answers where the packet goes. The NSG answers whether the packet is allowed. The database port must be listening. These are separate checks. An allow rule is not a route.
 
-6. Write the intended database security rule:
+Write the Azure to AWS map:
 
 ```text
-Source: Application subnet 10.20.2.0/24
-Destination: Database 10.20.3.0/24
-Port: 5432
-Protocol: TCP
-Action: Allow
+VNet          → VPC
+Subnet        → Subnet
+NSG           → Security Group (and NACL if you need subnet-level deny)
+Route table   → Route table
+NAT Gateway   → NAT Gateway (avoid in this lab)
 ```
 
-Write one sentence: an internet-wide source is wrong for a private database. Routing and this allow rule are not the same control.
+9. Optional Azure apply. Use a dedicated root so you can destroy it without touching Day 8 state.
 
-7. Check Docker. If the command fails, write `docker missing — address plan and path diagram are the lab` and go to Verify. Do not run the container steps.
+`infra/azure/environments/net-dev/main.tf`:
+
+```hcl
+terraform {
+  required_version = ">= 1.9.0, < 2.0.0"
+
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "5.9.0"
+    }
+  }
+}
+
+provider "azurerm" {
+  features {}
+  resource_provider_registrations = "none"
+}
+
+resource "azurerm_resource_group" "net" {
+  name     = "rg-shopsphere-net-dev"
+  location = "eastus"
+  tags = {
+    project = "shopsphere"
+    day     = "12"
+  }
+}
+
+module "network" {
+  source              = "../../modules/network"
+  name                = "vnet-shopsphere-dev"
+  location            = azurerm_resource_group.net.location
+  resource_group_name = azurerm_resource_group.net.name
+}
+
+output "vnet_name" {
+  value = module.network.vnet_name
+}
+```
+
+Create the budget first. Then:
 
 ```bash
-docker version
+cd infra/azure/environments/net-dev
+terraform init
+terraform plan -input=false
 ```
 
-8. If Docker is present, create one user-defined network. Docker embeds DNS on this network, so container names resolve. That is the local analog of private name resolution on a shared network.
+Read the plan. Expected: one resource group, one VNet, three subnets, three NSGs, three associations. Confirm there is **no** `azurerm_nat_gateway` and **no** public IP. If the plan would create either, stop and change the module.
 
 ```bash
-docker network create day12-lab
+terraform apply -input=false
+az network vnet show --resource-group rg-shopsphere-net-dev --name vnet-shopsphere-dev \
+  --query "{name:name,space:addressSpace.addressPrefixes}" -o table
+az network nsg rule list --resource-group rg-shopsphere-net-dev --nsg-name nsg-db -o table
 ```
 
-9. Run two containers on that network. Use Alpine. If the Alpine pull fails, use BusyBox the same way. `sleep 3600` keeps each container running so you can exec into it.
+If `az account show` failed, write `apply skipped — no Azure login` in the notes. The test result is your evidence.
+
+10. Local fallback when you have Docker and `kind` but no Azure. Create (or reuse) cluster `shopsphere` from Day 14. Add one extra Docker network so two pods can share a path that is not the default bridge. This is **not** an NSG.
 
 ```bash
-docker run -d --name day12-web --network day12-lab alpine sleep 3600
-docker run -d --name day12-app --network day12-lab alpine sleep 3600
+kind get clusters
+# if shopsphere is missing and you want the fallback:
+# kind create cluster --name shopsphere
+docker network ls
 ```
 
-10. Ping from web to app by name. Copy the result into your notes. A reply means both containers share a network path and name resolution worked.
-
-```bash
-docker exec day12-web ping -c 3 day12-app
-```
-
-11. Break the path. Disconnect the app container from the network. Ping again. The ping should fail because the route to that name is gone. Copy the failure into your notes. This is the local analog of a missing route, not a cloud NSG change.
-
-```bash
-docker network disconnect day12-lab day12-app
-docker exec day12-web ping -c 3 day12-app
-```
-
-12. Restore the path. Connect the app container again. Ping once more. The ping should succeed. Write that you fixed the path by restoring membership on the network, not by opening a firewall.
-
-```bash
-docker network connect day12-lab day12-app
-docker exec day12-web ping -c 3 day12-app
-```
+Write in the notes: `kind` proves name resolution and a shared path. It does not enforce CIDR or NSG rules. Azure apply is the only way this module becomes a real VNet.
 
 ---
 
 ## Verify
 
-Read the notes as if you are on a call. You should name the `/16`, the three `/24` subnets, the allowed flows, and the user request path.
+Read the notes on a call. You should name the `/16`, the three `/24` subnets, the allowed flows, and the user request path.
 
 Check these points:
 
-- The notes show `10.20.0.0/16` with Web `10.20.1.0/24`, App `10.20.2.0/24`, and DB `10.20.3.0/24`.
-- The notes say Web may reach App, App may reach DB on `5432`, and Web must not reach DB.
-- The path includes DNS, a public load balancer, and private web, app, and database.
-- The database rule uses the application subnet as source, not the internet.
-- If Docker was missing, the notes say so, and you did not run container commands.
-- If Docker ran, ping succeeded, failed after `docker network disconnect`, and succeeded again after `docker network connect`.
-
-If a required Docker command is missing, write that in the notes and keep the paper plan. Do not invent flags.
+- `infra/azure/modules/network/main.tf` contains `azurerm_virtual_network` and three `azurerm_subnet` resources.
+- There is no `azurerm_nat_gateway` and no public IP.
+- `terraform test` in `modules/network` printed `1 passed, 0 failed`.
+- The database NSG allows `5432` from `10.20.2.0/24` and denies Internet.
+- You either applied and listed the VNet, or you recorded `apply skipped`.
+- Notes do **not** say the lab is free if Azure objects exist.
+- Files live in ShopSphere, not only under `/tmp`.
 
 ---
 
 ## Break and fix
 
-If Docker ran, you already broke the path in step 11. That is the lab failure. The fix is `docker network connect`, not a new security rule. Say that out loud: routing and network membership are not the same as an NSG or Security Group allow.
+Do both failures.
 
-If Docker is missing, break the design on paper. Remove the App-to-DB route, or change the database source to the internet. Write what fails for a Spring Boot application that needs TCP `5432`. Then restore the original rule. The paper break is enough when Docker is not present.
+### Failure 1 — overlapping CIDR
 
-Do not start a real Azure VNet or AWS VPC to complete this break. This lab stays local.
+Change `app_prefix` default to `10.20.1.0/24` so App overlaps Web. Run:
+
+```bash
+cd infra/azure/modules/network
+terraform test
+```
+
+`terraform test` with `mock_provider` still plans. Azure apply would fail because two subnets cannot share the same prefix. Restore `10.20.2.0/24`. Then change `address_space` to `10.20.0.0/24` so the `/24` subnets no longer fit inside the VNet. A live apply fails with an address-prefix error. Restore `10.20.0.0/16`. Write one sentence: overlapping CIDR blocks make peering and hybrid links hard later. That is why the plan starts at the `/16`.
+
+### Failure 2 — database open to the Internet
+
+Change `allow-app-postgres` so `source_address_prefix = "*"`. Run `terraform test`. Expected: the source assert fails. That is the pipeline catching a public database.
+
+Restore `10.20.2.0/24`. Then, on paper (or in the notes), remove the App-to-DB allow and keep only the deny. Write what fails for a catalog API that needs TCP `5432`. Routing can be correct and the packet still dies on the NSG. Restore the allow. Do not open the database to the Internet to "make it work."
+
+---
+
+## Stretch
+
+- Add a fourth subnet `10.20.4.0/24` named `snet-pe` for Day 32 Private Endpoints. Do not create a Private Endpoint today.
+- Write one `azurerm_route_table` that has only the default Azure routes. Custom routes wait for a firewall or NVA. Day 24 covers that.
+- Map this module to an `aws_vpc` + `aws_subnet` + `aws_security_group` twin in the notes. Do not apply AWS today.
 
 ---
 
 ## Clean up
 
-If you did not run Docker, leave the notes if you want them, then delete the temp directory.
+If you did **not** apply, there is no cloud resource to delete. Keep the module. It is the capstone stage.
+
+If you applied `rg-shopsphere-net-dev`:
 
 ```bash
-cd /tmp
-rm -rf "$LAB_DIR"
+cd infra/azure/environments/net-dev
+terraform destroy -input=false
+az group show --name rg-shopsphere-net-dev
 ```
 
-If you ran Docker, remove the containers first, then remove the network. Use `docker rm -f` so a running container does not block the delete. Then `docker network rm`.
+Expected destroy plan: the group, the VNet, the subnets, the NSGs, and the associations. Type `yes`. Expected `az group show`: `ResourceGroupNotFound`.
 
-```bash
-docker rm -f day12-web day12-app
-docker network rm day12-lab
-```
+Do not use `-target` as cleanup. Destroy the whole configuration.
 
-Confirm both names are gone. Then delete the temp directory.
+Keep `kind` cluster `shopsphere` if you will do later Kubernetes Days.
 
-```bash
-cd /tmp
-rm -rf "$LAB_DIR"
-```
-
-If you want to keep the notes, copy `day-12-network-lab.md` out before `rm -rf`. You created no Azure or AWS resources, so there is no VNet, VPC, NAT Gateway, or public IP to delete.
+Commit the module, the test, the optional root, and the notes to ShopSphere. Do not commit `terraform.tfstate`.
 
 ---
 
 ## Interview story
 
-I plan cloud networks from the CIDR down, not from product names. For `10.20.0.0/16` I cut Web, App, and Database into `/24` subnets so each tier has its own routing and security. A user HTTPS request hits DNS, then a public load balancer, then private web and app. The database has no public IP. App reaches it on TCP `5432` only. Routing answers where the packet goes. An NSG or Security Group answers whether it is allowed. On a laptop I prove the path idea with `docker network create` and two containers. Ping works until I disconnect one container. I restore the path with `docker network connect`. Azure VNet and AWS VPC are two names for that same model.
+**Situation:** ShopSphere still had a paper CIDR plan and no reusable network module, so every later Day would invent its own address space. **Task:** Put `10.20.0.0/16` and the three tier NSGs into Terraform that a teammate can test without Azure. **Action:** I wrote `azurerm_virtual_network` plus Web, App, and DB `/24` subnets on provider 5.9.0, attached one NSG per subnet, and allowed only HTTPS, App `8080`, and App-to-DB `5432`. I covered the prefixes and the Internet deny with `terraform test` and `mock_provider`. I refused a NAT Gateway so the session stays under USD 5. **Result:** I can walk DNS → route → NSG → port, I can map VNet to VPC, and I can destroy the VNet in the same session.
+
+---
+
+## Self-score checklist
+
+Score 1 only when you have evidence in `docs/day-12-network-lab.md` or in Git.
+
+- [ ] I can say what a VNet is and why we cut it into subnets.
+- [ ] The module validates and `terraform test` printed `1 passed, 0 failed`.
+- [ ] Web, App, and DB prefixes are `10.20.1.0/24`, `10.20.2.0/24`, and `10.20.3.0/24`.
+- [ ] The database NSG allows App and denies Internet.
+- [ ] There is no NAT Gateway in the plan.
+- [ ] I broke overlapping CIDR and I restored the `/16`.
+- [ ] I broke a public database source and `terraform test` caught it.
+- [ ] I either destroyed the VNet the same session, or I never applied.
+- [ ] Files live in ShopSphere, not only under `/tmp`.
+
+Count the checked boxes. 8 or 9 is done.
+
+**Executed:** `terraform fmt`, `validate`, and `terraform test` (1 passed) on Terraform 1.16.5 / azurerm 5.9.0. **Not executed:** live `terraform apply` of the VNet, `az network` list, `kind` extra network, NAT Gateway (forbidden).
