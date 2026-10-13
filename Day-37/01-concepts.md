@@ -666,6 +666,20 @@ HPA manages workload replicas.
 
 Cluster/node autoscaling manages compute capacity.
 
+Two common tools add those nodes. **Cluster Autoscaler** scales the node groups you already defined. You pick the instance types in the group, and the autoscaler adds or removes nodes inside those groups when Pods stay Pending. It will not invent a new instance type that is missing from the group.
+
+**Karpenter** provisions a node just in time for the Pending Pod. It does not need a pre-sized group for every shape. You still set limits on what it may buy, where it may buy it, and how much it may spend. Product knobs are Look-up.
+
+```text
+Cluster Autoscaler
+  Pending Pod → scale an existing node group
+
+Karpenter
+  Pending Pod → create the right node now
+```
+
+The interview question is the difference: groups you scale versus nodes you create on demand. Both exist to unstick Pending Pods. Neither one fixes a saturated database.
+
 ---
 
 ## Part 18 — High Availability

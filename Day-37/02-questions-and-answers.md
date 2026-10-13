@@ -882,6 +882,23 @@ Map the Kubernetes concept to cloud integration, then security, networking, and 
 
 ---
 
+## 32. Cluster Autoscaler versus Karpenter
+
+How does Cluster Autoscaler add nodes, and how is Karpenter different?
+
+<details>
+<summary>Answer</summary>
+
+Cluster Autoscaler scales the node groups you already defined. You pick the instance types. It adds or removes nodes inside those groups when Pods stay Pending.
+
+Karpenter provisions a node just in time for the Pending Pod. It does not need a pre-sized group for every shape. You still set buy, place, and spend limits.
+
+Both unstick Pending Pods. Neither one fixes a saturated database.
+
+</details>
+
+---
+
 ## Day 37 Completion Criteria
 
 Complete Day 37 when you can demonstrate:
