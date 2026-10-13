@@ -187,3 +187,38 @@ Day-4 AI-in-the-loop note, Day-8 IaC desired-state model, Day-16 paved road, Day
 - Debezium connector settings and MSK topic design stay Look-up. The lesson is "the log is the source of events."
 
 > **Remember:** Fresh themes update the card first. Touch a Day only when the card exposes a missing model or a name the interview will ask out loud.
+
+## Hands-on lab rebuild (2026-10-13)
+
+Date: 2026-10-13. Scope: `Day-NN/03-implementation.md` labs versus Senior/Lead interview depth. Concepts files were already strong (JD and STE passes). The bottleneck was the labs: paper sketches, `/tmp` throwaways, `local_file` stand-ins, and "cost stays at ₹0 / INR 0" on paths that can bill.
+
+The rebuild uses one product repository (ShopSphere capstone), real Terraform modules with `terraform test` on **1.16.5 / azurerm 5.9.0**, pinned Docker/Helm/Argo/Trivy commands, USD estimates under USD 5 per session, budget-first, teardown, **no NAT Gateways**, and a local fallback (`kind`, Docker, `mock_provider`). Format is fixed: Goal, Capstone stage, Steps, Verify, Break and fix (≥2), Stretch, Clean up, STAR, Self-score.
+
+**Before** the rebuild, a typical lab scored about **2.5 / 5** (runnable locally, not a platform story). **After**, a rewritten lab targets **5 / 5** when the learner commits the ShopSphere stage and destroys billed objects.
+
+### Lab ratings (before → after)
+
+Scale: 1 = read-only notes, 3 = real commands but throwaway/`/tmp`/no cost honesty, 5 = ShopSphere stage, pinned tools, verify + break/fix, USD + teardown, interview STAR.
+
+| Day | Before | After | Why the delta |
+|:--|:--|:--|:--|
+| 01–07, 08–11, 14–21, 25–31, 34–38, 40 | ~2.5 | **5** (PRs #181–#219) | Capstone scaffold + per-Day rewrites already opened; merge those PRs with this track. |
+| 12 | 2.0 | **5** | Paper CIDR + Docker ping → VNet/NSG module + `terraform test`, no NAT. |
+| 13 | 2.5 | **5** | One-stage `/tmp` HTTP image → multi-stage non-root catalog, size, Trivy, `HOST=0.0.0.0`. |
+| 22 | 2.5 | **5** | Paper tenant tree + empty RG → platform module (RG, LAW, USD 15 budget). |
+| 23 | 2.0 | **5** | Decision table + same Dockerfile break as 13 → Packer bake + ACA 0.25 vCPU (harder than 13). |
+| 24 | 2.5 | **5** | Paper NSG / optional `az network` → hub-spoke peering + Private DNS module. |
+| 32 | 2.5 | **5** | Compose without DB ports → Key Vault Private Endpoint, public network off. |
+| 33 | 2.5 | **5** | Local image tag copy → same `sha256` Dev→Prod through GitOps (harder than 29). |
+| 39 | 2.5 | **5** | Single-dir tar → second-region restore with measured RTO/RPO + Geo vault module. |
+| 41 | 2.5 | **5** | `/tmp` tabletop → game day on Day 20 burn-rate (`/products` 5xx, `/health` 200). |
+
+Mean of the nine thin Days in this pass: **2.4 / 5 → 5 / 5** on the lab file. Interview readiness still depends on the learner running ShopSphere, not on markdown alone.
+
+### What stayed out of this pass
+
+- Concepts and Q&A files were not rewritten (STE and JD coverage already hold).
+- Capstone, drills, and CI lint live in their own PRs (#181, #195, #198, #205–#208). Do not copy `capstone/` into a Day PR.
+- Cloud apply of AKS, ACA, PE, and vaults remains **Not executed** in the authoring VMs. `terraform test`, Python, and bash were executed where the Day says so.
+
+> **Remember:** A Senior story is one repo, a reviewed plan, a destroy, and a budget. A folder of `local_file` labs is not.
