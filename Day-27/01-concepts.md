@@ -813,6 +813,12 @@ Two more managed data services appear on Senior Platform JDs, including producti
 
 **Look-up when a JD names them:** RDS Proxy (connection pooling when many Pods open database connections), ElastiCache cluster mode, and OpenSearch fine-grained access control. Learn the product names, then map them onto the private-data pattern above.
 
+Some platforms also stream row changes out of the database. **Change data capture (CDC)** reads the database change log (the write-ahead log PostgreSQL already keeps) and publishes each insert, update, or delete as an event. Debezium is a common CDC connector. Amazon MSK is managed Kafka, the bus those events often land on.
+
+The application writes to RDS once. Downstream services consume the events. They do not need a second write from the app to Kafka. That second write is a dual-write, and the two stores drift when one write fails.
+
+**Look-up when a JD names them:** Debezium connectors, MSK topic design, consumer groups. Learn the product names, then map them onto this idea: the log is the source of events.
+
 Do not put a production database inside an ephemeral container simply because the application itself is containerized.
 
 ---
