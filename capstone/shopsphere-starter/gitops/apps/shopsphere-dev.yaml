@@ -1,0 +1,22 @@
+# Day 16 installs Argo CD and points this Application at the Helm chart.
+# Image tag stays a placeholder until Day 13 builds the real image.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: shopsphere-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/REPLACE_ME/shopsphere.git
+    targetRevision: main
+    path: charts/shopsphere
+    helm:
+      valueFiles:
+        - values-dev.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: shopsphere-dev
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
