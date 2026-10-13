@@ -1,0 +1,61 @@
+# Lints YAML, Terraform, shell, and Kubernetes manifests when those files exist.
+# Pins: checkout@v4, setup-terraform@v3, Terraform 1.16.5.
+
+name: hands-on-lint
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: YAML lint
+        uses: ibiqlik/action-yamllint@v3
+        continue-on-error: false
+        with:
+          file_or_dir: .
+          config_file: .yamllint.yaml
+          strict: false
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.16.5
+          terraform_wrapper: false
+
+      - name: Terraform fmt and validate
+        run: |
+          set -euo pipefail
+          mapfile -t dirs < <(find . -type f -name '*.tf' -printf '%h\n' | sort -u)
+          if [[ ${#dirs[@]} -eq 0 ]]; then
+            echo "no Terraform files"
+            exit 0
+          fi
+          for dir in "${dirs[@]}"; do
+            terraform fmt -check -recursive "$dir"
+            if [[ -f "$dir/main.tf" ]]; then
+              (cd "$dir" && terraform init -backend=false -input=false && terraform validate)
+            fi
+          done
+
+      - name: ShellCheck
+        uses: ludeeus/action-shellcheck@2.0.0
+        with:
+          scandir: .
+          ignore_paths: .git
+        env:
+          SHELLCHECK_OPTS: --severity=warning
+        continue-on-error: true
+
+      - name: kubeconform
+        uses: vhs/kubeconform-action@v1
+        continue-on-error: true
+        with:
+          args: -strict -ignore-missing-schemas k8s/ drills/kubernetes-broken-cluster/
