@@ -2,207 +2,399 @@
 
 This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [02-questions-and-answers.md](02-questions-and-answers.md). Then do this lab.
 
-Day 10 teaches Terraform State as the record of what Terraform manages. This lab uses the `hashicorp/local` provider and a `local_file` resource. You apply the file, inspect state, edit the file outside Terraform, and watch `terraform plan` report drift. You then restore the declared content with apply, or you update the code if you treat the edit as the new desired state.
+Day 10 teaches Terraform State as the record of what Terraform manages, and why a team does not keep that record on a laptop. Day 8 and Day 9 still used local state. This Day adds a **remote backend**: Azure Storage, a private blob container, and a lock. Day 36 is the harder sibling. It adds `tflint`, Checkov, and more `terraform test` after this backend exists.
 
-Work only in a temporary directory that you create for this lab. Do not run Terraform inside the DevOps-Prep course repository. Do not configure AWS S3 or Azure Storage. Local state is enough here.
+Work in **your ShopSphere repository**. You need the Day 8 `modules/rg` layout. If it is missing, create it from [Day-08/03-implementation.md](../Day-08/03-implementation.md) first.
 
 ---
 
 ## Goal
 
-Create one `local_file` with Terraform. After apply, run `terraform state list` and `terraform show` so you can see the resource address and the recorded content. Then change the file with a shell command, not with Terraform. Run `terraform plan` and confirm that Terraform detects the difference.
+Write a bootstrap module that would create the state Storage account. Run `terraform test` on that module. Configure the Dev environment with a partial `backend "azurerm"` block. Practice a saved plan (`-out` then `apply` of that file). Practice a real state lock on your machine with two Terraform processes.
 
-Decide the source of truth before you apply. If the edit was accidental, keep the `.tf` file and apply so Terraform restores the declared content. If the edit was intentional, change the configuration to match, then apply so state records the new content. When you finish, you can explain state, drift, and restore without a cloud account.
+When you finish, you can explain local state versus remote state, why a lock exists, and why you do not commit `terraform.tfstate`. If you have Azure, you may apply the bootstrap and migrate Dev state. If you do not, the test plus the lock drill still complete the Day.
 
-Time box: 45 to 75 minutes. Cost stays at ₹0. Stop when plan shows no remaining changes, you have a short notes file, and `terraform destroy` has removed the lab file.
+Time box: 60 to 90 minutes.
+
+---
+
+## Capstone stage
+
+| Path in ShopSphere | What it adds |
+|:--|:--|
+| `infra/azure/backend/` | Bootstrap: RG + Storage account + `tfstate` container |
+| `infra/azure/backend/tests/backend.tftest.hcl` | `terraform test` for those names |
+| `infra/azure/environments/dev/backend.hcl` | Partial backend config (no secrets) |
+| `docs/day-10-state-lab.md` | Lock ID, saved-plan note, migrate decision |
+
+Do not put access keys in `backend.hcl`. Use Azure AD. `use_azuread_auth = true` is the flag.
 
 ---
 
 ## What you need
 
-You need Terraform 1.0 or later and a shell. Check the version first:
+You need Terraform 1.16.5 (or 1.9+) and a shell.
 
 ```bash
 terraform version
 ```
 
-You do not need AWS, Azure, an S3 backend, or Azure Storage. This lab uses local state in `terraform.tfstate`. Remote backends and locking stay a design note at the end. They are not a required step.
+Azure CLI is optional. The bootstrap apply needs a logged-in account and a budget alert. The lock drill does not.
 
-Create the lab under `/tmp`, not under this course clone. Terraform writes `terraform.tfstate` in the working directory. You must be able to delete that directory when you clean up.
+```bash
+az account show --query name -o tsv
+```
 
-Keep a notes file named `day-10-state-lab.md` in the same temp directory. Record command output and the source-of-truth decision. Do not paste secrets. This lab should not create any.
+If that command fails, stay on the local path: test the bootstrap module, write `backend.hcl`, run the lock drill, run the saved plan on `terraform_data`. Do not invent an S3 backend today. Azure is the default track.
+
+---
+
+## Cost
+
+| Path | Estimated USD | Why it is not always zero |
+|:--|:--|:--|
+| `terraform test` + lock drill + saved plan | **0.00** | Local only |
+| Apply bootstrap Storage account (`Standard` / `LRS`) + container | **0.05-0.40** | Capacity and operations. Soft-delete can keep data after delete. |
+| Empty resource group only | **0.00-0.10** | The group is free. The account inside it is not. |
+
+Create a budget alert before you apply the Storage account. See [../capstone/COST.md](../capstone/COST.md). Do not write "cost stays at INR 0" if you created the account.
+
+Destroy the account at the end of the session unless you will reuse it for later Days. A leftover empty account is cheap. Say so in the notes if you keep it on purpose.
 
 ---
 
 ## Steps
 
-1. Create a throwaway directory and enter it. Use a unique folder name so you do not collide with another lab. Confirm the path is under `/tmp`.
+1. Open ShopSphere. Create the bootstrap folder.
 
 ```bash
-LAB_DIR="/tmp/day-10-tf-state-lab-$$"
-mkdir -p "$LAB_DIR"
-cd "$LAB_DIR"
-pwd
+mkdir -p infra/azure/backend/tests
+mkdir -p docs
 ```
 
-2. Write `main.tf`. This configuration uses the `local` provider only. The resource writes `managed.txt` with content that Terraform owns.
+2. Write `infra/azure/backend/main.tf`. These resource types and arguments are valid on `hashicorp/azurerm` 5.9.0. `azurerm_storage_container` uses `storage_account_id` in this provider line.
 
 ```hcl
 terraform {
+  required_version = ">= 1.9.0, < 2.0.0"
+
   required_providers {
-    local = {
-      source  = "hashicorp/local"
-      version = "~> 2.5"
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "5.9.0"
     }
   }
 }
 
-resource "local_file" "marker" {
-  filename = "${path.module}/managed.txt"
-  content  = "managed by terraform\n"
+provider "azurerm" {
+  features {}
+  resource_provider_registrations = "none"
+}
+
+variable "rg_name" {
+  type = string
+}
+
+variable "location" {
+  type = string
+}
+
+variable "storage_account_name" {
+  type = string
+}
+
+resource "azurerm_resource_group" "state" {
+  name     = var.rg_name
+  location = var.location
+  tags = {
+    project = "shopsphere"
+    purpose = "tfstate"
+    day     = "10"
+  }
+}
+
+resource "azurerm_storage_account" "state" {
+  name                            = var.storage_account_name
+  resource_group_name             = azurerm_resource_group.state.name
+  location                        = azurerm_resource_group.state.location
+  account_tier                    = "Standard"
+  account_replication_type        = "LRS"
+  min_tls_version                 = "TLS1_2"
+  allow_nested_items_to_be_public = false
+  https_traffic_only_enabled      = true
+}
+
+resource "azurerm_storage_container" "tfstate" {
+  name                  = "tfstate"
+  storage_account_id    = azurerm_storage_account.state.id
+  container_access_type = "private"
 }
 ```
 
-3. Initialize Terraform. This downloads the `hashicorp/local` provider into `.terraform` in this directory. It does not create the file yet.
+Storage account names are 3 to 24 lowercase letters and numbers, globally unique. Pick a name you own, for example `stshop` plus six random digits. Write that name in `backend.tfvars`. Do not commit a name that includes a company secret.
+
+`infra/azure/backend/backend.tfvars` (local values, you may gitignore this file):
+
+```hcl
+rg_name              = "rg-shopsphere-tfstate"
+location             = "eastus"
+storage_account_name = "stshopCHANGE_ME"
+```
+
+3. Write `infra/azure/backend/tests/backend.tftest.hcl`.
+
+```hcl
+mock_provider "azurerm" {}
+
+run "names" {
+  command = plan
+
+  variables {
+    rg_name              = "rg-shopsphere-tfstate"
+    location             = "eastus"
+    storage_account_name = "stshopspheretfstate"
+  }
+
+  assert {
+    condition     = azurerm_resource_group.state.name == "rg-shopsphere-tfstate"
+    error_message = "state resource group name"
+  }
+
+  assert {
+    condition     = azurerm_storage_container.tfstate.name == "tfstate"
+    error_message = "container must be tfstate"
+  }
+}
+```
+
+4. Test the bootstrap. This does not create Azure resources.
 
 ```bash
+cd infra/azure/backend
 terraform init
+terraform fmt
+terraform validate
+terraform test
 ```
 
-4. Preview the create. Read the plan. You should see one `local_file.marker` to add. Do not apply until the plan matches that expectation.
+Expected: `Success! 1 passed, 0 failed.` Copy that line into `docs/day-10-state-lab.md`.
 
-```bash
-terraform plan
+5. Write the Dev backend config. Put this **partial** block in `infra/azure/environments/dev/backend.tf`. Do not put keys here.
+
+```hcl
+terraform {
+  backend "azurerm" {}
+}
 ```
 
-5. Apply the configuration. Type `yes` when Terraform asks to confirm. After apply, the working directory should contain `managed.txt` and `terraform.tfstate`.
+Put this in `infra/azure/environments/dev/backend.hcl`.
 
-```bash
-terraform apply
+```hcl
+resource_group_name  = "rg-shopsphere-tfstate"
+storage_account_name = "stshopCHANGE_ME"
+container_name       = "tfstate"
+key                  = "dev/terraform.tfstate"
+use_azuread_auth     = true
 ```
 
-6. Find local state. Run `ls` and confirm `terraform.tfstate` exists. This is the local state file from the lesson. Do not commit it. Do not copy it into the course repository.
+`backend.tf` already exists as the `terraform { required_providers ... }` block from Day 8. Merge the `backend` argument into that same `terraform` block. Terraform allows one `terraform` block, or several that Terraform merges. Prefer one block so readers see providers and backend together.
+
+If you are **not** logged in to Azure, leave the `backend "azurerm"` line in the file and **do not** run `terraform init -backend-config=backend.hcl` yet. That init talks to Azure. Use the lock drill in step 7 instead. Write `remote init skipped — no Azure login` in the notes.
+
+If you **are** logged in and you already applied the bootstrap:
 
 ```bash
-ls
+cd infra/azure/environments/dev
+terraform init -backend-config=backend.hcl
 ```
 
-7. Inspect the state Terraform recorded. `terraform state list` should show `local_file.marker`. `terraform show` should print the filename and the content `managed by terraform`. Copy both results into your notes.
+Terraform asks whether to copy existing local state to the new backend. Read the prompt. Type `yes` only when you intend that migrate. Then `terraform state list` still shows `module.rg.azurerm_resource_group.lab` if Day 8 or 9 applied that group.
 
-```bash
-terraform state list
-terraform show
+6. Practice a saved plan. Use a tiny local root so this step does not need Azure. Create `infra/azure/loop-local/main.tf` only for this drill.
+
+```hcl
+resource "terraform_data" "marker" {
+  input = "shopsphere-state-lab"
+}
 ```
 
-8. Read the real file. Confirm the file on disk matches the content in state. State is Terraform’s record. The file on disk is the real object.
-
 ```bash
-cat managed.txt
-```
-
-9. Edit the file outside Terraform. This is the drift. Do not change `main.tf` yet.
-
-```bash
-printf 'changed by hand\n' > managed.txt
-cat managed.txt
-```
-
-10. Run plan again. Terraform compares configuration, state, and the real file. Record the proposed action in your notes.
-
-```bash
-terraform plan
-```
-
-The plan should want to write `managed by terraform` back to `managed.txt`. With `local_file`, that action often shows as a create, not an in-place update. The provider uses the file checksum as the resource ID. When you change the file outside Terraform, that old ID no longer matches. The difference is still drift. Terraform is telling you the real file no longer matches the declared content.
-
-11. Decide the source of truth, then pick one path. Write the decision in your notes before you apply.
-
-Accidental change: keep `main.tf`. Apply so Terraform restores the declared content. Type `yes` to confirm. Then `cat managed.txt` should show `managed by terraform`.
-
-```bash
-terraform apply
-cat managed.txt
-```
-
-Intentional change: edit `main.tf` so `content` is `changed by hand\n`. Run `terraform plan` again. You may still see a create, because state still holds the old checksum. Apply so state records the new content. Do not skip that apply if you chose this path.
-
-```bash
-terraform plan
-terraform apply
-```
-
-12. Confirm the chosen path. After restore, or after you update the code and apply, plan should report no changes. `terraform state list` should still show `local_file.marker`.
-
-```bash
-terraform plan
-terraform state list
-```
-
-13. Optional saved plan, if you still have time. This is the production habit from the lesson: review a plan file, then apply that file. Do not skip the review.
-
-```bash
+mkdir -p infra/azure/loop-local
+# write main.tf, then:
+cd infra/azure/loop-local
+terraform init
 terraform plan -out=tfplan
 terraform show tfplan
-```
-
-Apply only that file if you generated it:
-
-```bash
 terraform apply tfplan
 ```
 
-14. Remote backend, as a note only. Do not create an S3 bucket or an Azure storage account in this lab. Write two sentences in `day-10-state-lab.md`: a team would store this state in a remote backend such as Azure Storage or an S3-based backend with locking; this lab keeps `terraform.tfstate` on disk because the goal is state and drift, not cloud spend.
+Expected `show`: one `terraform_data.marker` to add. Expected apply: `Apply complete! Resources: 1 added`. A second `terraform plan` shows no changes.
+
+`terraform apply tfplan` applies **that file**. It does not recompute a new plan. That is the production habit: review the file, then apply the file.
+
+7. Practice a real lock. Keep `loop-local`. Change the resource so apply takes time.
+
+```hcl
+resource "terraform_data" "marker" {
+  input = "shopsphere-state-lab-lock"
+  provisioner "local-exec" {
+    command = "sleep 20"
+  }
+}
+```
+
+Start apply. In a **second** terminal, run plan in the same folder.
+
+```bash
+# terminal 1
+cd infra/azure/loop-local
+terraform apply -auto-approve
+```
+
+```bash
+# terminal 2, while terminal 1 still runs
+cd infra/azure/loop-local
+terraform plan
+```
+
+Expected plan error (Terraform 1.16.5 wording):
+
+```text
+Error: Error acquiring the state lock
+Error message: resource temporarily unavailable
+Lock Info:
+  ID:        <uuid>
+  Path:      terraform.tfstate
+  Operation: OperationTypeApply
+```
+
+Copy the Lock Info into the notes. Wait for terminal 1 to finish. Run `terraform plan` again. Expected: no lock error.
+
+If a process dies while it holds the lock, the unlock command is `terraform force-unlock <ID>`. Run that only when you know the other process is dead. Do not use `-lock=false` as a habit.
+
+8. Optional Azure apply of the bootstrap. Budget first. Then:
+
+```bash
+cd infra/azure/backend
+terraform plan -var-file=backend.tfvars -input=false
+terraform apply -var-file=backend.tfvars -input=false
+```
+
+Expected plan: `+ azurerm_resource_group.state`, `+ azurerm_storage_account.state`, `+ azurerm_storage_container.tfstate`. After apply, go to step 5 and run `terraform init -backend-config=backend.hcl` in Dev.
+
+Write two sentences in the notes: the Dev environment now reads and writes `dev/terraform.tfstate` in the container; two applies at once lose because of the blob lease (or the local lock you already saw).
 
 ---
 
 ## Verify
 
-Read the notes as if you are on a call. You should name the resource address, say what `terraform show` recorded, and explain the drift you caused.
+Read the notes on a call. You should name what is in state, where a team stores it, and what a lock prevents.
 
 Check these points:
 
-- `terraform state list` shows `local_file.marker`.
-- `terraform show` recorded the filename and the content Terraform manages.
-- `ls` showed `terraform.tfstate` after apply. You did not commit that file.
-- After the hand edit, `terraform plan` proposed a write back to the declared content. With `local_file` that often appears as a create. You wrote who is the source of truth before you applied.
-- After restore, or after you updated the code and applied, a later `terraform plan` reports no remaining changes.
-
-If plan still wants to change `managed.txt`, read `main.tf` and `cat managed.txt` again. The declared content, the file on disk, and state must match before you stop.
+- `infra/azure/backend/main.tf` contains `azurerm_storage_account` and `azurerm_storage_container`.
+- `terraform test` in `backend/` printed `1 passed, 0 failed`.
+- `backend.hcl` has `use_azuread_auth = true` and no access key.
+- You ran `terraform plan -out=tfplan`, `terraform show tfplan`, and `terraform apply tfplan`.
+- You captured Lock Info from a second `terraform plan` during apply.
+- You did not commit `terraform.tfstate` or `tfplan`.
+- If you applied the Storage account, the notes include the USD estimate and a destroy or keep decision.
 
 ---
 
 ## Break and fix
 
-You already broke the file on purpose in step 9. That is the drift this Day trains.
+Do both failures.
 
-If you restored with apply, break it once more so you can practice the other path. Edit `managed.txt` by hand again. This time treat the edit as desired. Change the `content` argument in `main.tf` to match. Run `terraform plan`, then apply so state records the new checksum. A later plan should report no changes.
+### Failure 1 — apply while a lock is held
 
-If you already codified the first edit, do the restore path now. Put `content` back to `managed by terraform\n`. Apply. Confirm `cat managed.txt` shows the declared line.
+You already ran this in step 7. If the second plan did **not** fail, the first apply finished too soon. Increase `sleep` to `30` and try once more.
 
-Do not skip the investigation. The lesson rule is detect, investigate, then reconcile or codify. Apply is not the first reflex.
+If you killed the first process, the lock may remain. Diagnose:
+
+```bash
+terraform plan
+```
+
+Read the lock ID. Confirm no other Terraform process is running (`ps aux | grep terraform`). Then:
+
+```bash
+terraform force-unlock -force <ID>
+```
+
+`force-unlock` is for a dead process. It is not a way to skip a live apply.
+
+### Failure 2 — drift, then decide the source of truth
+
+Change the marker **outside** the next apply. Edit `loop-local/main.tf` so `input` is `changed-by-hand`. Do not apply yet.
+
+```bash
+cd infra/azure/loop-local
+terraform plan
+```
+
+Expected: Terraform wants to update `terraform_data.marker`. State still holds `shopsphere-state-lab-lock` (or the last input). The file now says `changed-by-hand`.
+
+Write the decision in the notes before you apply. If the edit is the new desired state, apply so state records it. If the edit was a mistake, put `input` back and apply to restore.
+
+This is the same decision you make when someone changes a tag in the Azure portal. Investigate, then reconcile or codify. Do not apply as the first reflex.
+
+---
+
+## Stretch
+
+- Run `terraform state pull` after a remote migrate and show that the JSON contains the resource address. Do not paste secrets from state into chat.
+- Add `backend "azurerm"` to Prod with `key = "prod/terraform.tfstate"`. Same container. Different key. That is one state file per environment.
+- Read `terraform force-unlock -help`. Write one sentence about when `-force` is justified.
 
 ---
 
 ## Clean up
 
-Destroy the lab resource, then remove the temp directory. Run destroy only after the last plan reports no changes, so Terraform still knows the resource. Type `yes` when Terraform asks to confirm destroy.
+Destroy the local drill:
 
 ```bash
-terraform destroy
-ls
+cd infra/azure/loop-local
+terraform destroy -auto-approve
+rm -f tfplan terraform.tfstate terraform.tfstate.backup
 ```
 
-Confirm `managed.txt` is gone. Then leave the lab directory and delete it, including `.terraform`, `terraform.tfstate`, and any `tfplan` file.
+You may keep `loop-local/main.tf` as a teaching file or delete the folder after the notes exist.
+
+If you applied the bootstrap and you **will reuse** the account for Day 25 and Day 36, keep it. Write `KEEP_TFSTATE=yes` in the notes. Add a reminder to destroy it after the capstone.
+
+If you will **not** reuse it:
 
 ```bash
-cd /tmp
-rm -rf "$LAB_DIR"
+cd infra/azure/backend
+terraform destroy -var-file=backend.tfvars -input=false
+az storage account show --name stshopCHANGE_ME --resource-group rg-shopsphere-tfstate
 ```
 
-If you copied notes you want to keep, move `day-10-state-lab.md` out before `rm -rf`. Do not leave state files in the course repository. You created no AWS or Azure resources, so there is no bucket, storage account, or resource group to delete.
+Expected after destroy: the account is gone. Soft-deleted accounts can remain for a few days and may still bill a little. Purge only lab accounts you created.
+
+Commit `backend/main.tf`, the test, `backend.hcl` **without** a unique account name you do not want public, and the notes. Prefer a placeholder in Git and the real name in a gitignored `backend.tfvars`.
+
+Do not commit state files.
 
 ---
 
 ## Interview story
 
-I treat Terraform State as the record of what Terraform manages, not as an inventory of the whole account. I apply a small `local_file`, then I prove that record with `terraform state list` and `terraform show`. When someone edits the file outside Terraform, `terraform plan` shows drift because plan compares configuration, state, and the real object. I do not apply first. I decide whether the code is the source of truth or the manual change is. Then I restore with apply, or I update the configuration. For a team I would move that state to a remote backend with locking. I would not keep production state on a laptop.
+**Situation:** ShopSphere Dev still stored Terraform state on one laptop after Day 9, so a second engineer could apply at the same time and lose the record. **Task:** Move state to Azure Storage with locking, and prove the lock on my machine before I paid for the account. **Action:** I wrote a bootstrap module for a `Standard` `LRS` account and a private `tfstate` container, and I covered the names with `terraform test` and `mock_provider`. I added a partial `backend "azurerm"` block with `use_azuread_auth = true` so no storage key sits in Git. I practiced `plan -out` and `apply tfplan`. I ran two Terraform processes and captured `Error acquiring the state lock`. **Result:** I can explain that state is Terraform's inventory, a remote backend is the team copy, and a lock is what stops two applies from writing at once.
+
+---
+
+## Self-score checklist
+
+- [ ] I can say what state contains and why Git is the wrong place for it.
+- [ ] Bootstrap module validates and `terraform test` passed.
+- [ ] `backend.hcl` uses Azure AD and names `dev/terraform.tfstate`.
+- [ ] I applied a saved `tfplan` file.
+- [ ] I reproduced a state lock and I copied the lock ID.
+- [ ] I decided source of truth on drift before I applied.
+- [ ] I destroyed the local drill state.
+- [ ] I either destroyed the Storage account or I recorded why I kept it.
+- [ ] Files live in ShopSphere, not only under `/tmp`.
+
+Count the boxes. 8 or 9 is done.
