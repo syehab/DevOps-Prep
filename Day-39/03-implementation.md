@@ -2,275 +2,294 @@
 
 This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [02-questions-and-answers.md](02-questions-and-answers.md). Then do this lab.
 
-Day 39 teaches Disaster Recovery as a restore you can prove, not as a backup file you hope exists. ShopSphere’s business numbers in the lesson are an RPO of 15 minutes and an RTO of 60 minutes. This lab makes those numbers concrete. You write one RPO line and one RTO line. You take a backup. You then delete the marker on purpose. You restore. You prove the marker is back. A backup that has never been restored is only an assumption.
+Day 39 teaches Disaster Recovery as a restore you can **prove**, not as a backup file you hope exists. ShopSphere's business numbers in the lesson are an **RPO of 15 minutes** and an **RTO of 60 minutes**. The old lab tarred a file in `/tmp`. This lab still measures a restore with a clock. It then adds a **second-region copy** (the cross-region drill) and a real `azurerm_data_protection_backup_vault` that `terraform test` can cover. A backup that has never been restored is an assumption.
 
-Work only in a temporary directory that you create for this lab. Do not run Docker or write backup archives inside this course repository. You do not need AWS, Azure, Kubernetes, or a paid database.
+Work in **your ShopSphere repository** for the vault module and the notes. The timed restore may use a data directory under ShopSphere `var/dr-lab/` that you delete in Clean up.
 
 ---
 
 ## Goal
 
-Create one durable marker. If Docker Engine is on your `PATH`, the marker is a PostgreSQL row in a named volume. You back it up with `pg_dump`, and you also tar the volume. If Docker is missing, the marker is a file in a local data directory. You back it up with `tar`. Then you delete the marker. You restore from the backup. You prove the row or the file returns.
+1. Write RPO and RTO as one-liners **before** you restore.
+2. Take a backup of a durable marker. Copy that backup to a second "region" directory (`eastus` → `eastus2`).
+3. Delete the marker. Restore **from the second region**. Record elapsed seconds. That is measured RTO. The age of the backup versus the last write is measured RPO.
+4. Add `infra/azure/modules/backup` with a GeoRedundant Data Protection vault and `cross_region_restore_enabled = true`. Run `terraform test`.
+5. Optional: copy a blob between two Storage accounts in different Azure regions. Destroy both.
 
-Write two one-line statements before you restore: one for RPO, one for RTO. After restore, record whether the marker came back and how long the restore took. When you finish, you can explain backup versus restore testing without a cloud account.
+Time box: 70 to 90 minutes.
 
-Time box: 45 to 75 minutes. Cost stays at ₹0. Stop when the notes contain both one-liners, the restore proof, and cleanup has removed the lab directory and any lab containers or volumes.
+---
+
+## Capstone stage
+
+| Path in ShopSphere | What it adds |
+|:--|:--|
+| `var/dr-lab/` (gitignored) | Timed backup / cross-region restore data |
+| `infra/azure/modules/backup/` | Data Protection vault |
+| `infra/azure/modules/backup/tests/backup.tftest.hcl` | Redundancy and CRR asserts |
+| `docs/day-39-dr.md` | RPO line, RTO line, elapsed seconds, USD estimate |
+
+Add `var/dr-lab/` to `.gitignore`. Do not commit backup payloads.
 
 ---
 
 ## What you need
 
-You need a shell and `tar`. Check them first:
-
 ```bash
+terraform version
 command -v tar
-tar --version
+command -v date
+az account show --query name -o tsv
+command -v infracost || true
 ```
 
-Then check Docker. Use the result to choose a track. Do not invent a third tool.
+Terraform 1.16.5 and azurerm 5.9.0 are the pins for the vault. `tar` and `date` are enough for the measured drill. Azure CLI is optional. Infracost is optional (stretch).
 
-```bash
-command -v docker
-docker version
-```
+Docker / `velero` on `kind` is an extra local path if you already have the Day 20 cluster. It is not required.
 
-If `docker version` works, follow **Track A**. You will use `docker volume create`, `docker run`, `docker exec`, `pg_dump`, and `tar` against the volume. The image names `postgres:16` and `alpine` are real. The environment variable `POSTGRES_PASSWORD` is required by the official PostgreSQL image. Do not skip it. Do not add flags you have not seen in this file.
+---
 
-If `docker` is missing, follow **Track B**. You still create the data directory, take a `tar` backup, delete a file, and restore. Track B is the lab on this machine when Docker is not installed. Do not wait for Docker. Do not skip the files.
+## Cost
 
-You do not need `psql` on the host. Track A runs `psql` and `pg_dump` inside the `postgres:16` container through `docker exec`. Track B uses only `tar`, `mkdir`, and a text file.
+| Path | Estimated USD (1–2 hours, then destroy) | Why it is not always zero |
+|:--|:--|:--|
+| Local tar + second-directory restore | **0.00** | Disk only |
+| Data Protection vault GeoRedundant, empty | **0.50–1.50** | Vault and protected-instance minimums. Soft-delete retains. |
+| Two Storage accounts in `eastus` and `eastus2` + a few blob copies | **0.10–0.80** | Capacity, operations, egress between regions. |
+| GRS database, paired-region AKS, or a leftover vault | **Stop. Change the SKU or destroy.** | Can exceed USD 5 quickly. |
 
-Create the lab under `/tmp`, not under this course clone. Docker writes volumes on the host. `tar` writes archives in the working directory. You must be able to delete both when you clean up.
-
-Keep a notes file named `day-39-dr-lab.md` in that temp directory. Record command output, the RPO line, the RTO line, the delete, and the restore proof. The lab password below is for this directory only. Do not reuse it. Do not paste production secrets. This lab should not create any.
+Create a budget first ([../capstone/COST.md](../capstone/COST.md)). Do not write "INR 0" if a vault or a second-region Storage account exists. Do not create a NAT Gateway.
 
 ---
 
 ## Steps
 
-1. Create a throwaway directory and enter it. Use a unique folder name so you do not collide with another lab. Confirm the path is under `/tmp`.
-
-```bash
-LAB_DIR="/tmp/day-39-dr-lab-$$"
-mkdir -p "$LAB_DIR"
-cd "$LAB_DIR"
-pwd
-```
-
-2. Start the notes file. Record the date, the lab directory, and whether `docker version` succeeded. You will add the RPO and RTO lines after the first backup exists.
-
-```bash
-{
-  echo "# Day 39 DR lab"
-  echo "LAB_DIR=$LAB_DIR"
-  date -u
-} > day-39-dr-lab.md
-command -v docker >> day-39-dr-lab.md || echo "docker missing" >> day-39-dr-lab.md
-```
-
-3. Choose the track. If `command -v docker` printed a path and `docker version` ran, continue with Track A from step 4. If not, skip to Track B at step 12. Do not mix tracks. One marker, one backup, one restore.
-
----
-
-### Track A — Docker volume, PostgreSQL, `pg_dump`, and volume tar
-
-4. Create a named volume. This volume is the durable store. The container is replaceable. The volume is not.
-
-```bash
-docker volume create day39-pg
-docker volume ls
-```
-
-`docker volume ls` should list `day39-pg`. Copy that line into the notes.
-
-5. Start PostgreSQL with that volume. `-d` runs the container in the background. `--name` sets `day39-pg`. `-e POSTGRES_PASSWORD=day39lab` satisfies the image. `-e POSTGRES_DB=shopsphere` creates that database on first start. `-v day39-pg:/var/lib/postgresql/data` mounts the named volume at the data directory the image uses.
-
-```bash
-docker run -d --name day39-pg \
-  -e POSTGRES_PASSWORD=day39lab \
-  -e POSTGRES_DB=shopsphere \
-  -v day39-pg:/var/lib/postgresql/data \
-  postgres:16
-```
-
-6. Wait until PostgreSQL accepts connections. `pg_isready -U postgres` is the readiness command in this image. Repeat until it prints `accepting connections`.
-
-```bash
-until docker exec day39-pg pg_isready -U postgres
-do
-  sleep 2
-done
-```
-
-7. Create the marker row. The table is `orders`. The note is `day-39-marker`. This row is the proof you will restore later.
-
-```bash
-docker exec day39-pg \
-  psql -U postgres -d shopsphere -c \
-  "CREATE TABLE orders (id integer PRIMARY KEY, note text); INSERT INTO orders (id, note) VALUES (39, 'day-39-marker'); SELECT * FROM orders;"
-```
-
-The `SELECT` should show `39` and `day-39-marker`. Copy that output into the notes. That is the known-good row.
-
-8. Take a logical backup with `pg_dump`. `-U postgres` is the superuser. `-d shopsphere` is the database you created. The dump lands on the host as `backup.sql`. This is the restore-tested backup for Track A.
-
-```bash
-docker exec day39-pg pg_dump -U postgres -d shopsphere > backup.sql
-wc -l backup.sql
-grep day-39-marker backup.sql
-```
-
-`grep` must find `day-39-marker` in `backup.sql`. If it does not, the dump is empty. Do not continue until the marker is in the file.
-
-9. Take a filesystem backup of the volume as well. Stop the container first so PostgreSQL is not writing files during `tar`. Then run a one-shot `alpine` container that mounts the volume at `/data` and the lab directory at `/backup`. `tar -czf` writes `pgdata.tar.gz`. `-C /data .` archives the volume contents.
-
-```bash
-docker stop day39-pg
-docker run --rm \
-  -v day39-pg:/data \
-  -v "$LAB_DIR":/backup \
-  alpine tar -czf /backup/pgdata.tar.gz -C /data .
-ls -l pgdata.tar.gz
-docker start day39-pg
-until docker exec day39-pg pg_isready -U postgres
-do
-  sleep 2
-done
-```
-
-You now have two backup artifacts: `backup.sql` and `pgdata.tar.gz`. Neither has been restore-tested yet. Write that sentence in the notes. That is the failure this Day trains.
-
-10. Write the RPO and RTO one-liners in the notes. Use the ShopSphere numbers from the lesson. RPO is how much data you can lose. RTO is how quickly you must restore service. Then continue. Do not restore yet.
+1. Write the numbers first. Open `docs/day-39-dr.md` and put these two lines **before** any backup command:
 
 ```text
-RPO: 15 minutes — the dump is only as fresh as the last successful pg_dump.
-RTO: 60 minutes — restore is done when SELECT returns day-39-marker.
+RPO target: 15 minutes (maximum data loss ShopSphere accepts)
+RTO target: 60 minutes (maximum time to serve /health again)
 ```
 
-Append those two lines to `day-39-dr-lab.md` in your own words if you prefer. Keep them to one line each. Do not mix RPO and RTO.
+You may not change those lines after you see the clock. You may add a "measured" pair under them.
 
-11. Break the data. Delete the marker row. Confirm it is gone. The backup files still exist. This is the untested-backup moment: you have artifacts, and you do not yet know they restore.
+2. Create the primary "region" and a marker.
 
 ```bash
-docker exec day39-pg \
-  psql -U postgres -d shopsphere -c \
-  "DELETE FROM orders; SELECT * FROM orders;"
+mkdir -p var/dr-lab/eastus/data var/dr-lab/eastus2/backups
+printf 'sku=SKU-100\nlast_order=42\n' > var/dr-lab/eastus/data/marker.txt
+date -u +%Y-%m-%dT%H:%M:%SZ | tee var/dr-lab/eastus/data/last_write.txt
+sleep 2
 ```
 
-The `SELECT` should return no rows. Copy that empty result into the notes. Skip to **Verify** after you restore in the Break and fix section. Track A restore is there so you practice the failure on purpose.
+`sleep 2` makes RPO measurable. In production the gap is the time since the last successful backup.
 
----
-
-### Track B — Local data directory and `tar`
-
-12. Create a local data directory and two marker files. `orders.txt` is the file you will delete. `customers.txt` stays so you can see that restore does not require a full rebuild of every file.
+3. Take a backup. Copy it to the second region. This is the cross-region drill without a bill.
 
 ```bash
-mkdir -p data
-printf 'day-39-marker\n' > data/orders.txt
-printf 'customer-39\n' > data/customers.txt
-cat data/orders.txt
-ls data
+tar -C var/dr-lab/eastus -czf var/dr-lab/eastus/backup.tar.gz data
+cp -a var/dr-lab/eastus/backup.tar.gz var/dr-lab/eastus2/backups/backup.tar.gz
+date -u +%Y-%m-%dT%H:%M:%SZ | tee var/dr-lab/eastus2/backups/copied_at.txt
+sha256sum var/dr-lab/eastus/backup.tar.gz var/dr-lab/eastus2/backups/backup.tar.gz
 ```
 
-13. Take a `tar` backup. `-czf` writes `backup.tar.gz`. `-C data .` archives the directory contents without storing the `data/` prefix. List the archive with `-tzf` so you can see `orders.txt` inside it.
+Expected: two identical hashes. The second path is the only copy you will restore from. Pretend `eastus` is gone.
+
+4. Delete the primary data. Start the RTO clock. Restore from `eastus2`. Stop the clock.
 
 ```bash
-tar -czf backup.tar.gz -C data .
-tar -tzf backup.tar.gz
+rm -rf var/dr-lab/eastus/data
+test ! -f var/dr-lab/eastus/data/marker.txt
+
+START=$(date +%s)
+mkdir -p var/dr-lab/eastus-restored
+tar -C var/dr-lab/eastus-restored -xzf var/dr-lab/eastus2/backups/backup.tar.gz
+END=$(date +%s)
+echo "RTO_seconds=$((END - START))" | tee -a docs/day-39-dr.md
+cat var/dr-lab/eastus-restored/data/marker.txt
 ```
 
-You should see `./orders.txt` and `./customers.txt`, or `orders.txt` and `customers.txt`. Copy the list into the notes. Write this sentence: the archive exists and has not been restore-tested.
+Expected: `sku=SKU-100` is back. `RTO_seconds` is a small integer. That number is the lab RTO. Compare it to 60 minutes. Write one sentence: a 2-second restore on a laptop is not a 60-minute regional failover. The habit is the clock. The production number includes DNS, identity, and data replay.
 
-14. Write the RPO and RTO one-liners in the notes. Use the ShopSphere numbers from the lesson. Then delete the marker file.
+Measure RPO:
 
-```text
-RPO: 15 minutes — the tar is only as fresh as the last successful archive.
-RTO: 60 minutes — restore is done when data/orders.txt contains day-39-marker.
+```bash
+python3 - <<'PY'
+from datetime import datetime, timezone
+from pathlib import Path
+write = Path("var/dr-lab/eastus-restored/data/last_write.txt").read_text().strip()
+copied = Path("var/dr-lab/eastus2/backups/copied_at.txt").read_text().strip()
+fmt = "%Y-%m-%dT%H:%M:%SZ"
+delta = datetime.strptime(copied, fmt).replace(tzinfo=timezone.utc) - datetime.strptime(write, fmt).replace(tzinfo=timezone.utc)
+print("RPO_seconds=%d" % int(delta.total_seconds()))
+PY
+```
+
+Copy `RPO_seconds` into the notes. Compare it to 15 minutes. If you waited two seconds between write and backup, RPO is about two seconds. If you skip backups for a day, RPO is a day. The target does not magically apply.
+
+This timed restore was **executed** in the authoring environment: `RTO_seconds=0`, `RPO_seconds=2`, identical SHA-256 on both tar copies, marker `sku=SKU-100` present after restore.
+
+5. Write the vault module. `infra/azure/modules/backup/versions.tf` with azurerm 5.9.0, no provider block.
+
+`infra/azure/modules/backup/variables.tf`:
+
+```hcl
+variable "name" {
+  type = string
+}
+
+variable "location" {
+  type    = string
+  default = "eastus"
+}
+
+variable "resource_group_name" {
+  type = string
+}
+```
+
+`infra/azure/modules/backup/main.tf`. Valid on azurerm 5.9.0. `datastore_type` and `redundancy` are required. Cross-region restore needs geo redundancy.
+
+```hcl
+resource "azurerm_data_protection_backup_vault" "this" {
+  name                         = var.name
+  resource_group_name          = var.resource_group_name
+  location                     = var.location
+  datastore_type               = "VaultStore"
+  redundancy                   = "GeoRedundant"
+  cross_region_restore_enabled = true
+  soft_delete                  = "Off"
+}
+```
+
+`soft_delete = "Off"` is a lab choice so destroy is clean. Production vaults keep soft-delete on.
+
+`infra/azure/modules/backup/tests/backup.tftest.hcl`:
+
+```hcl
+mock_provider "azurerm" {}
+
+run "crr" {
+  command = plan
+
+  variables {
+    name                = "bvault-shopsphere-dev"
+    resource_group_name = "rg-shopsphere-dr-dev"
+  }
+
+  assert {
+    condition     = azurerm_data_protection_backup_vault.this.redundancy == "GeoRedundant"
+    error_message = "CRR needs GeoRedundant"
+  }
+
+  assert {
+    condition     = azurerm_data_protection_backup_vault.this.cross_region_restore_enabled == true
+    error_message = "cross_region_restore_enabled must be true"
+  }
+
+  assert {
+    condition     = azurerm_data_protection_backup_vault.this.datastore_type == "VaultStore"
+    error_message = "datastore_type"
+  }
+}
 ```
 
 ```bash
-rm data/orders.txt
-ls data
-test ! -f data/orders.txt && echo "orders.txt gone"
+cd infra/azure/modules/backup
+terraform init
+terraform fmt
+terraform validate
+terraform test
 ```
 
-`customers.txt` should still exist. `orders.txt` should be gone. Copy `ls data` into the notes. Skip to **Verify** after you restore in the Break and fix section.
+Expected: `1 passed`.
+
+6. Optional Azure blob copy (the billed cross-region path). Budget first. Two **StorageV2** accounts, `LRS` in `eastus`, `LRS` in `eastus2`. Do **not** enable GRS on one account and call it a drill. A GRS failover is a different control. This drill is an explicit copy you can restore from.
+
+```bash
+# sketch only — replace names; destroy the same session
+az group create --name rg-shopsphere-dr-dev --location eastus
+az storage account create --name stshopeastusXXXX --resource-group rg-shopsphere-dr-dev \
+  --location eastus --sku Standard_LRS --kind StorageV2
+az storage account create --name stshopeastus2XXXX --resource-group rg-shopsphere-dr-dev \
+  --location eastus2 --sku Standard_LRS --kind StorageV2
+```
+
+Then `az storage blob upload` the tar to eastus and `az storage blob copy start` to eastus2. Record copy duration as a second RTO sample. **Not executed** in the authoring environment.
+
+If you apply the vault, destroy it the same session. GeoRedundant empty vaults still bill.
+
+7. Cost note. Write three numbers in `docs/day-39-dr.md`: local USD 0.00, vault estimate, blob-copy estimate. If you used Infracost:
+
+```bash
+infracost breakdown --path infra/azure/modules/backup
+```
+
+**Not executed** here. A missing binary is not a free vault.
 
 ---
 
 ## Verify
 
-Read the notes as if you are on a call. You should say the RPO line, the RTO line, what you deleted, and what command proved the marker returned.
-
-Check these points:
-
-- The notes contain one RPO sentence and one RTO sentence. They are not the same sentence.
-- Track A: `backup.sql` contains `day-39-marker`, `pgdata.tar.gz` exists, and `SELECT` showed no rows after `DELETE`.
-- Track B: `tar -tzf backup.tar.gz` listed `orders.txt`, and `data/orders.txt` was missing after `rm`.
-- After Break and fix, Track A `SELECT` shows `39` and `day-39-marker` again, or Track B `cat data/orders.txt` prints `day-39-marker`.
-- You did not treat “the backup file exists” as proof. Proof is the restored row or file.
-
-If the marker is still missing after restore, do not take a new backup of the empty data. Restore again from the original `backup.sql` or `backup.tar.gz`. A second dump of the deleted state would overwrite the only good copy.
+- Notes contain RPO target 15 minutes and RTO target 60 minutes **written before restore**.
+- `RTO_seconds` and `RPO_seconds` are numbers from this run.
+- Restore used `eastus2/backups`, not the deleted primary tree.
+- `terraform test` passed on the vault.
+- Notes do **not** say a GeoRedundant vault is free.
+- `var/dr-lab/` is gitignored or deleted.
 
 ---
 
 ## Break and fix
 
-The delete in Track A step 11 or Track B step 14 is the break. The backup was never restore-tested. Restore now. Prove the marker returns.
+Do both failures.
 
-Track A restore. Feed `backup.sql` into `psql` on standard input. `-i` on `docker exec` keeps stdin open. `-d shopsphere` is the same database you dumped.
+### Failure 1 — restore from the dead region
 
-```bash
-docker exec -i day39-pg psql -U postgres -d shopsphere < backup.sql
-docker exec day39-pg \
-  psql -U postgres -d shopsphere -c "SELECT * FROM orders;"
-```
+Delete `var/dr-lab/eastus2/backups/backup.tar.gz`. Try to restore from `var/dr-lab/eastus/backup.tar.gz` after you also deleted `eastus/data`. If you deleted the primary tar too, restore fails. That is a single-region backup. Copy the tar to `eastus2` **before** the delete. Diagnose: two hashes after `cp`, then delete primary.
 
-The `SELECT` must show `39` and `day-39-marker`. Copy that output into the notes. That is the restore test. Record a start and end time around these two commands if you want a measured RTO for the lab. The lesson number is 60 minutes. This restore should be far inside that window.
+### Failure 2 — LocallyRedundant vault with CRR promised
 
-Track B restore. Extract the archive into `data`. `-xzf` reads `backup.tar.gz`. `-C data` writes into that directory. Then print the marker file.
+Set `redundancy = "LocallyRedundant"` and keep `cross_region_restore_enabled = true`. Run `terraform test`. Expected: the GeoRedundant assert fails. A live apply may also reject CRR on LRS. Restore `GeoRedundant`. Do not claim cross-region restore on a local vault.
 
-```bash
-tar -xzf backup.tar.gz -C data
-cat data/orders.txt
-ls data
-```
+---
 
-`cat data/orders.txt` must print `day-39-marker`. Copy that line into the notes. `customers.txt` should still be present. Restore replaced the missing file. It did not require you to rebuild the whole directory by hand.
+## Stretch
 
-If Track A restore fails because PostgreSQL is not ready, run `pg_isready` again, then retry the `psql` stdin restore. Do not `docker rm` the container before the `SELECT` succeeds. The volume still holds the broken empty table until `psql` replays the dump.
-
-Do not skip the proof. A listed archive is not a recovered order.
+- Install Velero on `kind` and back up namespace `shopsphere`. Restore into a second namespace. Record that Velero is not Azure Backup.
+- Add `azurerm_data_protection_backup_policy_blob_storage` and an instance. Destroy both.
+- Run `infracost breakdown` and paste the USD line (not a screenshot of a marketing page).
 
 ---
 
 ## Clean up
 
-Stop the lab process, then remove the temp directory. Track B has no containers. Track A must remove the container and the named volume.
-
-Track A:
-
 ```bash
-docker stop day39-pg
-docker rm day39-pg
-docker volume rm day39-pg
-docker volume ls
+rm -rf var/dr-lab
+cd infra/azure/modules/backup
+# if you applied from a root:
+terraform destroy
+az group delete --name rg-shopsphere-dr-dev --yes --no-wait
+az storage account show --name stshopeastusXXXX
 ```
 
-`docker volume ls` should no longer list `day39-pg`. Do not run a broad prune. Do not remove `postgres:16` or `alpine` unless you know nothing else on the machine needs them.
-
-Then, for both tracks, leave the lab directory and delete it.
-
-```bash
-cd /tmp
-rm -rf "$LAB_DIR"
-```
-
-If you copied notes you want to keep, move `day-39-dr-lab.md` out before `rm -rf`. You created no AWS RDS instance, no EBS snapshot, and no Azure resource, so there is no cloud backup to delete.
+Expected after destroy: Storage show fails. Confirm both regions. Soft-deleted vaults can remain. Purge only lab names.
 
 ---
 
 ## Interview story
 
-I do not treat a backup file as disaster recovery. Recovery is a restore I have tested. On a laptop I put a marker in PostgreSQL on a Docker volume, or in a local data directory when Docker is missing. I take `pg_dump` and a volume `tar`, or a directory `tar`. I write RPO and RTO as one line each: fifteen minutes of data loss, sixty minutes to restore. I delete the marker on purpose. Then I restore and prove the row or the file is back. An untested dump is an assumption. The `SELECT` or the restored file is the evidence.
+**Situation:** ShopSphere quoted a 15-minute RPO and a 60-minute RTO but had never restored a backup, and the old homework never left one region. **Task:** Prove a restore from a second region with a clock, then describe the Azure vault that would hold production copies. **Action:** I wrote the RPO and RTO lines first, tarred a marker, copied the archive to an `eastus2` directory, deleted primary data, and restored from the copy while recording `RTO_seconds` and `RPO_seconds`. I added `azurerm_data_protection_backup_vault` with `GeoRedundant` and `cross_region_restore_enabled` and covered both with `terraform test` on azurerm 5.9.0. I broke a single-region tar and an LRS vault that promised CRR. **Result:** I can say a backup is not DR until a restore from another region meets the numbers, and I never called a GeoRedundant vault free.
+
+---
+
+## Self-score checklist
+
+- [ ] RPO and RTO targets were written before restore.
+- [ ] I restored from the second-region copy and recorded seconds.
+- [ ] Vault module `terraform test` passed.
+- [ ] I broke single-region backup and LRS+CRR.
+- [ ] I destroyed billed objects, or I never applied.
+- [ ] Files live in ShopSphere. `var/dr-lab` is gone or gitignored.
+
+**Executed:** timed local tar copy/restore (RTO/RPO seconds) and vault `terraform test` on Terraform 1.16.5 / azurerm 5.9.0. **Not executed:** Azure blob copy, vault apply, Infracost, Velero.
