@@ -10,6 +10,7 @@ Platform and Lead roles want Git to be the source of truth for deployments (GitO
 - Helm charts or templates that teams reuse
 - Golden paths: a new service gets repo, pipeline, deploy, and monitoring by default
 - Internal Developer Platform thinking, sometimes Backstage by name, down to its pieces: Software Catalog, Scaffolder templates, TechDocs
+- Developer-portal integration: a catalog entry links the service to its dashboards, Argo CD deploy status, ownership and access rules, and docs generated from IaC outputs. The portal is a map of the paved road, not a second deploy path
 - Multi-tenancy: granular RBAC plus a repeatable way to onboard a new tenant or namespace
 - Golden paths you can trust: generated infrastructure is tested end to end and watched for drift
 - Promotion flow: the same artifact moves dev → test → prod via Git changes
@@ -37,6 +38,18 @@ CD loop: Git state → cluster    (applies things)
 ```
 
 The platform idea is the same loop, offered as a product: teams get a template, a pipeline, and a deploy path that already works.
+
+The developer portal is the map of that product:
+
+```text
+Catalog entry (one service)
+   ├── dashboards
+   ├── Argo CD deploy status
+   ├── owners / access
+   └── docs from IaC outputs
+```
+
+The portal does not replace GitOps. It points at the paved road so a team can find it.
 
 ## How a platform proves it works (DORA metrics)
 
@@ -77,4 +90,4 @@ Backstage appears in EPAM platform JDs, and newer ones also name Crossplane, Pul
 
 ## Source tags
 
-EPAM Lead Platform / Unified Automation (Backstage) · EPAM Lead Cloud (IDP) · EPAM Senior DevOps Azure · RedCloud Platform · EPAM Senior/Lead Platform Engineer · Turkey banking platform (Terraform account vending)
+EPAM Lead Platform / Unified Automation (Backstage) · EPAM Lead Cloud (IDP) · EPAM Senior DevOps Azure · RedCloud Platform · EPAM Senior/Lead Platform Engineer · Turkey banking platform (Terraform account vending) · 2026-10-13 market (catalog links dashboards, Argo CD, owners, IaC docs)
