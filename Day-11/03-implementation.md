@@ -2,65 +2,141 @@
 
 This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [02-questions-and-answers.md](02-questions-and-answers.md). Then do this lab.
 
-Day 11 teaches the structure above individual resources. A landing zone is that ready foundation: identity, governance, environment isolation, and ownership that workloads deploy into. This lab produces a markdown design document for a fictional company. You name the tenant or Organization, the governance layer, three environment subscriptions or accounts, resource groups, and Terraform state boundaries. You also fill an Azure versus AWS table so the same design maps across clouds.
+Day 11 teaches the structure above individual resources. A landing zone is identity, governance, isolation, and ownership that workloads deploy into. The old lab wrote HarborMart in `/tmp` and forbade Terraform. This lab still designs HarborMart (the lesson company). It lands the files in **your ShopSphere repository** and adds a real `azurerm` management group plus a custom policy that `terraform test` can cover.
 
-Do not create Azure or AWS resources. Do not run `az`, `aws`, or Terraform. The deliverable is a design document. Work in a temporary directory. Do not write the document inside the DevOps-Prep course repository.
+Do not apply a management group in a tenant you do not own.
 
 ---
 
 ## Goal
 
-Write one landing-zone design document for HarborMart, a fictional grocery retailer. The document must identify the identity boundary, the governance hierarchy, three environment isolation units (Dev, UAT, Production), resource groups for one application, and Terraform state files that follow those same lines.
+Write `docs/landing-zone.md` for HarborMart. Add `infra/azure/landing-zone/` with `azurerm_management_group` `mg-shopsphere` and a custom HTTPS policy. Run `terraform test`. Then break the design: Dev and Production share one subscription. Restore the split and write the blast radius.
 
-Include one table that maps each Azure object to its AWS equivalent. Then break the design on purpose: put Dev and Production in the same subscription or account. Rewrite the document so they are separate again, and write why the shared isolation unit grew the blast radius.
+Time box: 60 to 80 minutes.
 
-Time box: 45 to 75 minutes. Cost stays at ₹0. Stop when the document has every required section, the break-and-fix note explains blast radius, and you can present the design in the Lead Architect sentences from this Day.
+---
+
+## Capstone stage
+
+| Path | Adds |
+|:--|:--|
+| `docs/landing-zone.md` | HarborMart design + Azure/AWS map |
+| `infra/azure/landing-zone/` | Management group + policy |
+| `infra/azure/landing-zone/tests/lz.tftest.hcl` | Name asserts |
+| `docs/day-11-landing-zone.md` | Test output + blast-radius note |
+
+HarborMart is the fictional retailer in the lesson. ShopSphere is the repo you keep. The module names stay `shopsphere` so later Days reuse them.
 
 ---
 
 ## What you need
 
-You need a text editor and a shell. You do not need an Azure subscription, an AWS account, Terraform, or cloud credentials. This is a concept-only lab. The lesson is enterprise structure, not portal clicks.
+```bash
+terraform version
+```
 
-Create the lab under `/tmp`, not under this course clone. The design document is ordinary markdown. You must be able to delete the directory when you clean up.
+Terraform 1.16.5 and `hashicorp/azurerm` `5.9.0` are the pins this lab tested. Azure login is optional. `terraform test` does not need a tenant.
 
-Keep the document named `harbormart-landing-zone.md`. Record decisions in that file. Do not paste secrets. This lab should not create any.
+---
+
+## Cost
+
+| Path | Estimated USD |
+|:--|:--|
+| Design + `terraform test` | **0.00** |
+| Apply a management group + custom policy in a tenant you own | **0.00** (policy documents do not bill) |
+| `az account create` / new subscriptions | **Do not run** |
+
+A leftover policy is cheap. A leftover extra subscription is not. Stay on the test path unless this is a throwaway sandbox. Do not write "INR 0" if you created subscriptions.
 
 ---
 
 ## Steps
 
-1. Create a throwaway directory and enter it. Use a unique folder name so you do not collide with another lab. Confirm the path is under `/tmp`.
+1. Open ShopSphere. Create folders.
 
 ```bash
-LAB_DIR="/tmp/day-11-landing-zone-lab-$$"
-mkdir -p "$LAB_DIR"
-cd "$LAB_DIR"
-pwd
+mkdir -p docs infra/azure/landing-zone/tests
 ```
 
-2. Create the empty design document. You will fill it in the next steps. Confirm the file exists before you write the architecture.
+2. Write `infra/azure/landing-zone/main.tf`. These arguments are valid on **azurerm 5.9.0**. `features {}` is required. `resource_provider_registrations = "none"` keeps plan-only tenants quiet.
+
+```hcl
+terraform {
+  required_version = ">= 1.9.0, < 2.0.0"
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "5.9.0"
+    }
+  }
+}
+
+provider "azurerm" {
+  features {}
+  resource_provider_registrations = "none"
+}
+
+resource "azurerm_management_group" "platform" {
+  display_name = "mg-shopsphere"
+  name         = "mg-shopsphere"
+}
+
+resource "azurerm_policy_definition" "require_https" {
+  name         = "shopsphere-require-https"
+  policy_type  = "Custom"
+  mode         = "Indexed"
+  display_name = "ShopSphere require HTTPS"
+  policy_rule = jsonencode({
+    if = {
+      allOf = [
+        { field = "type", equals = "Microsoft.Storage/storageAccounts" },
+        { field = "Microsoft.Storage/storageAccounts/supportsHttpsTrafficOnly", equals = "false" }
+      ]
+    }
+    then = { effect = "deny" }
+  })
+}
+```
+
+3. Write `infra/azure/landing-zone/tests/lz.tftest.hcl`.
+
+```hcl
+mock_provider "azurerm" {}
+
+run "names" {
+  command = plan
+
+  assert {
+    condition     = azurerm_management_group.platform.name == "mg-shopsphere"
+    error_message = "mg name"
+  }
+
+  assert {
+    condition     = azurerm_policy_definition.require_https.name == "shopsphere-require-https"
+    error_message = "policy name"
+  }
+}
+```
 
 ```bash
-touch harbormart-landing-zone.md
-ls
+cd infra/azure/landing-zone
+terraform init
+terraform validate
+terraform test
 ```
 
-3. Write the company and identity section. HarborMart is one company. On Azure, that identity boundary is one Microsoft Entra ID tenant. On AWS, it is one AWS Organization. Say who authenticates: users, groups, applications, and service principals or IAM principals. Say that a tenant is not a subscription, and an Organization is not an account.
+Expected: `Success! 1 passed, 0 failed.` Executed on Terraform 1.16.5 / azurerm 5.9.0. Copy that line into `docs/day-11-landing-zone.md`.
 
-Write at least one short paragraph. Name the fictional tenant or Organization. Do not leave identity as a heading with no text.
+4. Write `docs/landing-zone.md`. Required sections (prose, not empty headings):
 
-4. Write the governance section. On Azure, place a root management group for HarborMart. Under it, create Production, Non-Production, and Security branches. On AWS, use Organizational Units for the same branches. List five central guardrails: allowed regions, required tags, mandatory logging, who may create subscriptions or accounts, and a ban on risky public exposure. Leave instance size and inner workload layout to application teams.
-
-5. Write the environment isolation section. Give HarborMart three isolation units: Dev, UAT, and Production. On Azure those units are subscriptions. On AWS those units are accounts. Place Dev and UAT under the Non-Production governance branch. Place Production under the Production branch. Put a Security or logging subscription or account under Security. State that Production gets stronger access control and change process than Dev.
-
-6. Write resource groups for one application. HarborMart runs a catalog API. Place the App Service or compute, the database, the storage account or bucket wrapper, and monitoring in one application resource group when they share a lifecycle. Say that a resource group organizes resources. It is not a subscription-level security boundary. It is not a region.
-
-Choose a primary region for users in India. Record latency, data residency, service availability, and cost as the reasons. Place Production compute across more than one availability zone.
-
-7. Write Terraform state boundaries that match ownership. Give Network its own project and state. Give Platform its own project and state. Give the catalog API its own project and state. Split Production state from Dev and UAT state. A Dev pipeline identity must not write Production state. Do not put the whole company in one state file.
-
-8. Add the Azure versus AWS mapping table. Keep the same jobs on both sides. Isolation, governance grouping, and guardrails must each have one row.
+- Identity: one Entra tenant / one AWS Organization. A tenant is not a subscription.
+- Governance: root management group; Production, Non-Production, Security branches. Five guardrails: allowed regions, required tags, mandatory logging, who may create subscriptions, ban on public databases.
+- Isolation: Dev, UAT, Production **subscriptions** (AWS: accounts). Security / log-archive under Security.
+- Resource groups for the catalog: compute, database, storage, monitoring share a lifecycle. A resource group is not a region and not the isolation unit.
+- Region: pick one primary. Record latency, residency, availability, cost. Production compute across two zones.
+- Terraform state: Network, Platform, catalog; Prod state separate from Dev. A Dev identity must not write Prod state.
+- Azure ↔ AWS table:
 
 ```markdown
 | Job | Azure | AWS |
@@ -73,69 +149,64 @@ Choose a primary region for users in India. Record latency, data residency, serv
 | Workload | Resource | Resource |
 ```
 
-Write two sentences under the table. A subscription and an account are equivalent isolation units. They are not identical services. Azure Policy is not identical to a Service Control Policy.
+Write two sentences: equivalent jobs, not identical services. Day 26 is the AWS SCP twin.
 
-9. Add an ownership and access paragraph. Network owns hub connectivity. Platform owns shared compute. Security owns policy and logging. The catalog team owns the catalog resources. Developers write in Dev. They do not hold unrestricted Production administration. Security gets read across environments so they can audit.
-
-10. Add the Lead Architect close. Use the sentence pattern from this Day: this is the hierarchy, these are the governance boundaries, these are the environment boundaries, these teams own these resources, these Terraform states match those lines, these pipelines may change these environments.
+- Ownership: Network, Platform, Security, catalog team. Developers write in Dev. They do not hold unrestricted Production administration.
+- Lead close: hierarchy, governance, environment boundaries, owners, state lines, which pipeline may apply.
 
 ---
 
 ## Verify
 
-Read `harbormart-landing-zone.md` as if you are on a call with a Lead Architect. You should name the identity boundary, the three environment isolation units, and the Terraform state split without opening the lesson notes.
-
-Check these points:
-
-- The document names one tenant or one Organization for HarborMart.
-- Governance has Production, Non-Production, and Security branches, plus five central rules.
-- Dev, UAT, and Production each have their own subscription or account.
-- One application resource group lists resources that share a lifecycle. The text says a resource group is not a region.
-- Terraform state is split by Network, Platform, application, and environment.
-- The Azure versus AWS table is complete. The note under it says the mapping is equivalent, not identical.
-- The close uses the Lead Architect sentences.
-
-If a section is only a heading, fill it before you stop. A landing zone design with empty headings is not a design.
+- `terraform test` printed 1 passed.
+- Document names one tenant, three environment subscriptions, and split state.
+- Table is complete. The note says equivalent, not identical.
+- You did not run `az account create`.
 
 ---
 
 ## Break and fix
 
-Copy the finished document to a broken variant so you can compare the two. Keep the good design. Do not overwrite it until you have written the blast-radius note.
+### Failure 1 — shared subscription
 
-```bash
-cp harbormart-landing-zone.md harbormart-landing-zone-broken.md
-```
+Copy `docs/landing-zone.md` to `docs/landing-zone-broken.md`. Put Dev and Production in one subscription. Keep tidy RG names. Write **Blast radius**: who can delete Prod data, what happens to Prod bills when Dev runs away, how far one apply reaches if one state holds both. Restore the main file so they are separate. A Dev mistake must not reach Production.
 
-Open `harbormart-landing-zone-broken.md`. Put Dev and Production in one subscription or one account. Keep UAT separate if you want, or fold it in. Leave resource group names as `rg-catalog-dev` and `rg-catalog-prod` so the labels still look tidy. Labels are not the isolation boundary.
+### Failure 2 — rename the management group
 
-Write a short section at the bottom of the broken file titled `Blast radius`. Answer these questions in prose, not as a checklist:
+Change `name` to `mg-wrong`. `terraform test` fails. Restore `mg-shopsphere`.
 
-- Who can delete a Production database if their identity already has write on the shared subscription or account?
-- What happens to Production quotas and bills when a Dev experiment runs away?
-- If one Terraform state now holds Dev and Production, how far does one apply reach?
+---
 
-Then rewrite the isolation section in `harbormart-landing-zone.md` so Dev and Production are separate again. Add a paragraph that states why the shared subscription or account grew the blast radius. A Dev mistake could reach Production resources. Role assignments mixed. Cost reports mixed. One apply could plan against both environments. Separate isolation units keep the failure inside one environment.
+## Stretch
 
-Do not leave the broken design as the main document. The main file must keep Dev, UAT, and Production apart. Keep `harbormart-landing-zone-broken.md` as the evidence of the mistake.
+- Add `azurerm_management_group_policy_assignment` that assigns the HTTPS policy to `mg-shopsphere`.
+- Map this file to Day 26 `DenyLeaveOrganization`.
 
 ---
 
 ## Clean up
 
-This lab created markdown only. There is no cloud resource to destroy. There is no Terraform state file.
-
-If you want to keep the design, copy `harbormart-landing-zone.md` out of the temp directory first. Then leave the lab directory and delete it.
+Do not apply the management group unless you own the tenant. If you applied, destroy the same session.
 
 ```bash
-cd /tmp
-rm -rf "$LAB_DIR"
+terraform destroy
 ```
 
-Do not copy the files into the course repository unless you are submitting homework through a path your instructor named. Do not run `az group delete` or `aws organizations` commands. You created no subscriptions, accounts, or resource groups in a cloud.
+Keep the markdown in Git.
 
 ---
 
 ## Interview story
 
-I design the landing zone before I place a VM. HarborMart gets one identity boundary, a governance layer with Production and Non-Production branches, and separate Dev, UAT, and Production subscriptions or accounts. Resource groups hold resources that share a lifecycle. They are not a region and not the isolation unit. Terraform state follows those same ownership and environment lines, so a Dev pipeline cannot write Production state. I mapped Azure management groups, subscriptions, and Policy to AWS OUs, accounts, and SCPs as equivalent jobs, not identical services. I then put Dev and Production in one subscription on purpose. Blast radius grew because access, billing, quotas, and one Terraform apply could all reach Production from a Dev change. I split them again so a mistake stays inside one environment.
+**Situation:** The landing-zone homework lived in `/tmp` and forbade Terraform. **Task:** Show HarborMart isolation in Git and a real `azurerm` policy. **Action:** I wrote one Entra tenant, Production / Non-Production / Security management groups, and separate Dev, UAT, and Prod subscriptions. I added `azurerm_management_group.platform` and a deny-HTTP storage policy, covered both with `terraform test` on azurerm 5.9.0. I then put Dev and Prod in one subscription on purpose and wrote the blast radius: access, bills, and one apply. **Result:** I can map subscription ↔ account and Azure Policy ↔ SCP, and I can say why a resource group is not the isolation unit.
+
+---
+
+## Self-score checklist
+
+- [ ] `terraform test` passed.
+- [ ] `docs/landing-zone.md` has identity, governance, isolation, state, and the table.
+- [ ] Broken file shows the shared-subscription blast radius.
+- [ ] I did not create a subscription.
+
+**Executed:** landing-zone `validate` + `terraform test` (1 passed) on Terraform 1.16.5 / azurerm 5.9.0. **Not executed:** live management group apply, new subscriptions, AWS Organizations.
