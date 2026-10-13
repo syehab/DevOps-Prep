@@ -380,7 +380,7 @@ Commit the workflow files, `.tflint.hcl`, optional `.checkov.yml`, and the notes
 - [ ] Local fmt, validate, test, and tflint passed.
 - [ ] Checkov produced a real check ID.
 - [ ] I broke `fmt -check` and I fixed it with `terraform fmt`.
-- [ ] I broke `CKV_AZURE_3` and I restored HTTPS-only.
+- [ ] I saw `CKV_AZURE_33` fail while `terraform validate` passed, then I recorded a skip or a fix.
 - [ ] The GitHub workflow has no client secret.
 - [ ] I can explain OIDC in three sentences.
 - [ ] Files live in ShopSphere.
