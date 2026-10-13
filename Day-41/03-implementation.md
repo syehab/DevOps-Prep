@@ -2,424 +2,246 @@
 
 This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [02-questions-and-answers.md](02-questions-and-answers.md). Then do this lab.
 
-Day 41 is a production simulation. A pipeline can report SUCCESS while checkout returns 5xx. This lab starts on paper. You write an incident timeline in markdown. You detect the symptom, you do not roll back immediately, you collect evidence, and then you decide rollback versus fix-forward. After the tabletop, you may run the same evidence-then-undo sequence on a local `kind` cluster with a bad image. `kubectl rollout undo` restores that image. It does not reverse a database migration.
+Day 41 is a **game day** on the ShopSphere stack you already built. A pipeline can report SUCCESS while checkout returns 5xx. You detect the **symptom** (error-budget burn from Day 20), you **mitigate before root cause**, and you write the incident. You use the capstone observability files, not a new `/tmp` server.
 
-Work in a temporary directory. Do not write incident notes inside the DevOps-Prep course repository. Prefer `kind` if you run the optional cluster steps. If `kind` is missing, finish the tabletop and the paper break. Then install `kind` from [kind.sigs.k8s.io](https://kind.sigs.k8s.io) if you want the cluster path. Do not invent other cluster tools or flags.
+Work in **your ShopSphere repository**. You need Day 20's PrometheusRule if you have `kind`. If you do not, you still run the catalog API, inject 5xx, compute the burn against a 99.9 percent SLO, and write the same incident file.
 
 ---
 
 ## Goal
 
-Write `INC-001-ShopSphere-Production-Deployment.md`. Record start time, service, environment, versions, error rate, and the failing business function. Build a factual timeline from deploy start through mitigation. Measure blast radius. Collect evidence from workload, Service, endpoints, logs, and the database dependency. Decide rollback versus fix-forward only after that evidence exists.
+Write `docs/incidents/INC-001-shopsphere.md` with start time, service, versions, error rate, and the failing business function. Inject 5xx on `/products`. Compute the fast 5-minute burn against a 0.001 error budget (Day 20). Mitigate by rolling back the inject. Then decide rollback versus fix-forward using evidence. Do not page on CPU.
 
-If you have Docker, `kind` or `minikube`, and `kubectl`, apply a known-good `shopsphere-api` Deployment, ship a tag that does not exist, and collect the same class of evidence before you undo. Then break the recovery on paper: roll back a schema-incompatible release and show why undo is unsafe. Rewrite the change as expand-and-contract.
+Time box: 60 to 90 minutes.
 
-Time box: 45 to 75 minutes. Cost stays at ₹0. Stop when the incident file has a timeline, an evidence list, and a rollback-versus-fix-forward decision, the paper expand-and-contract note exists, and any cluster you created for this lab is deleted.
+---
+
+## Capstone stage
+
+| Path in ShopSphere | What it adds |
+|:--|:--|
+| `docs/incidents/INC-001-shopsphere.md` | Timeline, evidence, mitigate-before-RCA |
+| `scripts/game-day-inject.sh` | Local 5xx inject + restore |
+| `observability/rules/shopsphere-slo.yaml` | Reuse Day 20 two-window burn (do not invent a CPU page) |
+| `docs/day-41-game-day.md` | Burn ratio, mitigate time, cluster-or-local note |
+
+Day 20 installed kube-prometheus-stack. Day 35 put Grafana in Git. This Day **uses** those objects. Do not install a second Prometheus.
 
 ---
 
 ## What you need
 
-You need a text editor and a shell. The tabletop is required. The cluster path is optional. You do not need Azure, AWS, EKS, or a paid registry.
-
-If you run the optional cluster steps, you need Docker, `kind` or `minikube`, and `kubectl`. `kind` runs Kubernetes nodes as Docker containers. `kubectl` talks to the API Server. Check what is already on your `PATH`:
-
 ```bash
-command -v docker
-command -v kind
-command -v minikube
-command -v kubectl
-docker version
+python3 --version
+curl --version
 kubectl version --client
+kind get clusters
 ```
 
-If `kind` is missing, install it from [kind.sigs.k8s.io](https://kind.sigs.k8s.io) only if you want the optional path. Follow that site. Come back and run the same commands in this file. `minikube` is an alternative local cluster. Prefer `kind` for this lab. Do not mix both tools against the same kubeconfig context unless you already know which context is active. Do not use a production cluster. Do not create AKS, EKS, or cloud load balancers.
+Python 3.12 and `curl` are enough for the required inject. `kind` cluster `shopsphere` plus namespace `monitoring` is the preferred path. If `kubectl -n monitoring get prometheusrules` fails, stay local. Do not create AKS for a game day.
 
-Create a throwaway directory under `/tmp`. Keep notes in `INC-001-ShopSphere-Production-Deployment.md` in that directory. Record times, evidence, and the recovery decision. Do not paste kubeconfig secrets, tokens, or registry passwords into a shared place.
+The broken-cluster pack in `drills/kubernetes-broken-cluster/` (PR #195) is extra practice after this incident. It is not a substitute for the ShopSphere timeline.
 
-The optional cluster uses the public `nginx:1.27` image as a stand-in for ShopSphere API. That image is not the ShopSphere application. It is local capacity you can roll and undo. Delete the Deployment and any `kind` cluster you created when you finish.
+---
+
+## Cost
+
+| Path | Estimated USD | Why |
+|:--|:--|:--|
+| Local API inject + notes | **0.00** | Laptop only |
+| Game day on existing `kind` | **0.00** | RAM |
+| Reuse a leftover one-node AKS | **1.50–4.50** per hour | Destroy when the game day ends |
+| New cluster, NAT Gateway, or load balancer | **Stop.** | |
+
+Create a budget before any cloud cluster ([../capstone/COST.md](../capstone/COST.md)). Do not write "INR 0" if AKS is running.
 
 ---
 
 ## Steps
 
-1. Create a lab directory and enter it. Confirm the path is under `/tmp`. Stay in this directory for every file you write.
+1. Open ShopSphere. Create folders.
 
 ```bash
-LAB_DIR="/tmp/day-41-incident-lab-$$"
-mkdir -p "$LAB_DIR"
-cd "$LAB_DIR"
-pwd
+mkdir -p docs/incidents scripts docs
 ```
 
-2. Create the incident file. You will fill it as you work. Confirm the file exists before you write the timeline.
+Start the incident file **before** you inject. Put UTC time, service `catalog`, environment `dev` or `kind`, and "error rate unknown".
+
+2. Confirm observability exists.
 
 ```bash
-touch INC-001-ShopSphere-Production-Deployment.md
-ls
+ls observability/rules/shopsphere-slo.yaml
+kubectl -n monitoring get prometheusrules shopsphere-slo
 ```
 
-3. Detect. Copy this opening into the incident file. Do not add a rollback command yet. Detection is a record of symptom, time, and impact. It is not a change to Production.
+If the YAML is missing, copy the two-window rule from [Day-20/03-implementation.md](../Day-20/03-implementation.md) into ShopSphere now. Fast window: 5m burn > `14.4 * 0.001`. Slow window: 1h burn > `6 * 0.001`. Symptom is 5xx ratio, not CPU.
 
-```markdown
-# INC-001 ShopSphere Production Deployment
+If Prometheus is missing, you will compute the same ratio with `curl` counts. Write `prometheus not running — curl SLI used`.
 
-## Detection
-
-- Incident start: 10:15
-- Affected service: shopsphere-api
-- Affected environment: Production
-- Deployment version: v1.9
-- Previous version: v1.8
-- Current error rate: HTTP 5xx increasing
-- Affected business function: checkout / POST /api/orders
-- Customer impact: some customers cannot place orders
-- Pipeline status: Production deployment SUCCESS
-- Pod status at detection: Running
-```
-
-Write one short paragraph under that list. Pipeline SUCCESS means the deploy mechanism finished. Running Pods mean the process was scheduled. Neither fact proves that checkout works. You have a symptom. You do not yet have a cause.
-
-4. Do not roll back immediately. Add this decision block before any recovery command.
-
-```markdown
-## Hold on rollback
-
-I will not run kubectl rollout undo yet.
-
-I do not yet know whether v1.9 caused the 5xx.
-I do not yet know whether the database schema still fits v1.8.
-I do not yet know the blast radius.
-```
-
-A rollback without evidence can hide the cause. It can also break a schema that already moved. Containment comes after the timeline and the blast radius, not before them.
-
-5. Collect evidence. Build the timeline first. A temporal relationship is evidence. It is not yet proof of causation. Paste this into the incident file and keep the times factual.
-
-```markdown
-## Timeline
-
-- 10:00 Production deployment begins
-- 10:05 Deployment completes (SUCCESS)
-- 10:08 5xx begins increasing
-- 10:10 Checkout failures reported
-- 10:15 Incident declared
-- 10:20 Investigation indicates failures began after v1.9
-- 10:28 Order endpoint identified as affected path
-- 10:32 Database compatibility issue suspected
-```
-
-Leave later recovery times blank until you decide. Do not write “the database definitely caused everything” until the causal chain is proven.
-
-6. Measure blast radius. Record which paths still work. The lesson example is products 200 and orders 500. Copy this table and fill the result column.
-
-```markdown
-## Blast radius
-
-| Check | Result |
-|:--|:--|
-| GET /api/products | 200 |
-| GET /api/products/{id} | 200 |
-| POST /api/orders | 500 |
-| All AZs | unknown until checked |
-| New Pods only | unknown until checked |
-| Authenticated users only | unknown until checked |
-```
-
-Write two sentences under the table. The entire application may not be broken. The failure may sit on the order path. Narrow failure means contain the order path. Do not restart the whole cluster.
-
-7. Record the evidence you would collect on the live cluster. Use the same commands the lesson uses. If you are not running `kind` yet, still type them into the incident file as the evidence plan. You are collecting evidence. You are not changing Production.
+3. Baseline. Start the catalog if it is not already up.
 
 ```bash
-kubectl get deployment shopsphere-api
-kubectl get pods -o wide
-kubectl get rs
-kubectl get events --sort-by=.lastTimestamp
-kubectl get svc shopsphere-api
-kubectl describe svc shopsphere-api
-kubectl get endpoints shopsphere-api
-kubectl rollout history deployment/shopsphere-api
-kubectl rollout status deployment/shopsphere-api
+python3 app/main.py
 ```
 
-Then inspect one Pod. Replace `<pod-name>` with a real name only when the cluster exists.
+Second terminal:
 
 ```bash
-kubectl describe pod <pod-name>
-kubectl logs <pod-name>
+ok=0
+n=20
+for i in $(seq 1 "$n"); do
+  code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/products)
+  if [ "$code" = "200" ]; then ok=$((ok + 1)); fi
+done
+python3 -c "print('baseline_success=%.2f' % ($ok / $n))"
 ```
 
-Add this evidence list to the incident file:
+Expected: `baseline_success=1.00`. Record it. `/products` is the business function. `/health` can stay 200 while products fail. That is the Day 41 lesson.
 
-```markdown
-## Evidence plan
-
-- Deployment desired / available / ready replicas
-- Pod Running vs Ready vs restart count vs age
-- ReplicaSets and recent events
-- Service selector vs endpoints
-- Application logs for SQL error, timeout, or missing column
-- Database: availability, connections, schema, recent migration
-```
-
-Compare Running Pods, Ready Pods, and Service endpoints. A Running Pod that is not Ready should not be in the ready endpoints. Deployment success is not business health.
-
-8. Form the hypothesis from the lesson. v1.9 expects `orders.customer_reference`. Production does not have that column. Order requests return SQL errors as HTTP 500. Readiness only checked process startup, so the rollout looked healthy. Write that chain in the incident file as a hypothesis, not as a proven finding.
-
-9. Decide rollback versus fix-forward. Ask the questions from the lesson, then write the answer in the incident file.
-
-```markdown
-## Decision
-
-Can v1.8 run on the current schema?
-Is the failure isolated to POST /api/orders?
-Can a tested fix reach Production faster than rollback?
-What is the fastest safe recovery?
-
-Decision: rollback application to v1.8.
-Reason: the Production database was not migrated. v1.8 still fits the current schema.
-Not chosen: fix-forward, because a schema add in the incident window is a larger change.
-Not chosen: terraform apply, scale, or security-group edits. Those are unrelated.
-```
-
-If the schema still fits v1.8, rollback is the smallest safe action that restores checkout. If the database already changed incompatibly, rollback may be unsafe. You will prove that second case in Break and fix. Do not skip this decision and jump to `kubectl rollout undo`.
-
-10. Optional cluster path. Skip to Verify if you have no Docker or no cluster tool. The tabletop already satisfies the required lab. If you continue, list clusters and the current context.
+4. Write `scripts/game-day-inject.sh`. This overlay makes `/products` return 500 without touching Prometheus. It copies `app/main.py`, patches the products branch, and restores from Git.
 
 ```bash
-kind get clusters
-kubectl config current-context
+#!/usr/bin/env bash
+set -euo pipefail
+# Inject: /products returns HTTP 500. Restore: git checkout -- app/main.py
+mode="${1:-}"
+case "$mode" in
+  on)
+    python3 - <<'PY'
+from pathlib import Path
+p = Path("app/main.py")
+text = p.read_text()
+old = '        if self.path == "/products":\n            self._send(200, PRODUCTS)\n            return\n'
+new = '        if self.path == "/products":\n            self._send(500, {"error": "game-day"})\n            return\n'
+if old not in text:
+    raise SystemExit("products branch not found — Day 1 starter main.py required")
+p.write_text(text.replace(old, new, 1))
+print("inject on: /products -> 500")
+PY
+    ;;
+  off)
+    git checkout -- app/main.py
+    echo "inject off: app/main.py restored"
+    ;;
+  *)
+    echo "usage: $0 on|off" >&2
+    exit 2
+    ;;
+esac
 ```
-
-Create a cluster only when you need one:
 
 ```bash
-kind create cluster --name day41
+chmod +x scripts/game-day-inject.sh
+./scripts/game-day-inject.sh on
 ```
 
-If you use `minikube` instead, start it only when you have no cluster:
+Restart the API process so it loads the file. If you used `kind` and a live image, this file change is not enough. For the cluster path, set the Deployment image to a tag that does not exist (Day 16 ImagePullBackOff) **or** apply a ConfigMap that the app reads. The local file inject is the required path.
+
+5. Measure the symptom.
 
 ```bash
-minikube start
+fail=0
+n=20
+for i in $(seq 1 "$n"); do
+  code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/products)
+  if [ "$code" != "200" ]; then fail=$((fail + 1)); fi
+  echo "$code"
+done
+python3 -c "ratio=$fail/$n; budget=0.001; print('error_ratio=%.2f' % ratio); print('fast_burn_x=%.1f' % (ratio / budget))"
+curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/health
 ```
 
-Wait until the command exits. Then confirm the API answers:
+Expected: `/products` is `500`. `/health` is still `200`. `error_ratio=1.00`. `fast_burn_x=1000.0` times the 0.001 budget. The 5-minute rule would page. CPU is irrelevant.
+
+If Prometheus is up:
 
 ```bash
-kubectl cluster-info
-kubectl get nodes
-kubectl get pods -A
+kubectl -n monitoring port-forward svc/kps-kube-prometheus-st-prometheus 9090:9090
+# other terminal
+curl -sG http://127.0.0.1:9090/api/v1/query \
+  --data-urlencode 'query=ALERTS{alertname="ShopSphereErrorBudgetBurnFast"}'
 ```
 
-Write `CREATED_KIND=yes` in the incident file if you ran `kind create cluster --name day41`. Write `CREATED_MINIKUBE=yes` if you ran `minikube start` for this lab. Write `CREATED_KIND=no` and `CREATED_MINIKUBE=no` if you reused an existing cluster. Cleanup uses those notes.
+**Not executed** in the authoring environment (no cluster).
 
-11. Write `deployment.yaml`. This file is a local stand-in named `shopsphere-api`. Two replicas. Container name `api`. Known-good image `nginx:1.27`. That image stands in for v1.8. The Service selects the same label so you can compare Ready Pods with endpoints. You do not create Pods by hand.
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: shopsphere-api
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: shopsphere-api
-  template:
-    metadata:
-      labels:
-        app: shopsphere-api
-    spec:
-      containers:
-        - name: api
-          image: nginx:1.27
-          ports:
-            - containerPort: 80
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: shopsphere-api
-spec:
-  selector:
-    app: shopsphere-api
-  ports:
-    - port: 80
-      targetPort: 80
-```
-
-Apply it and wait until both replicas are Ready.
+6. Mitigate **before** you hunt the Git blame.
 
 ```bash
-kubectl apply -f deployment.yaml
-kubectl rollout status deployment/shopsphere-api
-kubectl get deployment shopsphere-api
-kubectl get pods -l app=shopsphere-api -o wide
-kubectl get svc shopsphere-api
-kubectl describe svc shopsphere-api
-kubectl get endpoints shopsphere-api
-kubectl rollout history deployment/shopsphere-api
+./scripts/game-day-inject.sh off
+# restart the API
+curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/products
 ```
 
-Record the revision number. The first successful apply is usually revision `1`. `rollout status` means this rolling update reached the declared replica count. It does not mean checkout works in Production.
+Expected: `200`. Record mitigate time in the incident file. Then write root cause: the products handler returned 500 because of a game-day inject. The user symptom was checkout/browse failing, not a missing CPU alert.
 
-12. Detect a bad release without rolling back. Change the container named `api` to a tag that does not exist. That tag stands in for v1.9. `kubectl set image` still updates desired state. Kubernetes then cannot pull the image.
+7. Fill INC-001. Required sections (prose, not empty headings):
 
-```bash
-kubectl set image deployment/shopsphere-api api=nginx:not-a-real-tag-day41
-```
+- Detect: how you saw 5xx (curl ratio or Prometheus ALERTS)
+- Evidence: `/products` vs `/health`, Deployment image, last Git SHA
+- Mitigate: inject off / `kubectl rollout undo` / Git revert
+- Verify: success ratio back to 1.00
+- RCA: after mitigate
+- Prevent: digest pin from Day 33, burn-rate from Day 20, no CPU page as primary
 
-Do not run `kubectl rollout undo` yet. Collect evidence first.
-
-```bash
-kubectl rollout status deployment/shopsphere-api --timeout=60s
-kubectl get deployment shopsphere-api
-kubectl get pods -l app=shopsphere-api -o wide
-kubectl get rs
-kubectl get events --sort-by=.lastTimestamp
-kubectl rollout history deployment/shopsphere-api
-```
-
-`--timeout` is a real flag on `kubectl rollout status`. Status should fail or time out. Events often show `ImagePullBackOff` or `ErrImagePull`. Describe a stuck Pod and copy the image name into the incident file.
-
-```bash
-kubectl get pods -l app=shopsphere-api
-kubectl describe pod <stuck-pod-name>
-kubectl logs <stuck-pod-name>
-```
-
-Replace `<stuck-pod-name>` with a real name from `kubectl get pods`. Logs may be empty if the image never started. That is still evidence. Record: desired replicas, Ready replicas, the bad image, and that you have not undone yet.
-
-13. Decide on the cluster. This failure is a bad image. There is no database. The previous revision still fits. Rollback is safe. Fix-forward would mean shipping a real tag. Undo is the smallest safe recovery here.
-
-```bash
-kubectl rollout undo deployment/shopsphere-api
-kubectl rollout status deployment/shopsphere-api
-kubectl get pods -l app=shopsphere-api -o wide
-kubectl rollout history deployment/shopsphere-api
-```
-
-`--to-revision` is a real flag if history shows that undo did not land on the known-good image. Use the revision number from history, not a guessed number.
-
-```bash
-kubectl rollout history deployment/shopsphere-api
-kubectl rollout undo deployment/shopsphere-api --to-revision=1
-kubectl rollout status deployment/shopsphere-api
-```
-
-Do not declare recovery only because Pods become `Running`. Recovery in this stand-in is `2/2` Ready on `nginx:1.27`. In the tabletop, recovery is a successful checkout. Add the missing times to the timeline: rollback initiated, error rate decreasing, checkout verified, incident mitigated.
+If you have `kind`, also run **one** scenario from `drills/kubernetes-broken-cluster/` after the incident file exists. Do not skip the ShopSphere write-up to play the pack.
 
 ---
 
 ## Verify
 
-Read `INC-001-ShopSphere-Production-Deployment.md` as if you are on an incident call. You should name the symptom, the hold on rollback, the timeline, the blast radius, the evidence, and the decision without opening the lesson.
-
-Check these points:
-
-- Detection names Production, `shopsphere-api`, v1.9, v1.8, and checkout as the failing function.
-- The file states that you will not roll back until evidence exists.
-- The timeline includes deploy start, SUCCESS, 5xx, customer report, and incident declared.
-- Blast radius shows products succeeding and orders failing.
-- The decision says why rollback is safe in the tabletop (schema still fits v1.8) and what you refused to change during the incident.
-- If you ran the cluster path, `kubectl get deployment shopsphere-api` shows `2/2` after undo, and the incident file records evidence collected before undo.
-
-If a section is only a heading, fill it before you stop. An incident report with empty headings is not a report. If you have no cluster, stop after the markdown exists. Create the cluster later and continue from apply. Do not invent fake `kubectl` output.
+- INC-001 has a timeline and a mitigate-before-RCA order.
+- `/products` failed while `/health` stayed 200, or you recorded the cluster equivalent.
+- Burn math used 0.001, not CPU percent.
+- Inject is off. `app/main.py` matches Git.
+- Files live in ShopSphere.
 
 ---
 
 ## Break and fix
 
-The cluster undo recovered a bad image. A schema-incompatible release is a different failure. `kubectl rollout undo` moves the Deployment back to the previous ReplicaSet. It does not reverse a database migration. Rollback of the application and rollback of the database are different problems. Prove that on paper. Do not run a dangerous Production migration.
+Do both failures.
 
-1. Copy the incident file so the good tabletop stays intact.
+### Failure 1 — page on CPU
 
-```bash
-cp INC-001-ShopSphere-Production-Deployment.md INC-001-schema-incompatible.md
-```
+Write an alert `node_cpu_seconds > 80` as the first page. Then delete it. Record: CPU is a cause. The burn-rate rule is the symptom. Day 20 already forbade this. Game day is where people forget.
 
-2. Open `INC-001-schema-incompatible.md`. Change the hypothesis. v1.9 already applied this Production migration:
+### Failure 2 — undo a schema-incompatible release
 
-```text
-ALTER TABLE orders DROP COLUMN customer_code;
-ALTER TABLE orders ADD COLUMN customer_reference TEXT NOT NULL;
-```
+On paper, version N+1 migrated PostgreSQL and then the app failed. `kubectl rollout undo` restores the old image against the new schema. Write why undo is unsafe. The fix is expand-and-contract (Day 34). Mitigate with a forward fix or a dual-write, not a blind undo. Do not run a real migration today.
 
-v1.8 reads and writes `orders.customer_code`. v1.9 reads and writes `orders.customer_reference`. Both versions cannot run against this schema. Write a section titled `Why rollback is unsafe` and answer these questions in prose, not as a checklist:
+---
 
-- What happens to `POST /api/orders` if you run `kubectl rollout undo` and v1.8 starts against the new schema?
-- Does undo restore the dropped column `customer_code`?
-- Do Running Pods on v1.8 prove checkout works?
-- Would adding API replicas help, or would they open more failing queries?
+## Stretch
 
-Write the outcome. Undo returns v1.8. The column v1.8 needs is gone. Order SQL fails again. Customers still cannot place orders. You destroyed a useful timeline and you did not restore the business function. That is why you collect schema compatibility evidence before you undo.
-
-3. Rewrite the change as expand-and-contract in the same file. Keep both versions viable. Do not drop the old column in the same release that adds the new one.
-
-```text
-Expand:
-1. Add orders.customer_reference as nullable. Do not drop customer_code.
-2. Deploy a dual-write version. Write both columns. Read customer_code.
-3. Backfill customer_reference from customer_code.
-4. Verify both v1.8 and the dual-write version can create an order.
-
-Contract:
-5. Deploy a version that reads customer_reference and still writes both columns.
-6. Confirm checkout on that version.
-7. Stop writing customer_code.
-8. Drop customer_code only after no running version reads it.
-```
-
-Write two sentences under that list. Expand-and-contract keeps rollback possible at each step. A single incompatible migration makes `kubectl rollout undo` unsafe even when the Deployment undo succeeds.
-
-4. Return to `INC-001-ShopSphere-Production-Deployment.md`. Confirm it still records the compatible-schema rollback decision from the tabletop. The incompatible case lives in `INC-001-schema-incompatible.md`. Do not overwrite the good decision with the unsafe one.
+- Port-forward Grafana and watch the Day 35 success-ratio panel during inject. Screenshot stays out of Git if it contains host names you do not want public. Record the uid `shopsphere-catalog`.
+- Add `shopsphere_http_requests_total{code=...}` to `app/main.py` so the Day 20 PromQL is literal. Keep cardinality low (no `user_id`).
 
 ---
 
 ## Clean up
 
-If you did not create a cluster, you have markdown only. There is no cloud resource to destroy.
-
-If you applied `deployment.yaml`, delete that object. This lab used the default namespace.
-
 ```bash
-kubectl delete -f deployment.yaml
+./scripts/game-day-inject.sh off || git checkout -- app/main.py
+# stop the Python API if you started it
 ```
 
-Confirm it is gone:
-
-```bash
-kubectl get deployment shopsphere-api
-kubectl get pods -l app=shopsphere-api
-```
-
-Those gets should report that the resources were not found, or they should show no `shopsphere-api` Pods. Do not delete shared cluster resources that belong to other workloads.
-
-If your notes say `CREATED_KIND=yes`, delete the cluster you created. This removes the `kind` nodes for `day41`.
-
-```bash
-kind delete cluster --name day41
-```
-
-If your notes say `CREATED_MINIKUBE=yes`, stop and delete that profile only when you created it for this lab:
-
-```bash
-minikube delete
-```
-
-If your notes say `CREATED_KIND=no` and `CREATED_MINIKUBE=no`, do not delete the cluster. You reused a cluster that you did not create for this lab.
-
-Leave the lab directory and remove it:
-
-```bash
-cd /tmp
-rm -rf "$LAB_DIR"
-```
-
-If you want to keep notes, copy `INC-001-ShopSphere-Production-Deployment.md` and `INC-001-schema-incompatible.md` out before `rm -rf`. You created no Azure or AWS resources, so there is no resource group or VPC to delete. Do not copy the files into the course repository unless you are submitting homework through a path your instructor named.
+Do not leave `GAME_DAY` code in `main.py`. Keep INC-001. Uninstall kube-prometheus-stack only if you are done with observability (`helm uninstall kps -n monitoring`). Destroy AKS if you used it.
 
 ---
 
 ## Interview story
 
-I treat a green pipeline as a deploy-mechanism result, not as checkout health. When Production 5xx rises after v1.9, I record impact, build a timeline, and measure blast radius before I touch traffic. I compare Running Pods, Ready Pods, and Service endpoints, then I read logs on the failing order path. I ask whether v1.8 can still run on the current schema before I run `kubectl rollout undo`. If the schema still fits, rollback is the smallest safe recovery. If the migration already dropped the old column, undo puts v1.8 on an incompatible database and checkout stays broken. I recover that class of change with expand-and-contract, not with an immediate undo. On a local cluster I still collect evidence on a bad image before undo, then I confirm `2/2` Ready. Recovery is the business function working again, not the rollback command exiting.
+**Situation:** ShopSphere Production had dashboards from Day 20 and Day 35, but I had never run an incident against that stack. **Task:** Game-day a 5xx on the catalog, page on error-budget burn, and mitigate before root cause. **Action:** I wrote INC-001 first, proved `/products` at 200, injected HTTP 500 on that path, and measured `error_ratio=1.00` against a 0.001 budget (about 1000× fast burn) while `/health` stayed 200. I restored `app/main.py` before I wrote RCA. I refused a CPU page as the primary alert and I refused a blind rollout undo across a schema change. **Result:** I can walk detect → evidence → mitigate → verify → RCA on the same observability the capstone already had.
+
+---
+
+## Self-score checklist
+
+- [ ] INC-001 exists with mitigate before RCA.
+- [ ] I saw `/products` 5xx while `/health` was 200.
+- [ ] Burn math used the 99.9 percent budget.
+- [ ] I did not page on CPU as the primary alert.
+- [ ] Inject is off and `main.py` is clean.
+- [ ] Files live in ShopSphere.
+
+**Executed:** local inject against starter `app/main.py`: `/products` 500, `/health` 200, `error_ratio=1.00`, `fast_burn_x=1000.0`, then restore. **Not executed:** Prometheus `ALERTS` query, Grafana, kind, AKS, `kubectl rollout undo`.
