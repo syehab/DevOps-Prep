@@ -2,212 +2,246 @@
 
 This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [02-questions-and-answers.md](02-questions-and-answers.md). Then do this lab.
 
-Day 19 teaches the software supply chain as the trusted path from source to production. This lab proves two controls from that path: artifact integrity and pinned pipeline actions. You create a tiny artifact file, hash it with `sha256sum`, and record the digest. You then write a GitHub Actions workflow that uses `actions/checkout@v4`, not `@main`. You do not need a scanner, a registry account, or a paid GitHub org. Checksum plus pin is enough.
+Day 19 teaches the software supply chain. The old lab stopped at `sha256sum` and `actions/checkout@v4`. This lab adds **Gitleaks**, **Syft SBOM**, **Trivy**, **Cosign**, and a **Kyverno** policy that denies `:latest`.
 
-Work only in a temporary directory that you create for this lab. Do not write the artifact or the workflow inside this course repository. Do not push the lab to GitHub unless you already have a throwaway repo you own. Local files and local checksum verification are the required path.
+Work in **your ShopSphere repository**.
 
 ---
 
 ## Goal
 
-Create `artifact.txt`. Hash it with `sha256sum`. Save the digest in `artifact.sha256`. Confirm `sha256sum -c` reports OK. Write `.github/workflows/record-digest.yml` so the checkout step uses `actions/checkout@v4`. Then change `artifact.txt` on purpose, watch the checksum fail, restore the original bytes, and watch the checksum pass again.
+Scan the repo for secrets. Generate an SBOM of `app/`. Scan the image (or the filesystem) with Trivy. Sign and verify with Cosign (key pair is enough). Add a Kyverno ClusterPolicy. Pin GitHub Actions by tag.
 
-If Docker is installed, pull a small public image and inspect `RepoDigests`. That optional step shows how a registry digest identifies image content the same way `sha256sum` identifies a file. Skip Docker if the binary is missing. Do not invent scanner flags.
+Time box: 70 to 90 minutes.
 
-Time box: 40 to 70 minutes. Cost stays at ₹0. Stop when the restored checksum is OK, the workflow pins `@v4`, and the temp directory is deleted.
+---
+
+## Capstone stage
+
+| Path | Adds |
+|:--|:--|
+| `.github/workflows/supply-chain.yml` | gitleaks, Syft, Trivy |
+| `sbom/app.syft.json` | generated locally, you may gitignore it |
+| `policies/deny-latest.yaml` | Kyverno |
+| `docs/day-19-supply-chain.md` | digests and verify output |
 
 ---
 
 ## What you need
 
-You need a shell and GNU `sha256sum`. Check them first:
-
 ```bash
-command -v sha256sum
+gitleaks version
+syft version
+trivy --version
+cosign version
 sha256sum --version
 ```
 
-You do not need Azure, AWS, Maven, Kubernetes, Trivy, or a GitHub Actions minute. This lab never calls a vulnerability scanner. If you add a scan step, you are outside the lab.
+Pins that exist as of 2026-10-13:
 
-Docker is optional. Check it, then decide:
+| Tool | Version |
+|:--|:--|
+| Gitleaks | 8.24.0 (executed in the authoring VM) |
+| Syft | 1.19.0 (executed) |
+| Trivy | 0.58.1 |
+| Cosign | 2.4.3 |
 
-```bash
-command -v docker
-```
+Install from those GitHub release pages. Docker is optional. Trivy can scan a filesystem without an image.
 
-If `docker` is missing, write `docker: skipped` in your notes and continue. If it exists, you may run the optional inspect step later. Do not treat a missing daemon as a failed lab.
+---
 
-Create the lab under `/tmp`, not under this course clone. You must be able to delete that directory when you clean up.
+## Cost
 
-Keep a notes file named `day-19-supply-chain-lab.md` in the same temp directory. Record the digest, the failed checksum, the restored checksum, and the checkout pin. Do not paste secrets. This lab should not create any.
+Local scanners: **USD 0.00**. Cosign key pair is local. A public registry pull of `nginx:1.27` uses your network, not a cloud bill. Do not push signatures to a paid registry unless you will delete them.
 
 ---
 
 ## Steps
 
-1. Create a throwaway directory and enter it. Use a unique folder name so you do not collide with another lab. Confirm the path is under `/tmp`.
+1. Gitleaks.
 
 ```bash
-LAB_DIR="/tmp/day-19-supply-chain-lab-$$"
-mkdir -p "$LAB_DIR"
-cd "$LAB_DIR"
-pwd
+gitleaks detect --source . --no-git --verbose
 ```
 
-2. Create the artifact. This file stands in for a build output: a JAR, a tarball, or an image layer. Keep the content exact so the later restore matches.
+Expected: no leaks, or a finding you must fix. Do not commit `.env`.
+
+Plant a break (see Break and fix) only in a file you will delete.
+
+2. Hash the artifact the old lab already taught. Keep it.
 
 ```bash
-printf 'day-19-artifact-v1\n' > artifact.txt
-cat artifact.txt
+sha256sum app/main.py | tee docs/main.py.sha256
+sha256sum -c docs/main.py.sha256
 ```
 
-3. Hash the file and save the digest. `sha256sum` prints the digest and the filename. `tee` writes that line to `artifact.sha256` and shows it on the terminal. Copy the digest into `day-19-supply-chain-lab.md`.
+Expected: `OK`.
+
+3. SBOM with Syft 1.19.0.
 
 ```bash
-sha256sum artifact.txt | tee artifact.sha256
-cat artifact.sha256
+syft dir:app -o syft-json=sbom/app.syft.json -o table
 ```
 
-The first field is the SHA-256 digest. The second field is the file name. That pair is the integrity record. Production release notes should hold the same kind of record for a real artifact.
+On a stdlib-only app the table may say **No packages discovered**. That is still an SBOM. Record the command. If you have `requirements.txt` with a pin later, the table grows.
 
-4. Verify the record against the file. `sha256sum -c` rereads `artifact.txt`, hashes it again, and compares the result with `artifact.sha256`. You should see `artifact.txt: OK`.
+4. Trivy filesystem scan.
 
 ```bash
-sha256sum -c artifact.sha256
+trivy fs --scanners vuln,secret,misconfig app
 ```
 
-If the check fails now, you typed the wrong content or you edited the file after hashing. Recreate `artifact.txt` with the `printf` from step 2, then hash again.
+If Trivy is missing, write the command and record `trivy not executed`. Do not invent flags. `trivy fs` is real.
 
-5. Create the workflow directory. GitHub Actions loads YAML from `.github/workflows/`. The lab writes that path locally so you can inspect the pin. You do not have to push it.
+If Docker works:
 
 ```bash
-mkdir -p .github/workflows
+docker build -t shopsphere-api:dev -f app/Dockerfile app
+trivy image shopsphere-api:dev
 ```
 
-6. Write `.github/workflows/record-digest.yml`. The checkout action is pinned to `@v4`. Do not use `@main`. `@main` moves when the action repository moves. `@v4` is a published version tag. Copy this file exactly.
+5. Cosign key pair (local, not Fulcio, so you do not need an identity token).
+
+```bash
+mkdir -p .cosign
+cosign generate-key-pair --output-key-prefix .cosign/shopsphere
+# writes .cosign/shopsphere.key and .cosign/shopsphere.pub
+echo "signed by shopsphere" > /tmp/shopsphere-artifact
+cosign sign-blob --key .cosign/shopsphere.key --output-signature /tmp/shopsphere-artifact.sig /tmp/shopsphere-artifact
+cosign verify-blob --key .cosign/shopsphere.pub --signature /tmp/shopsphere-artifact.sig /tmp/shopsphere-artifact
+```
+
+Expected verify: `Verified OK`. Add `.cosign/*.key` to `.gitignore`. You may commit the `.pub` file.
+
+6. Kyverno policy. `policies/deny-latest.yaml`:
 
 ```yaml
-name: record-artifact-digest
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: deny-latest-tag
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: deny-latest
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+      validate:
+        message: "Do not use the latest tag."
+        pattern:
+          spec:
+            containers:
+              - image: "!*:latest"
+```
 
+Apply only if Kyverno is installed. Install is optional today:
+
+```bash
+helm repo add kyverno https://kyverno.github.io/kyverno/
+helm upgrade --install kyverno kyverno/kyverno -n kyverno --create-namespace
+kubectl apply -f policies/deny-latest.yaml
+```
+
+If Helm is missing, keep the YAML. Day 16 already used Helm.
+
+7. Workflow. `.github/workflows/supply-chain.yml` — pin actions by tag. Use `gitleaks/gitleaks-action@v2` only if you accept that action's latest v2; prefer a raw install of 8.24.0 in a step so the version is exact.
+
+```yaml
+name: supply-chain
 on:
-  push:
   pull_request:
-
+  push:
+    branches: [main]
 jobs:
-  checksum:
+  scan:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out source
-        uses: actions/checkout@v4
-      - name: Record SHA-256 of the artifact
-        run: sha256sum artifact.txt
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: syft
+        uses: anchore/sbom-action@v0
+        with:
+          path: app
+          format: syft-json
 ```
 
-7. Prove the pin. Search the workflow for `actions/checkout`. You should see `@v4` and you should not see `@main`.
-
-```bash
-grep -n 'actions/checkout' .github/workflows/record-digest.yml
-grep -n 'checkout@main' .github/workflows/record-digest.yml || echo 'checkout@main is absent'
-```
-
-Write one sentence in the notes: the pipeline checks out source with `actions/checkout@v4`, not `@main`. A mutable action tag is a supply-chain risk in the same way a mutable image tag is.
-
-8. Optional Docker inspect, only if `command -v docker` succeeded and the daemon responds. Pull a small public image, then print `RepoDigests`. `RepoDigests` is the registry content digest after pull. A tag such as `alpine` can move. The digest names the exact image content.
-
-```bash
-docker pull alpine:3.20
-docker image inspect alpine:3.20 --format '{{json .RepoDigests}}'
-```
-
-Copy the `RepoDigests` JSON into the notes. If pull or inspect fails, write `docker inspect: skipped` and continue. Do not add Trivy, Grype, or `docker sbom` flags. Checksum plus pin is the required proof.
-
-9. Start the notes file if you have not already. Record the file digest, the workflow pin, and the optional image digest. Keep the notes in the lab directory.
-
-```bash
-{
-  echo '# Day 19 supply-chain lab'
-  echo
-  echo 'Artifact digest:'
-  cat artifact.sha256
-  echo
-  echo 'Checkout pin:'
-  grep -n 'actions/checkout' .github/workflows/record-digest.yml
-} > day-19-supply-chain-lab.md
-cat day-19-supply-chain-lab.md
-```
+`anchore/sbom-action@v0` and `gitleaks/gitleaks-action@v2` are real actions. In a company repo, pin the commit SHA.
 
 ---
 
 ## Verify
 
-Read the notes as if you are on a call. You should name the artifact digest, say that `sha256sum -c` reported OK, and say that checkout is pinned to `@v4`.
-
-Check these points:
-
-- `artifact.txt` contains `day-19-artifact-v1`.
-- `artifact.sha256` holds one line: digest, space, `artifact.txt`.
-- `sha256sum -c artifact.sha256` prints `artifact.txt: OK`.
-- `.github/workflows/record-digest.yml` contains `uses: actions/checkout@v4`.
-- That workflow does not contain `actions/checkout@main`.
-- If Docker ran, the notes contain a `RepoDigests` value or an explicit skip.
-
-If `sha256sum -c` already fails, stop. Restore the file from step 2 before you go to Break and fix. The break step only has meaning when the baseline check is green.
+- `sha256sum -c` printed `OK`.
+- `gitleaks version` is 8.24.0 or you recorded the version you ran.
+- `syft dir:app` wrote a file (even if empty of packages).
+- Cosign verify printed `Verified OK`, or you recorded `cosign not installed`.
+- `policies/deny-latest.yaml` exists.
+- No private key is in Git.
 
 ---
 
 ## Break and fix
 
-Change the artifact without updating `artifact.sha256`. This is the supply-chain break: the bytes no longer match the recorded digest. Do not edit `artifact.sha256` yet.
+### Failure 1 — planted secret
 
 ```bash
-printf 'day-19-artifact-tampered\n' > artifact.txt
-cat artifact.txt
-sha256sum artifact.txt
-sha256sum -c artifact.sha256
+printf '%s\n' '-----BEGIN PRIVATE KEY-----' 'MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCv2lrjYi' '-----END PRIVATE KEY-----' > /tmp/leak.env
+gitleaks detect --source /tmp/leak.env --no-git
 ```
 
-The new `sha256sum artifact.txt` digest must differ from the line in `artifact.sha256`. `sha256sum -c` must fail. Copy the failed output into the notes. That failure is the control working. A tag or a file name stayed the same. The content did not.
+Expected: Gitleaks 8.24.0 prints `leaks found: 1` and exits 1. Delete the file. Do not commit it. Diagnose with Gitleaks, not with `grep` alone. A short `AKIA...` string may not match a rule. A PEM header does.
 
-Restore the original bytes. Do not change `artifact.sha256`. The recorded digest is the source of truth for this lab.
+### Failure 2 — checksum mismatch
 
 ```bash
-printf 'day-19-artifact-v1\n' > artifact.txt
-sha256sum -c artifact.sha256
+echo changed >> app/main.py
+sha256sum -c docs/main.py.sha256 || true
 ```
 
-The check must print `artifact.txt: OK` again. Write one sentence in the notes: a changed artifact fails the checksum; restoring the original bytes makes the recorded digest match.
+Expected: `FAILED`. Restore the file (`git checkout -- app/main.py`) and re-hash.
 
-Optional extra check on the workflow pin, if you still have time. Copy the workflow to a broken file that uses `@main`, then confirm your real workflow still uses `@v4`.
+---
 
-```bash
-sed 's/actions\/checkout@v4/actions\/checkout@main/' .github/workflows/record-digest.yml > /tmp/day-19-bad-workflow.yml
-grep -n 'actions/checkout' /tmp/day-19-bad-workflow.yml .github/workflows/record-digest.yml
-rm -f /tmp/day-19-bad-workflow.yml
-```
+## Stretch
 
-Do not leave `checkout@main` in `.github/workflows/record-digest.yml`. The broken copy is only a contrast. The lab workflow stays on `@v4`.
+- `cosign sign` an image digest on GHCR if you have a throwaway repo.
+- Kyverno `verifyImages` with the Cosign public key.
 
 ---
 
 ## Clean up
 
-Leave the lab directory and delete it. That removes the artifact, the digest file, the workflow, and the notes unless you copied the notes out first.
-
 ```bash
-cd /tmp
-rm -rf "$LAB_DIR"
+rm -f /tmp/shopsphere-artifact /tmp/shopsphere-artifact.sig /tmp/leak.env
+rm -f .cosign/shopsphere.key   # keep the pub if you want
 ```
 
-If you pulled `alpine:3.20` and you do not need that image, remove it. Do not run a broad prune.
-
-```bash
-docker image rm alpine:3.20
-```
-
-If Docker is missing, skip that command. You created no Azure or AWS resources, so there is no registry, cluster, or resource group to delete. Do not delete shared or production images.
+Do not leave a private key in chat or in Git.
 
 ---
 
 ## Interview story
 
-I treat a release artifact as untrusted until I can name its digest. I write a small file, run `sha256sum`, and store that line. When the file changes, `sha256sum -c` fails. When I restore the original bytes, the check passes. That is the same idea as pinning a container to `myapp@sha256:<digest>` instead of a moving tag. I also pin GitHub Actions checkout to `actions/checkout@v4` and I refuse `@main`, because the pipeline is part of the supply chain. If Docker is present I inspect `RepoDigests` after pull. I do not add a scanner I cannot operate. Checksum plus pin is enough to explain integrity in an interview.
+**Situation:** ShopSphere CI only hashed a file and pinned `actions/checkout@v4`. **Task:** Put secret scan, SBOM, image scan, and signature on the path to Prod. **Action:** I ran Gitleaks 8.24.0, Syft 1.19.0 on `app/`, Trivy `fs`, and Cosign `sign-blob` / `verify-blob` with a local key pair. I added a Kyverno policy that denies `:latest`. I planted a PEM private-key header and watched Gitleaks 8.24.0 exit 1, then I deleted the file. **Result:** I can name each gate and I do not call a checksum a complete supply chain.
+
+---
+
+## Self-score checklist
+
+- [ ] Gitleaks ran (or I recorded why not).
+- [ ] Syft wrote an SBOM file.
+- [ ] Checksum verify works and I broke it once.
+- [ ] Cosign verify worked, or I recorded `not executed`.
+- [ ] Kyverno YAML is in Git.
+- [ ] No private key or planted secret remains.
+
+**Executed in the authoring VM:** Gitleaks 8.24.0, Syft 1.19.0, `sha256sum`. **Not executed:** Trivy binary install, Cosign, Kyverno Helm, `trivy image`.
