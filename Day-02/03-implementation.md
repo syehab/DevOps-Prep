@@ -2,129 +2,142 @@
 
 This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [02-questions-and-answers.md](02-questions-and-answers.md). Then do this lab.
 
-Day 2 teaches the Linux runtime around an application. This lab inspects a real machine. You collect evidence from the kernel, memory, disk, processes, listening ports, and logs. You do not create cloud resources.
+Day 2 teaches the Linux runtime around an application. The old lab inspected the host and wrote notes anywhere. This lab inspects the **ShopSphere catalog process** from Day 1, then records evidence in Git.
+
+Work in **your ShopSphere repository**. Start `app/day01_server.py` (or the capstone starter) so you have a PID and a listen port.
 
 ---
 
 ## Goal
 
-Inspect the Linux environment on the machine you already use. Record what the operating system is, how much memory and disk remain, which processes run, and which TCP ports listen. Then write a short evidence note as if an application on this host had stopped.
+Collect OS, memory, disk, process, listen-port, and log evidence for the catalog API. Write `docs/runtime.md`. Prove that a missing listen on `8080` is not the same as a missing process.
 
-When you finish, you can walk the layers from process to port to resources to logs. You can also explain why a missing listen on port `8080` is not the same problem as a missing process.
+Time box: 45 to 75 minutes. Cost is **USD 0.00**.
+
+---
+
+## Capstone stage
+
+| Path | Adds |
+|:--|:--|
+| `docs/runtime.md` | Command output + troubleshooting order |
+| `docs/day-02-evidence.md` | PID, port, and the break |
 
 ---
 
 ## What you need
 
-You need a local Linux shell, a Linux VM you already have, or WSL. You do not need Azure, AWS, Docker, or a Spring Boot jar. Use the commands from the lesson. Do not invent extra tools.
+```bash
+uname -a
+python3 --version
+command -v ss || command -v netstat
+```
 
-Create a notes file named `day-02-runtime-inspect.md` in a folder you control. You will paste command output into that file. Do not put passwords, keys, or account IDs in the file.
+You do not need Azure, AWS, or Docker. Do not start or stop production services.
 
-Time box: 45 to 75 minutes. Cost stays at ₹0. Work only on this machine. Do not start or stop production services.
+---
+
+## Cost
+
+| Path | Estimated USD |
+|:--|:--|
+| Local inspect | **0.00** |
 
 ---
 
 ## Steps
 
-1. Open your notes file. Write the hostname and the date at the top. Write one sentence that names the host role, for example “local study laptop” or “dev VM”. Stay in this file for the rest of the lab.
-
-2. Identify the OS and kernel. Run the command below. Copy the full line into the notes. Mark the kernel name, hostname, kernel version, and architecture.
+1. Open ShopSphere. Start the Day 1 server if it is not running.
 
 ```bash
+mkdir -p docs
+python3 app/day01_server.py
+```
+
+If that file is missing, copy it from [Day-01/03-implementation.md](../Day-01/03-implementation.md) first.
+
+2. In a second shell, collect host evidence into `docs/runtime.md`.
+
+```bash
+hostname
+date -u
 uname -a
-```
-
-3. Check memory. Run the command below. Record total, used, and available memory. Write one sentence that says whether available memory looks healthy for a JVM.
-
-```bash
 free -h
-```
-
-4. Check disk. Run the command below. Look at the Use% column. Record the fullest filesystem. Write one sentence that says what happens if a disk reaches 100%.
-
-```bash
 df -h
 ```
 
-5. List processes. Run the command below. Find a process you recognize, such as `bash`, `sshd`, or `java`. Note its PID. If you see Java, also run the grep form from the lesson. Record the PID and the command name.
+Write one sentence: available memory is or is not enough for a JVM (this API is Python; the sentence still trains the habit). Write what happens if a disk hits 100% (logs and writes fail).
+
+3. Find the catalog process and its port.
 
 ```bash
-ps aux
-ps aux | grep java
+ps aux | grep -E 'day01_server|main.py' | grep -v grep
+ss -lntp | grep 8080 || netstat -lntp | grep 8080
+curl -sS http://127.0.0.1:8080/health
 ```
 
-6. List listening TCP ports. Run the command below. Copy two LISTEN lines into the notes. Where the output shows a process, write which process owns the port. If process names are blank, you still have the port numbers. That is enough evidence for this lab.
+Copy PID, the LISTEN line, and the health body into `docs/day-02-evidence.md`.
+
+4. Logs. This process logs to the server terminal (BaseHTTPRequestHandler). Copy two request lines. Then:
 
 ```bash
-ss -lntp
+ls /var/log | head
 ```
 
-7. Inspect logs. Run the lesson command first. If `myapp` is not installed, the command fails. That is expected. Then list log files. Do not start, stop, restart, or enable any service.
+Write: logs show what the service observed. They do not by themselves show memory or disk.
 
-```bash
-journalctl -u myapp
-ls -la /var/log
-```
-
-Copy a few log lines, or the names of two files under `/var/log`, into the notes. Write one sentence: logs show what the service observed; they do not by themselves show memory or disk.
-
-8. Write a troubleshooting order in the notes, using this path from the lesson:
+5. Troubleshooting order in `docs/runtime.md`:
 
 ```text
-systemctl status (if a service exists)
-        ↓
-Read service / application logs
-        ↓
-Check process
-        ↓
-Check port
-        ↓
-Check resources
-        ↓
-Investigate the actual failure
+status (if a unit exists) → logs → process → port → resources → the actual failure
 ```
 
-Next to each step, paste the command you already ran, or write “not present on this host” if `systemctl` is missing. Do not restart anything.
+`systemctl status` may be missing. Write "not present" if it is. Do not restart a host service.
 
 ---
 
 ## Verify
 
-Read the notes out loud as if you are on a call. You should be able to name the OS, one PID, one listening port, memory available, disk Use%, and one log observation without opening extra tools.
-
-Check these points:
-
-- `uname -a`, `free -h`, `df -h`, `ps aux`, and `ss -lntp` each have a result in the notes.
-- One PID is recorded. The note says that a living process is not the same as a healthy application.
-- At least one LISTEN line is recorded. The note says listening is not the same as “clients can reach it”.
-- Logs came from `journalctl` or from files under `/var/log`. The note does not guess a root cause from a symptom.
-
-If any layer is missing, run that command again and add the evidence before you stop.
+- `docs/runtime.md` has `uname`, `free`, `df`, PID, and port 8080.
+- `/health` returned `ok` while the process ran.
+- Notes say a missing LISTEN is not the same as a missing PID.
 
 ---
 
 ## Break and fix
 
-Do this on purpose. Look for port `8080` in the `ss -lntp` output. On most study machines nothing listens there. That is the safe failure.
+### Failure 1 — stop the process
 
-Write three short lines in the notes:
+Stop the server. Run `ss -lntp | grep 8080` and `curl`. Expected: no LISTEN, connection refused. Restart. Both return.
 
-1. Process: is a `java` process present in `ps aux`? Yes or no, with the PID if you found one.
-2. Listen: does `ss -lntp` show `LISTEN` on `:8080`? On this host the answer is usually no.
-3. Gap: a missing listen is not proof that “Java is broken”, and it is not proof that the network is broken. It only answers “is anything listening on this port?”
+### Failure 2 — process up, wrong port
 
-Do not start a dummy service to make the port appear. Do not run `systemctl start`, `stop`, or `restart`. Put the three lines next to the troubleshooting path. That gap is the habit this Day trains: collect evidence at the listen layer before you change anything.
+Start the server, then `curl http://127.0.0.1:8081/health`. Expected: connection refused. The PID is healthy. The path is wrong. Write that sentence.
+
+---
+
+## Stretch
+
+- `journalctl -u shopsphere` after you add a systemd unit (optional, do not enable on a shared host).
 
 ---
 
 ## Clean up
 
-You created no cloud resources. Keep `day-02-runtime-inspect.md` in your notes. Remove any pasted output that shows private IPs you do not want to keep, if that matters for your environment.
-
-Do not disable services. Do not delete `/var/log` files. If you opened a cloud console out of habit, close it. There is no resource group, VPC, or VM to delete unless you created a temporary VM only for this lab. If you did, delete that VM now.
+Stop the Python process. Keep the markdown.
 
 ---
 
 ## Interview story
 
-I do not treat “the application is down” as a diagnosis. I inspect the Linux runtime first: `uname -a` for the kernel, `free -h` and `df -h` for capacity, `ps aux` for the PID, `ss -lntp` for the listen, and logs with `journalctl` or the files under `/var/log`. If the process exists but port 8080 does not listen, I stay on that layer. A restart can hide the cause, so I collect evidence before I change anything.
+**Situation:** An interview asked how I debug a silent host. **Task:** Show evidence from a live ShopSphere process. **Action:** I recorded `uname`, `free`, `df`, the catalog PID, and `ss` LISTEN on 8080, then curled `/health`. I stopped the process and saw connection refused. I curled 8081 while 8080 still listened to separate a dead process from a wrong path. **Result:** I can walk process → port → resources → logs without opening a portal.
+
+---
+
+## Self-score checklist
+
+- [ ] PID and port 8080 are in Git.
+- [ ] I saw connection refused after stop.
+- [ ] I did not restart a host service.
+
+**Executed:** `uname`, `free`, `df`, `ps`, `ss`/`netstat`, `curl` on this class of host. **Not executed:** `journalctl -u myapp`, Azure, AWS.
