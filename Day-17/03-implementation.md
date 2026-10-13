@@ -2,251 +2,256 @@
 
 This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [02-questions-and-answers.md](02-questions-and-answers.md). Then do this lab.
 
-Day 17 teaches AKS and EKS as managed Kubernetes plus cloud integrations. The cloud provider manages the control plane. Your team still owns compute, networking, identity, and workloads. This lab produces a markdown comparison of AKS and EKS. You fill control plane, node identity versus Workload Identity and IRSA, networking, and add-ons. You do not create an AKS or EKS cluster. Those services cost money.
-
-If `kind` is present, you may start a local cluster as a stand-in. `kind` is not AKS. It is not EKS. It only lets you see a control plane and worker capacity on your machine. If `kind` is missing, the comparison table and the identity note are the lab.
+Day 17 teaches AKS and EKS as managed Kubernetes plus cloud integrations. The old lab **forbade** `az aks create` and produced a comparison table. This lab writes a real `azurerm_kubernetes_cluster` module. You apply it only after a budget alert, on **one** `Standard_B2s` node, and you destroy it the same session. If you have no subscription, you still write the module, run `terraform test`, and wire Workload Identity YAML on `kind`.
 
 ---
 
 ## Goal
 
-Write one comparison document that maps AKS to EKS for four platform jobs: control plane, node identity and workload identity, networking, and add-ons. Record who owns each job. Then write a broken identity: the cluster identity is admin on the whole Azure subscription or AWS account. Shrink that identity to the cluster and to one application secret.
+Add `infra/azure/modules/aks` that creates a one-node AKS cluster with OIDC and Workload Identity enabled. Call it from Dev. Run `terraform test`. Apply only when the estimate stays under USD 5 and a budget exists. Map the same idea to EKS / IRSA in the notes.
 
-If Docker and `kind` work on this machine, create a disposable local cluster named `day17`. List nodes. Apply one nginx Deployment so you can see that you still own the workload. Delete that cluster if this lab created it. Do not run `az aks create`. Do not run `eksctl` or `aws eks create-cluster`.
+Time box: 75 to 90 minutes. Destroy before you walk away.
 
-Time box: 45 to 75 minutes. Cost stays at ₹0. Stop when the comparison table is complete, the identity blast-radius note is written, and any `kind` cluster this lab created is gone.
+---
+
+## Capstone stage
+
+| Path | Adds |
+|:--|:--|
+| `infra/azure/modules/aks/` | `azurerm_kubernetes_cluster` |
+| `k8s/identity/serviceaccount.yaml` | Workload Identity annotations |
+| `docs/day-17-aks-eks.md` | Ownership table + destroy evidence |
 
 ---
 
 ## What you need
 
-You need a text editor and a shell. You do not need an Azure subscription or an AWS account. Do not create AKS or EKS. The required deliverable is markdown.
-
-`kind` is optional. Check the tools first:
-
 ```bash
-command -v docker
-command -v kind
-command -v kubectl
+terraform version
+az account show --query name -o tsv
+kind get clusters
 ```
 
-If `kind` or Docker is missing, skip every `kind` and `kubectl` step. Write `kind missing — comparison table and identity note are the lab` in your notes. Do not invent another cluster tool. Do not open a cloud console to compensate.
+Azure is optional. Terraform 1.16.5 and azurerm 5.9.0 are required for the module. `kind` cluster `shopsphere` is the fallback.
 
-If `kind` is present, you also need `kubectl` and a running Docker engine. Check versions:
+---
+
+## Cost
+
+| Path | Estimated USD (1–2 hours, then destroy) |
+|:--|:--|
+| `terraform test` + kind YAML | **0.00** |
+| AKS `sku_tier = "Free"` + 1 × `Standard_B2s` + OS disk | **1.50–4.50** |
+| Extra node, NAT Gateway, or Standard load balancer SKU | **Stop. Change the code.** |
+
+Create the budget first ([../capstone/COST.md](../capstone/COST.md)). Do not write "cost stays at INR 0". AKS nodes bill.
+
+Teardown:
 
 ```bash
-docker version
-kind version
-kubectl version --client
+make destroy
+# or
+terraform -chdir=infra/azure/environments/dev destroy
+az aks list -o table
 ```
-
-Create the lab under `/tmp`, not under this course clone. Keep notes in `day-17-aks-eks-lab.md` in that temp directory. Record the table, the identity shrink, and whether this lab created a `kind` cluster. Do not paste kubeconfig, tokens, or cloud account IDs.
 
 ---
 
 ## Steps
 
-1. Create a throwaway directory and enter it. Use a unique folder name so you do not collide with another lab. Confirm the path is under `/tmp`.
+1. Write `infra/azure/modules/aks/main.tf`. This block **validates** on azurerm 5.9.0. The provider requires `node_provisioning_profile`.
+
+```hcl
+variable "name" { type = string }
+variable "location" { type = string }
+variable "resource_group_name" { type = string }
+
+resource "azurerm_kubernetes_cluster" "this" {
+  name                = var.name
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  dns_prefix          = replace(var.name, "-", "")
+  sku_tier            = "Free"
+
+  default_node_pool {
+    name       = "sys"
+    node_count = 1
+    vm_size    = "Standard_B2s"
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  oidc_issuer_enabled       = true
+  workload_identity_enabled = true
+
+  node_provisioning_profile {
+    mode = "Manual"
+  }
+}
+
+output "name" {
+  value = azurerm_kubernetes_cluster.this.name
+}
+
+output "oidc_issuer_url" {
+  value = azurerm_kubernetes_cluster.this.oidc_issuer_url
+}
+```
+
+2. Call it from Dev only if you will apply. Otherwise keep it as a module and test it from a tiny root in `modules/aks/tests` by making `modules/aks` a testable module. Simpler: add the module to a file `infra/azure/environments/dev/aks.tf` and **leave it commented** until you apply. Better: write `infra/azure/modules/aks/tests/aks.tftest.hcl` next to a `terraform { required_providers }` wrapper.
+
+Create `infra/azure/modules/aks/versions.tf`. Do **not** put a `provider` block in the module. The Dev root already has one.
+
+```hcl
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "5.9.0"
+    }
+  }
+}
+```
+
+`infra/azure/modules/aks/tests/aks.tftest.hcl`:
+
+```hcl
+mock_provider "azurerm" {}
+
+run "sku" {
+  command = plan
+  variables {
+    name                = "aks-shopsphere-dev"
+    location            = "eastus"
+    resource_group_name = "rg-shopsphere-aks-dev"
+  }
+  assert {
+    condition     = azurerm_kubernetes_cluster.this.sku_tier == "Free"
+    error_message = "lab cluster must use sku_tier Free"
+  }
+  assert {
+    condition     = azurerm_kubernetes_cluster.this.default_node_pool[0].vm_size == "Standard_B2s"
+    error_message = "lab node must be Standard_B2s"
+  }
+}
+```
 
 ```bash
-LAB_DIR="/tmp/day-17-aks-eks-lab-$$"
-mkdir -p "$LAB_DIR"
-cd "$LAB_DIR"
-pwd
+cd infra/azure/modules/aks
+terraform init
+terraform validate
+terraform test
 ```
 
-2. Create the notes file. Put the date at the top. Write one short paragraph: you will compare AKS and EKS on paper. You will not create those clusters. You will use `kind` only if it is already on this machine, and only as a local stand-in.
+Expected: `1 passed`. This was executed on Terraform 1.16.5 / azurerm 5.9.0 in the authoring environment.
+
+3. If Azure is available and the budget exists, create the resource group (or reuse Day 8), then apply **only** the AKS module from a dedicated root `infra/azure/environments/aks-dev/` so you can destroy it without touching state for other Days.
 
 ```bash
-touch day-17-aks-eks-lab.md
-ls
-```
-
-3. Write the ownership sentence before the table. Use the lesson model. Azure or AWS manages the Kubernetes control plane. Your team still owns node pools or managed node groups, workloads, networking design, identity bindings, and operations. Never write that the provider manages Kubernetes as if everything is managed.
-
-Write at least one short paragraph. Name AKS and EKS. Say that Kubernetes objects stay the same. Say that identity, network, registry, load balancing, and monitoring integrations change.
-
-4. Add the AKS versus EKS comparison table. Copy this block into the notes file. Fill every cell in your own words. Do not leave a cell as a product name only. Write what the layer does, then the Azure name, then the AWS name.
-
-```markdown
-| Layer | What it does | AKS / Azure | EKS / AWS | Who owns it |
-|:--|:--|:--|:--|:--|
-| Control plane | API server, scheduler, controllers, cluster state | | | |
-| Node identity | Nodes call cloud APIs (pull images, attach disks, join the VPC/VNet) | | | |
-| Workload identity | A Pod calls cloud APIs without a static access key | Workload Identity | IRSA / EKS Pod Identity | |
-| Networking | Nodes and Pods sit on a cloud network with routes and security rules | VNet, subnets, NSGs, CNI | VPC, subnets, security groups, CNI | |
-| Add-ons | Monitoring, DNS inside the cluster, cloud load-balancer integration | | | |
-```
-
-Fill control plane first. Azure manages the AKS control plane. AWS manages the EKS control plane. You do not run etcd. You still reach the Kubernetes API.
-
-Fill node identity next. On AKS, nodes use a managed identity to talk to Azure. On EKS, nodes use an IAM instance role. That identity is for the node, not for the application.
-
-Fill workload identity. Azure Workload Identity maps a ServiceAccount to a Microsoft Entra ID identity. IRSA lets a ServiceAccount assume an IAM role through an OIDC trust. EKS Pod Identity attaches an IAM role without you wiring the OIDC provider by hand. No access keys live in the Pod.
-
-Fill networking. AKS sits on a VNet. EKS sits on a VPC. Kubernetes does not remove routes, NSGs, or security groups. A missing cloud route still looks like the application is down.
-
-Fill add-ons. Map Azure Monitor to CloudWatch. Map ACR to ECR only as the image source the cluster pulls. Map Azure Load Balancer or Application Gateway to the ELB family. Say the map is conceptual. Behavior is not identical.
-
-5. Write two sentences under the table. AKS and EKS are both managed Kubernetes. They are not the same service. Workload Identity is not IRSA. A VNet is not a VPC. You learn the concept once, then you map the cloud implementation.
-
-6. Draw the local stand-in versus managed ownership. Copy this block, then add one sentence: `kind` shows Kubernetes. It does not show Azure or AWS integrations.
-
-```text
-kind (this lab, optional)
- └── You operate the local control plane and the worker node (Docker)
-
-AKS / EKS (not created in this lab)
- ├── Cloud provider: managed control plane
- └── You: node pools / node groups, workloads, VNet/VPC, identity, add-ons
-```
-
-7. Check `kind`. If the command fails, write `kind missing` and go to Verify. Do not run the cluster steps.
-
-```bash
-command -v kind
-command -v kubectl
-docker version
-```
-
-8. If `kind` is present, decide whether you need a new cluster. List clusters. If `kubectl get nodes` already works on a disposable local cluster, you may reuse it. Record the context. Do not use a production cluster. Do not use AKS or EKS.
-
-```bash
-kind get clusters
-kubectl config current-context
-```
-
-Create a cluster only when you need one:
-
-```bash
-kind create cluster --name day17
-```
-
-Wait until the command exits. Then confirm the API answers:
-
-```bash
-kubectl cluster-info
+mkdir -p infra/azure/environments/aks-dev
+# root that calls module.aks and creates rg-shopsphere-aks-dev
+terraform -chdir=infra/azure/environments/aks-dev init
+terraform -chdir=infra/azure/environments/aks-dev plan
+# read the plan. one cluster, one node, no NAT Gateway.
+terraform -chdir=infra/azure/environments/aks-dev apply
+az aks get-credentials --resource-group rg-shopsphere-aks-dev --name aks-shopsphere-dev --overwrite-existing
 kubectl get nodes
-kubectl get pods -A
 ```
 
-`cluster-info` shows control-plane endpoints. `get nodes` lists worker capacity. `get pods -A` lists system Pods. On `kind`, the control-plane node is a Docker container on your machine. On AKS or EKS you would not operate that node. Write `CREATED_KIND=yes` in your notes if you ran `kind create cluster --name day17`. Write `CREATED_KIND=no` if you reused a cluster, or if you skipped `kind`.
+If apply would exceed USD 5, stop. Use the kind path.
 
-9. If you have a local cluster, apply one nginx Deployment. This is the workload you still own after the control plane is someone else's problem. The image is `nginx:1.27` from Day 14.
+4. Workload Identity YAML (works as a document on kind; the token exchange works only on AKS).
+
+`k8s/identity/serviceaccount.yaml`:
 
 ```yaml
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: ServiceAccount
 metadata:
-  name: nginx
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: nginx
-  template:
-    metadata:
-      labels:
-        app: nginx
-    spec:
-      containers:
-        - name: nginx
-          image: nginx:1.27
-          ports:
-            - containerPort: 80
+  name: catalog
+  namespace: shopsphere
+  annotations:
+    azure.workload.identity/client-id: "00000000-0000-0000-0000-000000000000"
+  labels:
+    azure.workload.identity/use: "true"
 ```
 
-Save that YAML as `deployment.yaml`. Apply it and list Pods:
+On AKS you replace the GUID with a federated Entra app. On `kind` the annotation does nothing. Write that limit in the notes.
 
-```bash
-kubectl apply -f deployment.yaml
-kubectl get deployment nginx
-kubectl get pods -l app=nginx
-```
+5. Fill the ownership table in `docs/day-17-aks-eks.md`.
 
-Record the node name from `kubectl get pods -l app=nginx -o wide`. The Pod runs on worker capacity. That is the compute layer you still size on AKS node pools or EKS node groups. `kind` does not give you Workload Identity, IRSA, a VNet, or a VPC. Write that limit in the notes.
+| Layer | AKS / Azure | EKS / AWS | Who owns it |
+|:--|:--|:--|:--|
+| Control plane | Managed | Managed | Cloud |
+| Node pool / node group | `Standard_B2s` / `t3.small` | You |
+| Workload identity | Workload Identity | IRSA / Pod Identity | You |
+| Network | VNet / NSG | VPC / SG | You |
 
 ---
 
 ## Verify
 
-Read `day-17-aks-eks-lab.md` as if you are on a call. You should name what the provider manages and what stays yours, without opening the lesson.
-
-Check these points:
-
-- The table has rows for control plane, node identity, workload identity, networking, and add-ons.
-- Workload identity names Azure Workload Identity and IRSA or EKS Pod Identity. The notes say no access keys live in the Pod.
-- Networking names VNet and VPC. The notes say Kubernetes does not remove cloud routes or security rules.
-- Add-ons map monitoring and load-balancer integration. The notes say the map is conceptual, not identical.
-- The ownership paragraph says the provider manages the control plane and you still own workloads.
-- If `kind` ran, `kubectl get nodes` returned at least one Ready node, and `kubectl get deployment nginx` shows the Deployment.
-- You did not create AKS or EKS. Cost stays at ₹0.
-
-If a table cell is only a heading, fill it before you stop. A comparison with empty cells is not a design.
+- `terraform validate` and `terraform test` passed on `modules/aks`.
+- The module sets `workload_identity_enabled = true` and one `Standard_B2s` node.
+- You either applied and listed a Ready node, or you recorded `apply skipped`.
+- ServiceAccount YAML exists.
+- Notes do **not** say the lab is free if AKS ran.
 
 ---
 
 ## Break and fix
 
-The lesson asks you to keep least privilege at the cloud layer and at the Kubernetes layer. Break that on paper. Do not assign a real Owner role. Do not attach `AdministratorAccess`. Document the mistake, then shrink it.
+### Failure 1 — missing `node_provisioning_profile`
 
-Copy the notes so you can compare the two designs:
+Remove the block. Run `terraform validate`. Expected on azurerm 5.9.0:
 
-```bash
-cp day-17-aks-eks-lab.md day-17-aks-eks-lab-broken.md
+```text
+Insufficient node_provisioning_profile blocks
+At least 1 "node_provisioning_profile" blocks are required.
 ```
 
-Open `day-17-aks-eks-lab-broken.md`. Add a section titled `Over-privileged cluster identity`. Write that the AKS cluster identity is Owner on the whole Azure subscription. Write that the EKS node role or cluster role is `AdministratorAccess` on the whole AWS account. Keep the tidy table above it. A tidy table does not shrink blast radius.
+Restore the block. Validate again.
 
-Write a short `Blast radius` paragraph in that broken file. Answer these questions in prose:
+### Failure 2 — over-privileged cluster identity
 
-- What can a stolen kubelet identity or a escaped Pod do if the cluster identity already administers the subscription or account?
-- Can that identity create or delete other teams' resource groups, VPCs, or Key Vaults and secrets?
-- What happens to billing and quotas when one cluster can create resources anywhere in the account?
-- Does Kubernetes RBAC inside one namespace stop a cloud-admin identity from calling ARM or AWS APIs?
+On paper (or in the notes), give the kubelet identity `Owner` on the subscription. Write the blast radius: a stolen node identity can delete other teams' resource groups. Shrink it: the cluster identity manages the node resource group only. The app uses Workload Identity to one Key Vault secret. Kubernetes RBAC does not limit ARM.
 
-Kubernetes RBAC does not limit Azure RBAC or IAM. A cluster-admin on the Kubernetes API is already too broad. A cluster identity with Owner or `AdministratorAccess` on the whole subscription or account is worse. The blast radius is the entire billing boundary, not one namespace.
+---
 
-Then fix `day-17-aks-eks-lab.md`. Add a section titled `Least-privilege cluster identity`. Shrink the Azure side: the cluster or kubelet identity may manage the node resource group and the AKS resource. It does not get Owner on the subscription. The application uses Workload Identity with permission to read one Key Vault secret, not every vault.
+## Stretch
 
-Shrink the AWS side the same way. The node IAM role may pull from ECR, describe instances, and talk to the VPC CNI. It does not get `AdministratorAccess`. The application uses IRSA or EKS Pod Identity with permission to read one secret or one S3 prefix. The CI/CD role that deploys YAML is a third identity. It is not the runtime role.
-
-Do not leave the broken design as the main document. Keep `day-17-aks-eks-lab-broken.md` as the evidence of the mistake.
+- Add `azurerm_federated_identity_credential` for the `catalog` ServiceAccount.
+- Write the EKS twin: `aws_eks_cluster` + `aws_eks_node_group` + IRSA annotation `eks.amazonaws.com/role-arn`. Do not apply EKS today unless you are on the AWS week (Days 26-29). EKS control plane is about USD 0.10/hour.
 
 ---
 
 ## Clean up
 
-If you applied nginx, delete that Deployment:
+If you applied AKS:
 
 ```bash
-kubectl delete -f deployment.yaml
-kubectl get deployment nginx
+terraform -chdir=infra/azure/environments/aks-dev destroy
+az aks show --resource-group rg-shopsphere-aks-dev --name aks-shopsphere-dev
 ```
 
-The get should report that the Deployment was not found. Do not delete shared cluster resources that belong to other workloads.
+Expected: the show command fails with `ResourceNotFound`. If a public IP or disk remains, delete it. Do not leave the node running overnight.
 
-If your notes say `CREATED_KIND=yes`, delete the cluster you created:
-
-```bash
-kind delete cluster --name day17
-```
-
-If your notes say `CREATED_KIND=no`, do not run `kind delete cluster`. You reused a cluster, or you never created one.
-
-This lab created no AKS or EKS cluster. There is no resource group, VPC, or node pool to delete in Azure or AWS. Do not run `az group delete` or `aws eks delete-cluster` as cleanup. You never created those resources.
-
-Leave the lab directory and remove it. Copy `day-17-aks-eks-lab.md` out first if you want to keep the notes.
-
-```bash
-cd /tmp
-rm -rf "$LAB_DIR"
-```
-
-Do not copy kubeconfig or the broken identity file into the course repository.
+Keep `kind` cluster `shopsphere` for later Days.
 
 ---
 
 ## Interview story
 
-I treat AKS and EKS as managed Kubernetes plus cloud integrations, not as two different Kubernetes products. Azure or AWS runs the control plane. I still own node pools or node groups, the VNet or VPC, add-ons, and the workloads. Workload Identity on Azure, and IRSA or EKS Pod Identity on AWS, map a ServiceAccount to a cloud role so the Pod never stores an access key. I prove the Kubernetes loop on `kind` when I need a local stand-in. I do not create AKS or EKS for that proof. I then write the failure mode: a cluster identity with Owner or `AdministratorAccess` on the whole subscription or account can reach every other team's resources. I shrink that identity to the cluster resource group or node role, and I give the application one secret. Kubernetes RBAC does not replace that cloud boundary.
+**Situation:** The old homework said "do not create AKS," so I had no cluster story. **Task:** Describe and, if the budget allowed, create a one-node AKS cluster with Workload Identity, then destroy it. **Action:** I wrote `azurerm_kubernetes_cluster` on provider 5.9.0, including the required `node_provisioning_profile`, and I covered SKU and VM size with `terraform test`. I set `oidc_issuer_enabled` and `workload_identity_enabled`. I applied only after a budget alert, on `Standard_B2s`, then ran `terraform destroy` the same day. On `kind` I still committed the ServiceAccount annotations. **Result:** I can explain what Azure manages versus what I own, and I never claimed AKS was free.
+
+---
+
+## Self-score checklist
+
+- [ ] AKS module validates and tests pass.
+- [ ] I saw the `node_provisioning_profile` validate error when I removed the block.
+- [ ] I wrote the least-privilege identity shrink.
+- [ ] I destroyed AKS the same session, or I never applied.
+- [ ] Files live in ShopSphere.
