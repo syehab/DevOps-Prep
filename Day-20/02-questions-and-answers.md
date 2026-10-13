@@ -755,3 +755,18 @@ Detect → Assess → Stabilize → Investigate → Recover → Learn → Preven
 Observability is not collecting more data. It is collecting the right evidence to operate production.
 
 </details>
+
+---
+
+## 26. Recall — Why define dashboards and alerts as code?
+
+Why should dashboards and alert rules live in Terraform or Crossplane instead of only in a GUI?
+
+<details>
+<summary>Answer</summary>
+
+They become reviewable, versioned, and reversible. A pull request shows who changed the alert. Git can roll it back.
+
+Keep metric-label cardinality low. `user_id` as a label explodes series count and cost. Put IDs in logs and traces. Token usage and model cost are metrics too, next to latency and errors.
+
+</details>
