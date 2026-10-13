@@ -2,229 +2,263 @@
 
 This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [02-questions-and-answers.md](02-questions-and-answers.md). Then do this lab.
 
-Day 18 teaches identity, secrets, and blast radius. A secret that lands in Git stays in history even after you delete the file. This lab keeps that lesson local. You generate a real secret with `openssl`, store it in a file, and prove Git ignores it. You never push. You never use the course repository.
+Day 18 teaches identity and secrets. The old lab only proved `.gitignore`. This lab still does that, then adds the Senior pieces: **GitHub OIDC to Entra** (no client secret) and a **Key Vault CSI** SecretProviderClass for the catalog Pod. Workload Identity YAML from Day 17 is the Kubernetes side of the same chain.
 
-Work only in a temporary Git repository under `/tmp`. Do not run `git add` inside this DevOps-Prep clone. Do not create Azure Key Vault, AWS Secrets Manager, or a paid cluster. Optional Kubernetes steps run only if `kind` and `kubectl` already work on this machine.
+Work in **your ShopSphere repository**. Generate secrets only in ignored files. Never commit them.
 
 ---
 
 ## Goal
 
-Create a throwaway Git repository. Generate a 16-byte secret with `openssl rand -hex 16` and write it to a file. Add that file to `.gitignore`. Show that `git check-ignore` reports the file and that `git status` does not list it.
+1. Prove Git ignores a secret file.
+2. Write Terraform for a user-assigned identity plus two federated credentials: GitHub Actions and the `shopsphere:catalog` ServiceAccount.
+3. Write a SecretProviderClass that mounts one Key Vault secret.
+4. Run `terraform test` on the identity module. Apply Key Vault only if a budget exists.
 
-Then break the lab on purpose. Stage the secret with `git add`. Remove it from the index with `git rm --cached` before any commit of the secret and before any push. Put the path in `.gitignore` again. Confirm Git no longer tracks it.
+Time box: 70 to 90 minutes.
 
-Optional: if `kind` is present and `kubectl` can reach a cluster, create a Kubernetes Secret from the same file with `kubectl create secret generic`. Do not commit that Secret YAML. Do not paste the secret into notes, tickets, or chat.
+---
 
-Time box: 40 to 70 minutes. Cost stays at ₹0. Stop when `git status` is clean of secret files, `git check-ignore` names the secret file, you have not run `git push`, and cleanup has deleted the temp repository.
+## Capstone stage
+
+| Path | Adds |
+|:--|:--|
+| `secrets/app.env` + `.gitignore` | Ignored secret file |
+| `infra/azure/modules/identity/` | UAMI + two federated credentials |
+| `k8s/identity/secretproviderclass.yaml` | Key Vault CSI |
+| `docs/day-18-identity.md` | Subjects and `check-ignore` output |
 
 ---
 
 ## What you need
 
-You need a shell, Git, and OpenSSL. Check them first:
-
 ```bash
-command -v git
-command -v openssl
 git version
 openssl version
+terraform version
 ```
 
-`openssl rand -hex 16` writes 16 random bytes as hex. That is a real secret for this lab. Treat it like a password. Do not reuse it anywhere else. Do not print it into a shared document.
+Azure CLI is optional. kind is optional. `terraform test` does not need Azure.
 
-You do not need Azure, AWS, AKS, or EKS. Kubernetes is optional. Check whether `kind` and `kubectl` exist. Skip the optional Secret step if either command is missing or if `kubectl cluster-info` fails.
+---
 
-```bash
-command -v kind
-command -v kubectl
-kubectl version --client
-```
+## Cost
 
-Create the lab under `/tmp`, not under this course clone. The course `.gitignore` must not be the file you edit. The lab repository must be a new `git init` directory. You must be able to delete that directory when you clean up.
+| Path | Estimated USD |
+|:--|:--|
+| Git ignore + `terraform test` + YAML | **0.00** |
+| Key Vault Standard + a few operations | **0.10-0.30** |
+| Soft-deleted vault retention | small; purge only lab vaults |
 
-Keep a notes file named `day-18-secrets-lab.md` in the same temp directory. Record command output, not the secret value. Write `ignored` or `staged` as the result. If you paste `openssl` output into the notes, you have already leaked the lab secret.
+Create a budget before you apply a vault. See [../capstone/COST.md](../capstone/COST.md). Do not write "INR 0" if you created a vault.
 
 ---
 
 ## Steps
 
-1. Create a throwaway directory and enter it. Use a unique folder name so you do not collide with another lab. Confirm the path is under `/tmp` and is not inside the DevOps-Prep clone.
+1. Secret hygiene in ShopSphere, not in a second clone.
 
 ```bash
-LAB_DIR="/tmp/day-18-secrets-lab-$$"
-mkdir -p "$LAB_DIR"
-cd "$LAB_DIR"
-pwd
+mkdir -p secrets docs
+openssl rand -hex 16 > secrets/app.env
+printf 'secrets/\n' >> .gitignore
+git check-ignore -v secrets/app.env
+git status --porcelain secrets/app.env
 ```
 
-Write the date and the path at the top of `day-18-secrets-lab.md`. Write one sentence: this repository is disposable, and you will not run `git push`.
+Expected: `check-ignore` prints a `.gitignore` rule. `git status` does **not** list `secrets/app.env`. Do not paste the hex into notes.
 
-2. Initialize a new Git repository here. This is the only Git repository you touch in this lab. Check `git rev-parse --show-toplevel` so you can see the root. It must equal `$LAB_DIR`.
+2. Write `infra/azure/modules/identity/main.tf`. These arguments are valid on **azurerm 5.9.0**. The credential resource uses `user_assigned_identity_id`. It does **not** use `parent_id` or `resource_group_name`.
+
+```hcl
+variable "rg" { type = string }
+variable "location" { type = string }
+variable "oidc_issuer_url" { type = string }
+variable "github_subject" { type = string }
+
+resource "azurerm_user_assigned_identity" "catalog" {
+  name                = "id-shopsphere-catalog"
+  resource_group_name = var.rg
+  location            = var.location
+}
+
+resource "azurerm_federated_identity_credential" "github" {
+  name                      = "github-shopsphere"
+  user_assigned_identity_id = azurerm_user_assigned_identity.catalog.id
+  audience                  = ["api://AzureADTokenExchange"]
+  issuer                    = "https://token.actions.githubusercontent.com"
+  subject                   = var.github_subject
+}
+
+resource "azurerm_federated_identity_credential" "aks" {
+  name                      = "aks-catalog"
+  user_assigned_identity_id = azurerm_user_assigned_identity.catalog.id
+  audience                  = ["api://AzureADTokenExchange"]
+  issuer                    = var.oidc_issuer_url
+  subject                   = "system:serviceaccount:shopsphere:catalog"
+}
+
+output "client_id" {
+  value = azurerm_user_assigned_identity.catalog.client_id
+}
+```
+
+`versions.tf` needs only `required_providers` for `hashicorp/azurerm` `5.9.0`. Do not put a `provider` block in the module.
+
+3. Write `infra/azure/modules/identity/tests/id.tftest.hcl`.
+
+```hcl
+mock_provider "azurerm" {}
+
+run "subjects" {
+  command = plan
+
+  variables {
+    rg              = "rg-shopsphere-dev"
+    location        = "eastus"
+    oidc_issuer_url = "https://eastus.oic.prod-aks.azure.com/example/"
+    github_subject  = "repo:example/shopsphere:environment:azure-dev"
+  }
+
+  assert {
+    condition     = azurerm_federated_identity_credential.aks.subject == "system:serviceaccount:shopsphere:catalog"
+    error_message = "aks subject must match the ServiceAccount"
+  }
+
+  assert {
+    condition     = azurerm_federated_identity_credential.github.issuer == "https://token.actions.githubusercontent.com"
+    error_message = "github issuer"
+  }
+}
+```
 
 ```bash
-git init
-git rev-parse --show-toplevel
+cd infra/azure/modules/identity
+terraform init
+terraform validate
+terraform test
 ```
 
-If the toplevel is the course clone, stop. You are in the wrong directory. Go back to step 1.
+Expected: `1 passed, 0 failed`. This block was executed on Terraform 1.16.5 / azurerm 5.9.0.
 
-3. Create a README so the repository has a file you are allowed to commit. You will commit this file. You will not commit the secret.
+4. GitHub subject formats that are real:
 
-```bash
-printf 'day-18 secrets hygiene lab\n' > README.md
-git add README.md
-git status
+| When the workflow runs | Subject |
+|:--|:--|
+| A branch | `repo:ORG/REPO:ref:refs/heads/main` |
+| A GitHub Environment | `repo:ORG/REPO:environment:azure-dev` |
+
+Day 25's apply job uses `environment: azure-dev`. Prefer that subject so a push to a random branch cannot apply.
+
+5. Key Vault CSI. `k8s/identity/secretproviderclass.yaml`:
+
+```yaml
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: catalog-kv
+  namespace: shopsphere
+spec:
+  provider: azure
+  parameters:
+    usePodIdentity: "false"
+    clientID: "00000000-0000-0000-0000-000000000000"
+    keyvaultName: kv-shopsphere-dev
+    tenantId: "00000000-0000-0000-0000-000000000000"
+    objects: |
+      array:
+        - |
+          objectName: db-password
+          objectType: secret
 ```
 
-`git status` should list `README.md` as staged. There is no secret file yet.
+Replace the GUIDs when you apply a real vault. On `kind` this object is documentation. The CSI driver is not installed unless you add it. Write that limit in the notes.
 
-4. Generate the secret and write it to a file named `app.secret`. Use `openssl rand -hex 16`. Do not type a made-up password. Redirect the output so the value lives in the file, not in your notes.
+Mount it later with:
 
-```bash
-openssl rand -hex 16 > app.secret
-ls -l app.secret
-wc -c app.secret
+```yaml
+volumes:
+  - name: secrets-store
+    csi:
+      driver: secrets-store.csi.k8s.io
+      readOnly: true
+      volumeAttributes:
+        secretProviderClass: catalog-kv
 ```
 
-The file should exist and should not be empty. Do not run `cat app.secret` in a recorded terminal if you will share that recording. For your own screen, you may confirm the file has one hex line. Do not copy that line anywhere else.
+Do not put `db-password` in Git.
 
-5. Ignore the secret before you stage anything else. Create `.gitignore` with the file name. Then prove Git agrees.
-
-```bash
-printf 'app.secret\n' > .gitignore
-git check-ignore -v app.secret
-git status
-```
-
-`git check-ignore -v app.secret` should print a line that names `.gitignore` and `app.secret`. `git status` should show `.gitignore` as untracked or staged later. It must not list `app.secret`. If `app.secret` appears under untracked files, the ignore rule did not match. Fix `.gitignore` before you continue.
-
-6. Stage and commit only the files that are allowed. That is `README.md` and `.gitignore`. Do not run `git add app.secret`. Do not run `git add .` until you have confirmed `git check-ignore` still reports `app.secret`.
-
-```bash
-git add README.md .gitignore
-git status
-git commit -m "Add lab readme and ignore app.secret"
-git status
-```
-
-After the commit, `git status` should be clean. `git ls-files` should list `README.md` and `.gitignore` only. `app.secret` must not appear in `git ls-files`.
-
-```bash
-git ls-files
-git check-ignore -v app.secret
-```
-
-7. Optional Kubernetes Secret, only if `kind` exists and `kubectl cluster-info` works. If either check fails, write `skipped kubectl: no cluster` in your notes and go to Verify. Do not create a cluster for this optional step.
-
-```bash
-command -v kind
-kubectl cluster-info
-```
-
-If those commands succeed, create a generic Secret from the file. Use a unique name so you do not overwrite another Secret. Then show that Kubernetes stores it as a Secret object. Do not print the decoded value.
-
-```bash
-kubectl create secret generic day18-lab-db \
-  --from-file=password=app.secret
-kubectl get secret day18-lab-db
-kubectl describe secret day18-lab-db
-```
-
-`kubectl describe` should hide the password data. That matches the lesson: a Kubernetes Secret is a cluster object, not a Git file. Do not run `kubectl get secret day18-lab-db -o yaml` into your notes. Encoding is not encryption. Anyone who can `get` the Secret can decode it.
-
-Write `created k8s secret: yes` or `created k8s secret: no` in `day-18-secrets-lab.md`.
+6. Optional Azure apply. Budget first. Create a vault with RBAC, `soft_delete_retention_days = 7`, and no public blob. Grant the UAMI `Key Vault Secrets User` on one secret. Then set `clientID` in the SecretProviderClass to `terraform output -raw client_id`. Destroy the vault at the end unless Day 32 will reuse it.
 
 ---
 
 ## Verify
 
-Read the notes as if you are on a call. You should name the temp repository, say that `openssl rand -hex 16` created `app.secret`, and say that Git ignores that file.
-
-Check these points:
-
-- `pwd` and `git rev-parse --show-toplevel` are under `/tmp`, not inside the course clone.
-- `git check-ignore -v app.secret` prints a matching ignore rule.
-- `git status` does not list `app.secret`.
-- `git ls-files` does not list `app.secret`.
-- You committed `.gitignore` and `README.md` only.
-- You did not run `git push`.
-- You did not paste the secret value into `day-18-secrets-lab.md`.
-
-If `git status` still shows `app.secret`, the file is not ignored. Check the spelling in `.gitignore`. The ignore path is relative to the repository root. Run `git check-ignore -v app.secret` again until it prints the rule.
+- `git check-ignore` names `secrets/app.env`.
+- `terraform test` passed on both federated subjects.
+- The GitHub issuer is `https://token.actions.githubusercontent.com`.
+- SecretProviderClass uses `secrets-store.csi.x-k8s.io/v1` and `provider: azure`.
+- No secret value is in `docs/`.
 
 ---
 
 ## Break and fix
 
-The failure this Day trains is an accidental `git add` of a secret. You will stage a secret on purpose, then remove it from the index before any commit of that file and before any push.
-
-1. Copy the ignored secret to a new file that is not yet ignored. This is the accident. Do not add a remote. Do not push.
+### Failure 1 — staged secret
 
 ```bash
-cp app.secret leaked.secret
-git add leaked.secret
-git status
+git add -f secrets/app.env
+git status --porcelain
+git rm --cached secrets/app.env
+git check-ignore -v secrets/app.env
 ```
 
-`git status` should show `leaked.secret` as staged for commit. That is the break. The file is in the index. It is not in `.gitignore` yet. Stop here. Do not run `git commit`. Do not run `git push`. A staged secret is already a leak if you commit it.
+Expected: `add -f` stages it. `git rm --cached` unstages it **before** a commit. If you committed it, the secret is in history. Rotate it. Do not rely on a later delete.
 
-2. Remove the file from the index and keep it on disk. `git rm --cached` unstages the path. It does not delete `leaked.secret` in the working tree.
+### Failure 2 — wrong federated subject
 
-```bash
-git rm --cached leaked.secret
-git status
-```
+Change the test subject to `system:serviceaccount:default:default`. Run `terraform test`. Expected: assert fails. Restore `shopsphere:catalog`. A matching issuer with the wrong subject still issues a token that Azure will reject.
 
-`leaked.secret` should now appear as untracked, not as a staged new file. The secret still exists on disk. Git is no longer about to commit it.
+If you validate the old `parent_id` argument, azurerm 5.9.0 reports `Unsupported argument`. Use `user_assigned_identity_id`.
 
-3. Ignore the leaked name, then prove Git ignores it. Append the path to `.gitignore`. Stage `.gitignore` only.
+---
 
-```bash
-printf 'leaked.secret\n' >> .gitignore
-git check-ignore -v leaked.secret
-git add .gitignore
-git status
-git commit -m "Ignore leaked.secret after unstaging"
-git ls-files
-```
+## Stretch
 
-`git check-ignore -v leaked.secret` should print the new rule. `git status` must not list `leaked.secret`. `git ls-files` must not list `leaked.secret` or `app.secret`. The latest commit should change only `.gitignore`.
-
-4. Confirm there is no remote and that you never pushed. This lab has no origin. If a remote exists, you used the wrong repository. Stop and go back to step 1 of Steps.
-
-```bash
-git remote -v
-git log --oneline
-```
-
-`git remote -v` should print nothing. The log should show the README commit and the ignore commit. It should not show a commit whose diff adds `app.secret` or `leaked.secret`.
-
-If you already committed the secret in this temp repository, do not push. Delete the entire `$LAB_DIR` in Clean up and start again. History in a temp repo is disposable. History in a shared repo is not. That is why this lab never uses the course clone.
+- Add `azurerm_role_assignment` for `Key Vault Secrets User` on one secret id, not on the whole vault.
+- Write the AWS twin: IRSA annotation `eks.amazonaws.com/role-arn` (Day 27/28).
 
 ---
 
 ## Clean up
 
-If you created the optional Kubernetes Secret, delete it. Skip this command when you wrote `created k8s secret: no`.
-
 ```bash
-kubectl delete secret day18-lab-db --ignore-not-found
+rm -f secrets/app.env
 ```
 
-Leave the lab directory and delete it. This removes `app.secret`, `leaked.secret`, `.git`, and the notes unless you copied the notes out first.
+If you applied a vault:
 
 ```bash
-cd /tmp
-rm -rf "$LAB_DIR"
+terraform destroy
+az keyvault list-deleted --query "[?name=='kv-shopsphere-dev'].name" -o tsv
 ```
 
-If you want to keep notes, copy `day-18-secrets-lab.md` to a safe local folder before `rm -rf`. Redact any hex value if you captured one. Do not copy `app.secret` or `leaked.secret` into the course repository.
-
-You created no Azure or AWS resources, so there is no Key Vault, Secrets Manager, or resource group to delete. You did not run `git push`, so there is no remote history to rewrite.
+Purge only that lab vault, and only if policy allows.
 
 ---
 
 ## Interview story
 
-I treat a secret as a lifecycle problem, not as a file I hope nobody opens. I generate a value with `openssl rand -hex 16` and I keep it out of Git with `.gitignore`. I prove that with `git check-ignore` and with `git status` that does not list the file. If I accidentally run `git add` on a secret, I stop. I run `git rm --cached`, I add the path to `.gitignore`, and I do that before any commit of the secret and before any push. I do this drill in a throwaway repository so the course history never holds a credential. Kubernetes can consume the same file as a Secret object. Git is still not the secret store.
+**Situation:** ShopSphere still needed a password in GitHub Secrets and had no Pod-to-vault path. **Task:** Federate GitHub and the catalog ServiceAccount to one Entra identity, and mount one secret through CSI. **Action:** I wrote `azurerm_federated_identity_credential` with `user_assigned_identity_id` (azurerm 5.9.0), subjects `environment:azure-dev` and `system:serviceaccount:shopsphere:catalog`, and I covered both with `terraform test`. I kept `secrets/app.env` out of Git with `check-ignore`, then staged it on purpose and ran `git rm --cached` before any commit. **Result:** I can explain OIDC as a token exchange, not as a stored password, and I can say CSI reads Key Vault at start; it is not a secret in the image.
+
+---
+
+## Self-score checklist
+
+- [ ] Secret file is ignored and I never committed it.
+- [ ] `terraform test` passed.
+- [ ] I used `user_assigned_identity_id`, not `parent_id`.
+- [ ] SecretProviderClass is in Git with placeholder GUIDs only.
+- [ ] I destroyed any vault I created.
+
+**Executed:** `git check-ignore`, `openssl rand`, federated credential `validate` + `terraform test` on 5.9.0. **Not executed:** Key Vault apply, CSI driver on kind, live GitHub OIDC token.
