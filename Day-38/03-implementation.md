@@ -2,354 +2,254 @@
 
 This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [02-questions-and-answers.md](02-questions-and-answers.md). Then do this lab.
 
-Day 38 teaches environment and Terraform state boundaries. This lab uses the `hashicorp/local` provider and a `local_file` resource. You call one module from three environment folders: Dev, UAT, and Prod. Each folder writes a different file and keeps its own `terraform.tfstate`. You then break the design on purpose: one shared folder and one state for all three environments. You watch later applies replace earlier environments. You split the state again.
+Day 38 teaches environment and account boundaries. Day 9 already split Dev and Prod folders. This Day is the **harder sibling**: three environments, **three state keys**, a required-tag policy, and a break that puts all three environments in one state so you can watch later applies replace earlier ones.
 
-Work only in a temporary directory that you create for this lab. Do not run Terraform inside the DevOps-Prep course repository. Do not configure AWS, Azure, or a remote backend. Local state is enough here.
+Work in **your ShopSphere repository**. Reuse `modules/rg` or `modules/network`. Do not invent a new `local_file` module as the primary resource.
 
 ---
 
 ## Goal
 
-Build one Terraform module that writes a local file. Call that module from `environments/dev`, `environments/uat`, and `environments/prod`. Pass different names and content through `dev.tfvars`, `uat.tfvars`, and `prod.tfvars`. Run `terraform init`, `plan`, and `apply` inside each folder so each environment keeps its own state.
+Give Dev, UAT, and Prod their own backend key (`dev/terraform.tfstate`, `uat/terraform.tfstate`, `prod/terraform.tfstate`). Add a required-tag policy document. Then, on purpose, apply three variable files against **one** local state and record the replacement. Split the state again.
 
-Then create one shared folder. Apply all three variable files against that one state. Record what happens to the files and to `terraform state list`. Split the work back into the three folders. Write a short blast-radius note. When you finish, you can explain why Dev, UAT, and Prod must not share one Terraform state.
+When you finish, you can say why a shared state file is a blast-radius bug, not a convenience.
 
-Time box: 45 to 75 minutes. Cost stays at ₹0. Stop when each environment folder has its own state and file, the shared folder is destroyed, the blast-radius note exists, and `terraform destroy` has removed the lab files.
+Time box: 70 to 90 minutes.
+
+---
+
+## Capstone stage
+
+| Path | Adds beyond Day 9 |
+|:--|:--|
+| `environments/uat/` | Third root + `uat.tfvars` + test |
+| `environments/*/backend.hcl` | Different `key` values, same container |
+| `infra/azure/policy/require-tags.json` | Azure Policy rule |
+| `docs/day-38-boundary-lab.md` | Shared-state failure evidence |
 
 ---
 
 ## What you need
 
-You need Terraform 1.0 or later and a shell. Check the version first:
-
 ```bash
 terraform version
+test -f infra/azure/modules/rg/main.tf && echo "rg module present"
 ```
 
-You do not need AWS, Azure, Docker, or Kubernetes. This lab uses the HashiCorp `local` provider and the `local_file` resource. Those names are real. The flag `-var-file` is real. Do not invent other flags.
+Azure is optional. The shared-state break uses a local backend so you do not need three subscriptions. A tagging policy apply needs Owner or Resource Policy Contributor. Skip that apply if you lack the role.
 
-Create the lab under `/tmp`, not under this course clone. Terraform writes `terraform.tfstate` in the working directory. You must be able to delete that directory when you clean up.
+---
 
-Keep a notes file named `day-38-env-lab.md` in the same temp directory. Record command output, state addresses, and the blast-radius decision. Do not paste secrets. This lab should not create any.
+## Cost
+
+| Path | Estimated USD |
+|:--|:--|
+| Three `terraform test` runs + local shared-state drill | **0.00** |
+| Three empty resource groups | **0.00-0.10** |
+| Azure Policy definition (no effect until assigned) | **0.00** |
+| Policy assignment that blocks creates | **0.00** (it denies, it does not bill) |
+
+Do not create three AKS clusters. Budget first if you apply groups. See [../capstone/COST.md](../capstone/COST.md).
 
 ---
 
 ## Steps
 
-1. Create a throwaway directory and enter it. Use a unique folder name so you do not collide with another lab. Confirm the path is under `/tmp`.
+1. Add UAT next to Dev and Prod.
 
 ```bash
-LAB_DIR="/tmp/day-38-env-lab-$$"
-mkdir -p "$LAB_DIR"
-cd "$LAB_DIR"
-pwd
+mkdir -p infra/azure/environments/uat/tests
+cp infra/azure/environments/dev/main.tf infra/azure/environments/uat/main.tf
 ```
 
-Write one sentence in `day-38-env-lab.md`: this directory is disposable. You will run `terraform destroy` here before you delete it.
-
-2. Create the module folder and the three environment folders. The module holds the reusable design. Each environment folder is one place you apply values and one place Terraform stores state.
-
-```bash
-mkdir -p modules/marker
-mkdir -p environments/dev
-mkdir -p environments/uat
-mkdir -p environments/prod
-```
-
-3. Write the module inputs. Put this in `modules/marker/variables.tf`. These inputs must change between environments. The module must not hard-code Dev, UAT, or Prod names.
+`infra/azure/environments/uat/uat.tfvars`:
 
 ```hcl
-variable "filename" {
-  type = string
-}
-
-variable "content" {
-  type = string
-}
+name     = "rg-shopsphere-uat"
+location = "eastus"
 ```
 
-4. Put this in `modules/marker/main.tf`. The resource uses the variables. That is the reusable design. The provider block stays in the environment folder, not in the module.
+`infra/azure/environments/uat/tests/rg.tftest.hcl`:
 
 ```hcl
-resource "local_file" "marker" {
-  filename = var.filename
-  content  = var.content
-}
-```
+mock_provider "azurerm" {}
 
-5. Put this in `modules/marker/outputs.tf`. The module returns the path it wrote. The environment can read that fact without guessing.
+run "uat_name" {
+  command = plan
 
-```hcl
-output "filename" {
-  value = local_file.marker.filename
-}
-```
+  variables {
+    name     = "rg-shopsphere-uat"
+    location = "eastus"
+  }
 
-6. Write the Dev environment. Put this in `environments/dev/main.tf`. The `module` block is the caller. `source` points at the reusable folder. The values come from variables, not from hard-coded Dev strings in the module.
-
-```hcl
-terraform {
-  required_providers {
-    local = {
-      source  = "hashicorp/local"
-      version = "~> 2.5"
-    }
+  assert {
+    condition     = module.rg.name == "rg-shopsphere-uat"
+    error_message = "UAT must use rg-shopsphere-uat"
   }
 }
-
-variable "filename" {
-  type = string
-}
-
-variable "content" {
-  type = string
-}
-
-module "marker" {
-  source = "../../modules/marker"
-
-  filename = var.filename
-  content  = var.content
-}
-
-output "written_file" {
-  value = module.marker.filename
-}
 ```
 
-7. Put this in `environments/dev/dev.tfvars`. These are Dev values only. Smaller capacity here stands in for the lesson idea: same architecture, different values. Use a plain filename. A `.tfvars` file does not expand `${path.module}`.
-
-```hcl
-filename = "shopsphere-dev.txt"
-content  = "env=dev nodes=small ha=false\n"
-```
-
-8. Copy the same Terraform code into UAT and Prod. Do not copy the module. Do not rewrite the resource.
+If your root uses `module.network` instead of `module.rg`, assert the network output. Do not copy the resource block into UAT.
 
 ```bash
-cp environments/dev/main.tf environments/uat/main.tf
-cp environments/dev/main.tf environments/prod/main.tf
-```
-
-Put this in `environments/uat/uat.tfvars`:
-
-```hcl
-filename = "shopsphere-uat.txt"
-content  = "env=uat nodes=medium ha=false\n"
-```
-
-Put this in `environments/prod/prod.tfvars`:
-
-```hcl
-filename = "shopsphere-prod.txt"
-content  = "env=prod nodes=large ha=true\n"
-```
-
-9. Format and validate Dev. Run these commands from `environments/dev`. `terraform init` downloads the `hashicorp/local` provider. `terraform fmt` rewrites the files in this folder. `terraform validate` checks the configuration after init.
-
-```bash
-cd "$LAB_DIR/environments/dev"
-terraform init
-terraform fmt
-terraform validate
-terraform plan -var-file="dev.tfvars"
-```
-
-In the notes, copy the planned `local_file` address and the Dev filename. Write one sentence: the plan uses Dev values. The module file did not name Dev.
-
-10. Apply Dev. Type `yes` when Terraform asks to confirm. After apply, this folder should contain `shopsphere-dev.txt` and `terraform.tfstate`.
-
-```bash
-terraform apply -var-file="dev.tfvars"
-terraform state list
-terraform output
-cat shopsphere-dev.txt
-ls terraform.tfstate
-```
-
-`terraform state list` should show `module.marker.local_file.marker`. Record that address. State lives in this folder. It does not live in UAT or Prod yet.
-
-11. Initialize, plan, and apply UAT the same way. Use the UAT folder and `uat.tfvars`. Dev state stays in the Dev folder.
-
-```bash
-cd "$LAB_DIR/environments/uat"
+cd infra/azure/environments/uat
 terraform init
 terraform validate
-terraform plan -var-file="uat.tfvars"
-terraform apply -var-file="uat.tfvars"
-terraform state list
-cat shopsphere-uat.txt
-ls terraform.tfstate
+terraform test
 ```
 
-12. Repeat for Prod. Use the Prod folder and `prod.tfvars`. After this step you have three state files and three different local files.
+Expected: `1 passed`.
+
+2. Write three backend files. Same Storage account. Different keys.
+
+`environments/dev/backend.hcl` (from Day 10):
+
+```hcl
+resource_group_name  = "rg-shopsphere-tfstate"
+storage_account_name = "stshopCHANGE_ME"
+container_name       = "tfstate"
+key                  = "dev/terraform.tfstate"
+use_azuread_auth     = true
+```
+
+UAT uses `key = "uat/terraform.tfstate"`. Prod uses `key = "prod/terraform.tfstate"`.
+
+If you are not on Azure, still write the three files. Then set each environment to local state for the break in step 4. The lesson is the **key**, not the cloud vendor.
+
+3. Write the tagging policy. `infra/azure/policy/require-tags.json` is an Azure Policy rule. Mode `Indexed` applies to resources that support tags.
+
+```json
+{
+  "mode": "Indexed",
+  "policyRule": {
+    "if": {
+      "anyOf": [
+        { "field": "tags['project']", "exists": "false" },
+        { "field": "tags['env']", "exists": "false" }
+      ]
+    },
+    "then": {
+      "effect": "deny"
+    }
+  },
+  "parameters": {}
+}
+```
+
+If `az` works and you have permission:
 
 ```bash
-cd "$LAB_DIR/environments/prod"
+az policy definition create \
+  --name shopsphere-require-tags \
+  --display-name "ShopSphere require project and env tags" \
+  --rules infra/azure/policy/require-tags.json \
+  --mode Indexed
+```
+
+Do not assign this at subscription scope if other teams share the subscription. Assign it to `rg-shopsphere-dev` only, or skip assignment and keep the JSON.
+
+Add `env` to the module tags (`dev`, `uat`, or `prod`) so a future assignment would allow the groups this lab creates.
+
+4. Break: one state, three environments. Create a throwaway folder. Do not use the real Dev folder.
+
+```bash
+mkdir -p /tmp/shopsphere-shared-state
+cp infra/azure/environments/dev/main.tf /tmp/shopsphere-shared-state/main.tf
+cp -R infra/azure/modules /tmp/shopsphere-shared-state/modules
+# Fix the module source if the relative path broke.
+```
+
+If the module source `../../modules/rg` no longer resolves, write a tiny root that still calls the ShopSphere module with an absolute `source`.
+
+Easier path: stay in ShopSphere and create `infra/azure/environments/shared-bad/`.
+
+```hcl
+# same module as Dev
+# variables name + location
+```
+
+Apply Dev values. Then apply UAT values **without** changing folder or backend.
+
+```bash
+cd infra/azure/environments/shared-bad
 terraform init
-terraform validate
-terraform plan -var-file="prod.tfvars"
-terraform apply -var-file="prod.tfvars"
+terraform apply -var='name=rg-shopsphere-dev' -var='location=eastus' -auto-approve
 terraform state list
-cat shopsphere-prod.txt
-ls terraform.tfstate
+terraform apply -var='name=rg-shopsphere-uat' -var='location=eastus' -auto-approve
+terraform state list
 ```
 
-13. Prove the states are separate. From the lab root, list each environment directory. You should see three `terraform.tfstate` files and three different `shopsphere-*.txt` files. Changing Prod later must not require opening Dev state.
+Expected: the second apply **replaces** the Dev group (or the local object) because one resource address cannot hold two names. `terraform state list` still shows one address. Dev is gone from state.
+
+Copy both `state list` outputs into `docs/day-38-boundary-lab.md`. Write: one state file cannot represent three environments.
+
+5. Destroy the bad folder. Delete `shared-bad`. Keep Dev, UAT, and Prod as separate roots.
 
 ```bash
-cd "$LAB_DIR"
-ls environments/dev
-ls environments/uat
-ls environments/prod
+cd infra/azure/environments/shared-bad
+terraform destroy -var='name=rg-shopsphere-uat' -var='location=eastus' -auto-approve
+cd ..
+rm -rf shared-bad
 ```
-
-Copy those listings into `day-38-env-lab.md`. Write: Dev apply does not load UAT or Prod state, because each `terraform apply` ran in its own folder.
-
-14. Write the blast-radius note. Create `day-38-blast-radius.md` in the lab directory. Use this structure. Fill every line from what you just observed, not from memory of a cloud account.
-
-```text
-Separate folders:
-- Dev state path:
-- UAT state path:
-- Prod state path:
-- What a Dev destroy can delete:
-- What a Prod destroy can delete:
-
-Shared-state failure (complete this after Break and fix):
-- Shared state path:
-- What the last apply left in state:
-- Which environment files Terraform stopped tracking:
-- Blast radius of one apply:
-```
-
-The lesson rule is the same as the course: a Production operation should not require manipulating unrelated Dev infrastructure state.
 
 ---
 
 ## Verify
 
-Read the notes as if you are on a call. You should name three folders, three state files, and three different `local_file` outputs.
-
-Check these points:
-
-- `modules/marker/` contains the `local_file` resource. The environment folders do not contain a second copy of that resource.
-- `dev.tfvars`, `uat.tfvars`, and `prod.tfvars` set different `filename` and `content` values.
-- You ran `terraform init` in each environment folder.
-- `environments/dev/shopsphere-dev.txt`, `environments/uat/shopsphere-uat.txt`, and `environments/prod/shopsphere-prod.txt` all exist after apply.
-- `terraform state list` in each folder prints `module.marker.local_file.marker`.
-- Each folder has its own `terraform.tfstate`. There is no shared state file yet.
-
-If two environments wrote the same filename, stop and fix the `.tfvars` files before you continue.
+- UAT exists as its own root with its own test.
+- Three `backend.hcl` files use three keys.
+- `require-tags.json` denies missing `project` or `env`.
+- You recorded a shared-state apply that replaced the first environment.
+- You destroyed `shared-bad`.
 
 ---
 
 ## Break and fix
 
-The lesson says Dev and Production must not share a state file. Break that rule on purpose. Then split the state.
+### Failure 1 — shared state (already in step 4)
 
-1. Create one shared folder. Copy the same environment `main.tf` into it. Copy all three variable files into it. This folder will hold one `terraform.tfstate` for every environment.
+If the second apply did **not** replace the first resource, you used two folders. Repeat in **one** folder with two `-var` names.
 
-```bash
-mkdir -p "$LAB_DIR/environments/shared"
-cp "$LAB_DIR/environments/dev/main.tf" "$LAB_DIR/environments/shared/main.tf"
-cp "$LAB_DIR/environments/dev/dev.tfvars" "$LAB_DIR/environments/shared/dev.tfvars"
-cp "$LAB_DIR/environments/uat/uat.tfvars" "$LAB_DIR/environments/shared/uat.tfvars"
-cp "$LAB_DIR/environments/prod/prod.tfvars" "$LAB_DIR/environments/shared/prod.tfvars"
-cd "$LAB_DIR/environments/shared"
-terraform init
-```
+### Failure 2 — missing `env` tag
 
-2. Apply Dev values first. Type `yes` when Terraform asks. Read the file. Record `terraform state list`.
+Remove the `env` tag from the module. If you assigned the policy, a live apply should deny. If you did not assign it, add a `terraform test` assert that a tag map includes `env`, or write a Checkov/custom note. Restore the tag.
 
-```bash
-terraform apply -var-file="dev.tfvars"
-ls
-terraform state list
-cat shopsphere-dev.txt
-```
+---
 
-State now tracks one `local_file` whose filename is `shopsphere-dev.txt`.
+## Stretch
 
-3. Apply UAT values in the same folder, against the same state. Do not create a new backend. Type `yes`. Then list files and state again.
-
-```bash
-terraform apply -var-file="uat.tfvars"
-ls
-terraform state list
-```
-
-Terraform sees the same resource address `module.marker.local_file.marker`. The filename changed, so Terraform replaces the object. `shopsphere-dev.txt` is gone. `shopsphere-uat.txt` remains. One apply in a shared state deleted the Dev marker to make room for UAT. That is the blast radius.
-
-4. Apply Prod values in the same folder. Type `yes`. Then inspect state and disk.
-
-```bash
-terraform apply -var-file="prod.tfvars"
-ls
-terraform state list
-terraform show
-cat shopsphere-prod.txt
-```
-
-State still lists one resource. Disk should show `shopsphere-prod.txt` and should not show the Dev or UAT files Terraform used to manage. Fill the shared-state lines in `day-38-blast-radius.md` now.
-
-5. Split the state. Stop using the shared folder for Dev, UAT, and Prod. Destroy the shared configuration so it does not leave an extra file. Type `yes`. Use the last variable file Terraform applied, because that is what state currently describes.
-
-```bash
-cd "$LAB_DIR/environments/shared"
-terraform destroy -var-file="prod.tfvars"
-ls
-```
-
-Confirm `shopsphere-prod.txt` is gone from `environments/shared`. Leave the three separate environment folders in place. They already have their own state from steps 10 to 12. That split is the fix.
-
-6. Confirm the split still holds. From each environment folder, run plan. Each plan should report no remaining changes for its own file. A Dev plan must not mention `shopsphere-prod.txt`.
-
-```bash
-cd "$LAB_DIR/environments/dev"
-terraform plan -var-file="dev.tfvars"
-cd "$LAB_DIR/environments/uat"
-terraform plan -var-file="uat.tfvars"
-cd "$LAB_DIR/environments/prod"
-terraform plan -var-file="prod.tfvars"
-```
-
-If a plan wants to create the file again, the earlier apply in that folder is missing. Re-apply only that environment. Do not re-apply from `environments/shared`.
-
-The original three folders are the correct design. One folder per environment. One state per environment. One set of values per environment. Shared modules are allowed. Shared state is not.
+- Sketch a management-group tree in the notes: Platform / Sandbox / Prod. Do not create management groups in a company tenant.
+- Add an AWS Organizations SCP JSON next to the Azure policy for the Day 26 track (`DenyLeaveOrganization` or `DenyUnencryptedS3`). Do not attach it.
 
 ---
 
 ## Clean up
 
-Destroy each environment. Terraform needs the same variable file it used to apply, because the configuration still reads those variables. Type `yes` when Terraform asks to confirm destroy. Skip `environments/shared` if you already destroyed it.
+Destroy `shared-bad` if it still exists. Destroy any extra resource groups this lab created.
 
 ```bash
-cd "$LAB_DIR/environments/dev"
-terraform destroy -var-file="dev.tfvars"
+az group list --query "[?starts_with(name, 'rg-shopsphere')].name" -o tsv
 ```
+
+Keep Dev/UAT/Prod folders. Delete policy definitions you created if they are lab-only:
 
 ```bash
-cd "$LAB_DIR/environments/uat"
-terraform destroy -var-file="uat.tfvars"
+az policy definition delete --name shopsphere-require-tags
 ```
-
-```bash
-cd "$LAB_DIR/environments/prod"
-terraform destroy -var-file="prod.tfvars"
-```
-
-Confirm the local files are gone. Then leave the lab directory and remove it, including `.terraform` and `terraform.tfstate`.
-
-```bash
-cd /tmp
-rm -rf "$LAB_DIR"
-```
-
-If you copied notes you want to keep, move `day-38-env-lab.md` and `day-38-blast-radius.md` out before `rm -rf`. You created no AWS account, no EKS cluster, and no Azure subscription. There is nothing to delete in the cloud.
 
 ---
 
 ## Interview story
 
-I do not put Dev, UAT, and Production in one Terraform state. I put the design in a module and I pass values from each environment folder. In this lab the module writes a `local_file`. `dev.tfvars`, `uat.tfvars`, and `prod.tfvars` set different names and content. I run `terraform init`, `plan`, and `apply` in each folder so each environment keeps its own `terraform.tfstate`. When I forced all three variable files through one shared folder, the later apply replaced the earlier file because the resource address was the same. That is the blast radius of shared state. I destroyed the shared folder and went back to three states. A Production apply must not load Dev state.
+**Situation:** ShopSphere had two environment folders after Day 9, but someone proposed one state file "to keep it simple" and a resource without an `env` tag. **Task:** Prove that one state cannot hold Dev and UAT, and write a deny policy for missing tags. **Action:** I added `environments/uat` with its own `terraform test` and a backend key `uat/terraform.tfstate`. I applied Dev then UAT in one folder and watched state keep a single address while the first name disappeared. I wrote Azure Policy JSON that denies resources without `project` and `env`. **Result:** I can explain environment isolation as separate state and separate blast radius, not as three tfvars against one backend.
+
+---
+
+## Self-score checklist
+
+- [ ] UAT root and test exist.
+- [ ] Three backend keys are written.
+- [ ] Policy JSON denies missing tags.
+- [ ] Shared-state apply replaced the first environment.
+- [ ] `shared-bad` is destroyed.
+- [ ] Files live in ShopSphere.
