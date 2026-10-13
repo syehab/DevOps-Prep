@@ -743,6 +743,21 @@ Annotate each with RPO, RTO, failure domain, recovery method, cost driver, and o
 
 ---
 
+## 34. Capacity reservation versus a savings-plan discount
+
+A GPU-backed release is two weeks away. What is the difference between a savings plan and a capacity reservation, and what do you do before go-live?
+
+<details>
+<summary>Answer</summary>
+
+A savings plan or reserved instance buys a discount. A capacity reservation (On-Demand Capacity Reservations, EC2 Capacity Blocks for ML) holds the machines. They are different controls.
+
+Request quota increases before the date. Reserve scarce SKUs in the release plan. Do not discover a quota limit during the incident. Quota is platform capacity, not a billing discount.
+
+</details>
+
+---
+
 ## Day 39 Completion Criteria
 
 Complete Day 39 when you can demonstrate:

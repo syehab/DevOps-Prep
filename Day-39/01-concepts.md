@@ -892,6 +892,10 @@ Cluster Scaling Limits
 
 Cost controls should work alongside reliability controls.
 
+Some compute is scarce. GPU capacity is often not waiting on a shelf when you need it for a release. A savings plan or reserved instance buys a price discount. A capacity reservation (AWS On-Demand Capacity Reservations, or EC2 Capacity Blocks for ML) holds the actual machines. Those are different controls, and mixing them up leaves you with a cheaper bill and no GPUs.
+
+Put capacity planning in the release plan. Request quota increases before go-live, and reserve scarce SKUs before the date. Do not discover a quota limit during the incident, because quota is platform capacity, not a billing discount. Day 22 already named that distinction for Azure subscriptions.
+
 ---
 
 ## Part 26 — Observability Cost
