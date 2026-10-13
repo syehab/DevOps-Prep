@@ -1,0 +1,7 @@
+# Day 14 applies this on kind. It creates no cloud resources.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shopsphere
+  labels:
+    app.kubernetes.io/name: shopsphere

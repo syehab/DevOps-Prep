@@ -1,0 +1,2 @@
+# The catalog API uses the Python 3.12 standard library only.
+# Keep this file so Day 13 and CI have a real install step.

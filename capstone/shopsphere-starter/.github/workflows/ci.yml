@@ -1,0 +1,21 @@
+# Day 4 and Day 6 expand this workflow. Pin actions by tag here.
+# In production, pin the commit SHA as well.
+
+name: shopsphere-ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run catalog checks
+        working-directory: app
+        run: python test_api.py
