@@ -2,265 +2,308 @@
 
 This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [02-questions-and-answers.md](02-questions-and-answers.md). Then do this lab.
 
-Day 33 teaches a delivery pipeline as a supply chain. One Git commit produces one artifact. Dev, UAT, and Production must run those same bytes. This lab builds that artifact once. You then promote it with a new name. You do not rebuild it for the next environment.
+Day 33 teaches a delivery pipeline as a supply chain. One Git commit produces one artifact. Dev, UAT, and Production run **those same bytes**. The old lab tagged a local image in `/tmp`. Day 29 added the AWS backend and GitHub OIDC so CI can plan. This Day is the **harder sibling of Day 29**: you promote the **same image digest** from Dev to Prod **through GitOps**. You do not rebuild for Production.
 
-Work only in a temporary directory that you create for this lab. Do not build inside this course repository. Do not push to ECR. Do not create an AWS account. A local image ID, or a local tarball checksum, is enough to prove promotion.
+Work in **your ShopSphere repository**. You need the Day 16 chart and app-of-apps. If they are missing, create them from [Day-16/03-implementation.md](../Day-16/03-implementation.md) first.
 
 ---
 
 ## Goal
 
-Build one artifact. Record its identity. Tag it as `app:dev`. Promote the same artifact to `app:uat` without a second build. Prove the two identities match. Then break the rule: build again for Production and show that the identity can differ. Fix the break by promoting the first identity to `app:prod`.
+Pin one digest in `charts/shopsphere/values-dev.yaml`. Copy that digest into `values-prod.yaml` with a promotion script. Render both Helm releases and prove the image field matches. Turn on Prod auto-sync (Day 16 left it off). Then break the rule: change Prod to a new tag from a second build. Show the digests differ. Restore the first digest.
 
-If Docker Engine is present, the artifact is a container image. You record `Id` with `docker inspect`. `RepoDigests` stays empty until a registry push, so local `Id` is the proof in this lab. If Docker is missing, the artifact is a tarball. You record its SHA-256 with `sha256sum`. Promotion is a copy of that same file, not a new archive.
+Time box: 60 to 80 minutes.
 
-When you finish, you can explain why a Production rebuild is not a promotion. You can also name the identity you would write on a release record.
+---
 
-Time box: 40 to 70 minutes. Cost stays at ₹0. Stop when Dev and UAT identities match, the rebuild differs, the fix matches the first identity, and the temp directory is deleted.
+## Capstone stage
+
+| Path in ShopSphere | What it adds |
+|:--|:--|
+| `charts/shopsphere/values-dev.yaml` | Image **digest** (not a moving tag) |
+| `charts/shopsphere/values-prod.yaml` | Same digest, replica count 2 |
+| `charts/shopsphere/templates/deployment.yaml` | Image reference uses `@sha256:` |
+| `gitops/promote-digest.sh` | Copies digest Dev → Prod |
+| `gitops/apps/shopsphere-prod.yaml` | Auto-sync **on** for this Day |
+| `docs/day-33-promotion.md` | Both rendered image lines, digest equality |
 
 ---
 
 ## What you need
 
-You need a shell. Check it first:
-
 ```bash
-pwd
+helm version
+command -v docker && docker version
+kind get clusters
+python3 --version
 ```
 
-Check for Docker. The commands below print a path and a version if Docker Engine is installed and the daemon answers.
+Helm 3.16+ is required to render. Docker is optional (to print a real digest). `kind` plus Argo CD from Day 16 is the live path. If Helm is missing, still write the values files and the script. Python can prove the two YAML files share a digest.
 
-```bash
-command -v docker
-docker version
-```
+You do not need AWS, ECR, or Azure for the required path. Day 29 already showed the OIDC plan role.
 
-If `docker` is missing, or the daemon does not answer, use the tarball path in every later step. Write `docker: skipped` in your notes. Do not invent a replacement container tool.
+---
 
-You also need GNU `sha256sum` and `tar` for the fallback, and as a second record even when Docker works:
+## Cost
 
-```bash
-command -v sha256sum
-command -v tar
-```
+| Path | Estimated USD | Why |
+|:--|:--|:--|
+| Helm template + Python digest compare | **0.00** | Local only |
+| Argo CD on `kind` | **0.00** | Laptop RAM |
+| Push the digest to ACR/ECR | **0.00–0.50** | Storage. Delete unused tags. |
 
-You do not need AWS, ECR, ECS, Maven, or GitHub Actions minutes. `python:3.12-slim` is a real image. This lab uses it so `CMD` is a known HTTP server. Do not switch base images in the middle of the lab.
-
-Create the lab under `/tmp`, not under this course clone. Docker writes image layers on the host. You must be able to delete the directory and the lab tags when you clean up.
-
-Keep a notes file named `day-33-promotion-lab.md` in the same temp directory. Record command output, image IDs or checksums, and the rebuild difference. Do not paste secrets. This lab should not create any.
+Do not write "INR 0" if you pushed to a registry.
 
 ---
 
 ## Steps
 
-1. Create a throwaway directory and enter it. Use a unique folder name so you do not collide with another lab. Confirm the path is under `/tmp`.
+1. Open ShopSphere. Confirm the Day 16 chart exists.
 
 ```bash
-LAB_DIR="/tmp/day-33-promotion-lab-$$"
-mkdir -p "$LAB_DIR"
-cd "$LAB_DIR"
-pwd
+ls charts/shopsphere/values-dev.yaml charts/shopsphere/values-prod.yaml gitops/apps/shopsphere-prod.yaml
+mkdir -p gitops docs
 ```
 
-2. Write `index.html`. This is the file the HTTP server will return. Keep the content exact so a later rebuild cannot hide behind the same bytes.
+2. Pick a digest. If Docker has `nginx:1.27`:
 
 ```bash
-printf 'day-33-app-v1\n' > index.html
-cat index.html
+docker pull nginx:1.27
+docker image inspect nginx:1.27 --format '{{index .RepoDigests 0}}'
 ```
 
-3. Write `Dockerfile`. `FROM` starts from `python:3.12-slim`. `WORKDIR` sets `/app`. `COPY` adds `index.html`. `EXPOSE 8080` documents the listen port. `CMD` starts the process.
+`RepoDigests` stays empty until the image was pulled from a registry. Expected shape: `nginx@sha256:` plus 64 hex characters. Copy the `sha256:...` part.
 
-```dockerfile
-FROM python:3.12-slim
-
-WORKDIR /app
-
-COPY index.html .
-
-EXPOSE 8080
-
-CMD ["python", "-m", "http.server", "8080"]
-```
-
-Save that file as `Dockerfile` in `$LAB_DIR`. Confirm the files exist:
-
-```bash
-ls
-cat Dockerfile
-```
-
-You should see `Dockerfile` and `index.html`. These files are the source of the artifact. The promotion rule starts after the first successful build.
-
-4. Decide the path. If `docker version` succeeded, follow the Docker steps below. If it failed, skip to step 8 and use the tarball. Do not mix the two paths for the identity you record as `DEV_ID`.
-
-5. Build the image once. Tag it `app:dev`. Docker may pull `python:3.12-slim` on the first build. Wait for the build to finish. Do not add a second `-t` yet.
-
-```bash
-docker build -t app:dev .
-```
-
-This is the only `docker build` that creates the artifact you will promote. Dev, UAT, and Production must point at this image.
-
-6. Record the local image identity. `Id` names the image content on this machine. `RepoDigests` names the image after a registry push. This lab never pushes, so `RepoDigests` should be empty.
-
-```bash
-docker inspect --format='{{.Id}}' app:dev
-docker inspect --format='{{json .RepoDigests}}' app:dev
-```
-
-Paste the full `sha256:` value from `Id` into `day-33-promotion-lab.md`. Label it `DEV_ID`. Paste the `RepoDigests` JSON next to it. An empty list `[]` is the expected local result. In production you would record the digest after the ECR push instead of this local `Id`.
-
-7. Promote the same image to UAT without a rebuild. `docker tag` creates a new name for the same image ID. It does not run `docker build`.
-
-```bash
-docker tag app:dev app:uat
-docker inspect --format='{{.Id}}' app:uat
-docker inspect --format='{{json .RepoDigests}}' app:uat
-```
-
-The UAT `Id` must match `DEV_ID`. If it does not, you built twice. Stop and tag `app:dev` again. Write both IDs in the notes. Label the pair `promoted uat`. Skip step 8 if Docker succeeded.
-
-8. Tarball fallback, only if Docker is missing. Pack the same source files once. That archive is the artifact. Hash it. Copy it to a UAT name. Do not run `tar` a second time to create UAT.
-
-```bash
-tar -cf app-dev.tar Dockerfile index.html
-sha256sum app-dev.tar | tee app-dev.sha256
-cp app-dev.tar app-uat.tar
-sha256sum app-uat.tar | tee app-uat.sha256
-```
-
-The two checksums must match. Paste both lines into the notes. Label them `DEV_ID` and `promoted uat`. `cp` is the promotion. A second `tar -cf` would be a rebuild.
-
-9. Write the release record. Create `day-33-promotion-lab.md` if it does not exist. Put this block in it. Fill the values you just recorded.
+If Docker is missing, use this **placeholder** and write `digest not pulled — placeholder used`:
 
 ```text
-Git SHA: local lab, no remote
-Build: once
-Artifact name: app:dev
-Identity (Id or sha256sum):
-UAT name: app:uat
-UAT identity:
-IDs match: yes/no
-RepoDigests (Docker only):
+sha256:f00dbd7fb5c5d3c4411c1d71c2891ddfd3d50253e9dcb4b64f2a3a4b5c6d7e8f
 ```
 
-This is the same kind of record the lesson asks for after a real release: commit, artifact, digest, environment result. A branch name such as `main` is not an identity.
+That placeholder is not a real nginx digest. Replace it before Prod. The promotion mechanic does not care. Equality cares.
+
+3. Change the chart so the Deployment uses a digest. In `charts/shopsphere/templates/deployment.yaml` find the image line. Helm's `helm create` default is:
+
+```yaml
+image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+```
+
+Replace it with:
+
+```yaml
+image: "{{ .Values.image.repository }}@{{ .Values.image.digest }}"
+```
+
+A digest reference does **not** also take a tag. `nginx:1.27@sha256:...` is valid OCI. This lab uses `repository@digest` so a moving tag cannot sneak in.
+
+4. Pin both values files.
+
+`charts/shopsphere/values-dev.yaml`:
+
+```yaml
+replicaCount: 1
+image:
+  repository: nginx
+  digest: sha256:REPLACE_WITH_DIGEST
+```
+
+`charts/shopsphere/values-prod.yaml`:
+
+```yaml
+replicaCount: 2
+image:
+  repository: nginx
+  digest: sha256:REPLACE_WITH_DIGEST
+```
+
+Put the **same** `sha256:` string in both files by hand once. The script will do it next time.
+
+5. Write `gitops/promote-digest.sh`. Real bash. No invented flags.
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+# Copy image.digest from Dev values to Prod values.
+# Usage: gitops/promote-digest.sh
+
+dev="charts/shopsphere/values-dev.yaml"
+prod="charts/shopsphere/values-prod.yaml"
+
+digest="$(python3 - <<'PY'
+from pathlib import Path
+text = Path("charts/shopsphere/values-dev.yaml").read_text().splitlines()
+for line in text:
+    line = line.strip()
+    if line.startswith("digest:"):
+        print(line.split(":", 1)[1].strip())
+        break
+else:
+    raise SystemExit("digest missing in values-dev.yaml")
+PY
+)"
+
+python3 - "$digest" <<'PY'
+import sys
+from pathlib import Path
+digest = sys.argv[1]
+path = Path("charts/shopsphere/values-prod.yaml")
+lines = path.read_text().splitlines()
+out = []
+for line in lines:
+    if line.strip().startswith("digest:"):
+        indent = line[: len(line) - len(line.lstrip())]
+        out.append(f"{indent}digest: {digest}")
+    else:
+        out.append(line)
+path.write_text("\n".join(out) + "\n")
+print("promoted", digest, "->", path)
+PY
+```
+
+```bash
+chmod +x gitops/promote-digest.sh
+./gitops/promote-digest.sh
+```
+
+6. Render both. Prove equality.
+
+```bash
+helm template shopsphere-dev charts/shopsphere -f charts/shopsphere/values-dev.yaml \
+  | grep -E "image:|replicas:" | head
+helm template shopsphere-prod charts/shopsphere -f charts/shopsphere/values-prod.yaml \
+  | grep -E "image:|replicas:" | head
+```
+
+Expected: replica counts differ (1 vs 2). Image lines are **identical** and contain `@sha256:`.
+
+Python check you can run even without Helm:
+
+```bash
+python3 - <<'PY'
+from pathlib import Path
+
+def digest(path):
+    for line in Path(path).read_text().splitlines():
+        if line.strip().startswith("digest:"):
+            return line.split(":", 1)[1].strip()
+    raise SystemExit(path + " has no digest")
+
+d = digest("charts/shopsphere/values-dev.yaml")
+p = digest("charts/shopsphere/values-prod.yaml")
+print("dev ", d)
+print("prod", p)
+assert d == p and d.startswith("sha256:"), (d, p)
+print("same digest")
+PY
+```
+
+This Python check was **executed** in the authoring environment against a pair of sample values files.
+
+7. Turn on Prod auto-sync. Edit `gitops/apps/shopsphere-prod.yaml` so it matches Dev, with `values-prod.yaml` and namespace `shopsphere-prod`:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: shopsphere-prod
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/REPLACE_ME/shopsphere.git
+    targetRevision: main
+    path: charts/shopsphere
+    helm:
+      valueFiles:
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: shopsphere-prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+```
+
+Commit and push **before** Argo CD reads Git. If Argo CD is not installed, `kubectl apply` is not required. Helm template is the evidence.
+
+```bash
+kubectl apply -f gitops/apps/shopsphere-prod.yaml
+kubectl -n argocd get applications
+```
+
+Expected: both Applications Synced. Pods in both namespaces use the same digest (`kubectl -n shopsphere-prod get pod -o jsonpath='{.items[0].spec.containers[0].image}'`).
 
 ---
 
 ## Verify
 
-Read the notes as if you are on a call. Start at the first build. Stop at UAT. You should not need an AWS console.
-
-Check these points:
-
-- `Dockerfile` and `index.html` exist under `$LAB_DIR`.
-- You ran `docker build` once for `app:dev`, or you ran `tar -cf app-dev.tar` once.
-- `docker inspect --format='{{.Id}}'` matches for `app:dev` and `app:uat`, or `sha256sum` matches for `app-dev.tar` and `app-uat.tar`.
-- `RepoDigests` is `[]` when you did not push. You still recorded `Id`.
-- The notes file holds `DEV_ID` and the matching UAT identity.
-
-If Docker is missing, the tarball pair still completes Verify. Write one line: Docker is absent, so image IDs were not recorded. Do not skip the checksum.
-
-If the two identities differ before the break step, you rebuilt. Delete the extra tag or extra tarball. Promote from the first artifact again. Do not continue until they match.
+- Both values files contain the same `sha256:` digest.
+- Helm image lines match, or the Python assert printed `same digest`.
+- Prod replica count is 2. Dev is 1. That is config, not a new artifact.
+- Prod Application auto-sync is on.
+- Notes say Day 29 was identity and state. This Day is promotion.
 
 ---
 
 ## Break and fix
 
-The broken Production path rebuilds the artifact instead of promoting the identity. Do this on purpose.
+Do both failures.
 
-Change `index.html` so a rebuild cannot hide behind cache luck. Keep `app:dev` as the tested artifact.
+### Failure 1 — rebuild for Production
 
-```bash
-printf 'day-33-app-prod-rebuild\n' > index.html
-cat index.html
+Change only Prod:
+
+```yaml
+digest: sha256:000000000000000000000000000000000000000000000000000000000000dead
 ```
 
-If Docker is present, run a Production rebuild. This is the wrong path from the lesson.
+Run the Python check. Expected: assertion fails. That is a second artifact. It is not a promotion. Restore with `./gitops/promote-digest.sh`. Run the check again. Expected: `same digest`.
 
-```bash
-docker build -t app:prod .
-docker inspect --format='{{.Id}}' app:dev
-docker inspect --format='{{.Id}}' app:prod
-```
+### Failure 2 — tag instead of digest
 
-The Prod `Id` should differ from `DEV_ID`. UAT still passed the old image. Production now has different bytes. That is the traceability break: the source tree moved, and Production did not receive the artifact that UAT tested.
+Put `tag: "1.27"` back and remove `digest`. Render. The image line becomes a tag. Tags move. Yesterday's `1.27` is not today's. Restore the digest image line. Diagnose with the rendered manifest, not with `docker ps`.
 
-Write those two IDs in the notes. Label them `broken rebuild`.
+---
 
-If Docker is missing, rebuild the tarball instead:
+## Stretch
 
-```bash
-tar -cf app-prod.tar Dockerfile index.html
-sha256sum app-dev.tar
-sha256sum app-prod.tar
-```
-
-The Prod checksum should differ from `DEV_ID`. Label those two lines `broken rebuild`.
-
-Restore `index.html` so the working tree matches the tested artifact:
-
-```bash
-printf 'day-33-app-v1\n' > index.html
-cat index.html
-```
-
-Rewrite Production to promote the first identity. Do not run `docker build` for Production. Do not run `tar -cf` for Production.
-
-```bash
-docker tag app:dev app:prod
-docker inspect --format='{{.Id}}' app:dev
-docker inspect --format='{{.Id}}' app:prod
-```
-
-The IDs must match `DEV_ID` again. That is the fix: promote the image that already passed Dev and UAT. In AWS, the same rule is an ECR digest. The deploy stage consumes that digest. It does not ask the build stage to compile Production as a new image.
-
-If Docker is missing, copy the first tarball:
-
-```bash
-cp app-dev.tar app-prod.tar
-sha256sum app-dev.tar
-sha256sum app-prod.tar
-```
-
-The checksums must match `DEV_ID`. Label the pair `fixed promotion`.
-
-Write one sentence in the notes: Production now names the same artifact that Dev and UAT already used. A second build is not a promotion, even when the Git tree looks familiar.
+- Add a GitHub Environment `prod` with a required reviewer that must approve the values-prod digest change.
+- Record the Git SHA that produced the digest in `docs/day-33-promotion.md`.
+- On AWS week, point the same digest at ECR. Do not retag by rebuilding.
 
 ---
 
 ## Clean up
 
-You created no AWS resources. There is no ECR repository, ECS service, load balancer, or IAM role to delete.
+Keep the values files. They are the capstone stage.
 
-If Docker is present, remove the lab tags. `docker rmi` removes a tag. The `python:3.12-slim` base image may remain on the host from the pull. You may leave that base image.
-
-```bash
-docker rmi app:prod app:uat app:dev
-```
-
-If a rebuild left an untagged image, `docker images` may still show `<none>`. Remove dangling lab images only if you created them here:
+If you applied Argo Prod auto-sync and you want Day 16 behaviour back, set Prod `syncPolicy.automated` to unset. Do not delete the cluster if later Days need it.
 
 ```bash
-docker images
+# optional
+kubectl delete application shopsphere-prod -n argocd
 ```
 
-Leave the lab directory and delete it, including tarballs and checksum files.
-
-```bash
-cd /tmp
-rm -rf "$LAB_DIR"
-```
-
-If you copied notes you want to keep, move `day-33-promotion-lab.md` out before `rm -rf`. Strip any pasted image IDs you do not want to keep. Do not copy the lab directory into the course tree. This lab must not contain passwords, keys, or account IDs.
-
-The cleanup list in [01-concepts.md](01-concepts.md) applies when you later run ShopSphere in AWS. This local lab has none of those resources. Keep any real ShopSphere environment that Day 34 will reuse.
+No cloud bill unless you pushed to a registry. Delete unused ACR/ECR tags if you did.
 
 ---
 
 ## Interview story
 
-I treat a deployment pipeline as a supply chain, not as a list of shell commands. One Git commit produces one artifact. I build `app:dev` once, I record `docker inspect` `Id`, and I `docker tag` that same image as `app:uat`. The IDs match, so UAT did not get a new build. If I run `docker build` again for Production, the `Id` can differ, even from similar source. That rebuild is the bug. The fix is to promote the first `Id` to `app:prod`. When Docker is absent, `sha256sum` on a tarball is the same proof: copy the file, do not pack it again. In AWS I would record the ECR digest after the push and deploy that digest. I must prove Production runs the bytes that passed UAT.
+**Situation:** Day 29 gave ShopSphere an S3 backend and GitHub OIDC, but Production could still rebuild the catalog and call it a promotion. **Task:** Promote one digest through GitOps so Dev and Prod run the same bytes. **Action:** I changed the Helm image field to `repository@digest`, pinned the same `sha256` in `values-dev.yaml` and `values-prod.yaml`, and wrote `gitops/promote-digest.sh` to copy Dev to Prod. I rendered both releases: replica counts differed, the image line did not. I broke Prod with a fake digest and watched the equality check fail, then restored the script. I turned on Prod auto-sync. **Result:** I can say a tag is a pointer, a digest is the artifact, and OIDC from Day 29 is how CI authenticates — not how the bytes move.
+
+---
+
+## Self-score checklist
+
+- [ ] Image field uses `@sha256`, not a moving tag.
+- [ ] Dev and Prod values share one digest.
+- [ ] Promote script copied Dev → Prod.
+- [ ] I broke a Prod-only digest and the check failed.
+- [ ] Prod GitOps auto-sync is on, or I recorded why Argo was missing.
+- [ ] Files live in ShopSphere.
+
+**Executed:** Python digest-equality check against sample Dev/Prod values. **Not executed:** `helm template`, `docker pull`, Argo CD sync, registry push.
