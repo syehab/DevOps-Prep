@@ -2,209 +2,205 @@
 
 This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [02-questions-and-answers.md](02-questions-and-answers.md). Then do this lab.
 
-Day 36 teaches Terraform as a team control system: format, validate, plan, review, then apply. This lab uses the `hashicorp/local` provider and a `local_file` resource in a temporary directory. You initialize Terraform, read `.terraform.lock.hcl`, run `terraform fmt`, `terraform validate`, and `terraform plan`, then apply. You then edit the managed file outside Terraform, watch plan report drift, and you do not apply first. You investigate, then apply to restore the declared content. You destroy the lab when you finish.
+Day 36 hardens Terraform as a team system. Day 10 already moved state off the laptop and showed a lock. This Day is the **harder sibling**: `tflint` and Checkov are required gates, `terraform test` covers a rename, and a `moved` block prevents destroy-and-create when an address changes.
 
-Work only in a temporary directory that you create for this lab. Do not run Terraform inside the DevOps-Prep course repository. Do not configure an S3 backend or a DynamoDB lock table. Local state is enough here. Concurrent apply locking stays a design note from the lesson. Do not delete `.terraform.lock.hcl` to manufacture a failure.
+Work in **your ShopSphere repository**. You need `infra/azure/backend` from Day 10 and `environments/dev` from Days 8 to 31. Do not start a new `local_file` project.
 
 ---
 
 ## Goal
 
-Create one `local_file` with Terraform in a throwaway directory. After `terraform init`, open `.terraform.lock.hcl` and record that this file is what you would commit so provider versions stay reproducible. Run `terraform fmt`, `terraform validate`, and `terraform plan` before the first apply. Apply only after you have read the plan.
+Run the full gate set on the existing modules: `fmt`, `validate`, `tflint`, Checkov, `terraform test`. Then rename a `terraform_data` resource **with** a `moved` block and **without** one, so you can see `0 to add, 0 to destroy` versus `1 to add, 1 to destroy`.
 
-Then change the file with a shell command, not with Terraform. Run `terraform plan` again. Record expected content, actual content, owner, and intent before you apply. Restore the declared content with apply. When you finish, you can explain the pipeline order, the lock file, and why drift investigation comes before apply.
+When you finish, you can explain why an address change without `moved` looks like a replacement, and why a pipeline that only runs `validate` is not enough.
 
-Time box: 45 to 75 minutes. Cost stays at ₹0. Stop when plan shows no remaining changes, your notes name the lock file and the drift decision, and `terraform destroy` has removed the lab file.
+Time box: 60 to 90 minutes.
+
+---
+
+## Capstone stage
+
+| Path | Adds beyond Day 10 |
+|:--|:--|
+| `.tflint.hcl` at `infra/azure/` | Repo-wide lint |
+| `infra/azure/backend/.checkov.yml` | Recorded skips |
+| `infra/azure/loop-local/moved-demo/` | `moved` block drill |
+| `docs/day-36-hardening-lab.md` | Gate output + move plan |
 
 ---
 
 ## What you need
 
-You need Terraform 1.0 or later and a shell. Check the version first:
-
 ```bash
 terraform version
+tflint --version
+checkov --version
 ```
 
-You do not need AWS, Azure, an S3 backend, or DynamoDB. This lab uses local state in `terraform.tfstate`. Remote state, `use_lockfile`, and cross-account roles stay a design note at the end. They are not a required apply step.
+Use Terraform 1.16.5, tflint 0.55.1, Checkov 3.2.447. Install notes are in [Day-25/03-implementation.md](../Day-25/03-implementation.md). Azure is optional.
 
-Create the lab under `/tmp`, not under this course clone. Terraform writes `.terraform/`, `.terraform.lock.hcl`, and `terraform.tfstate` in the working directory. You must be able to delete that directory when you clean up.
+---
 
-Keep a notes file named `day-36-tf-governance-lab.md` in the same temp directory. Record the lock file provider source, the fmt/validate/plan results, the drift investigation, and the restore decision. Do not paste secrets. This lab should not create any.
+## Cost
+
+Local gates and the `moved` drill: **USD 0.00**. Do not apply a new cluster. If you still have the Day 10 Storage account, leaving it costs about **USD 0.05-0.40** this month. Destroy it if the capstone is over.
 
 ---
 
 ## Steps
 
-1. Create a throwaway directory and enter it. Use a unique folder name so you do not collide with another lab. Confirm the path is under `/tmp`.
+1. Run the gate set from `infra/azure`.
 
 ```bash
-LAB_DIR="/tmp/day-36-tf-governance-lab-$$"
-mkdir -p "$LAB_DIR"
-cd "$LAB_DIR"
-pwd
+cd infra/azure
+terraform fmt -check -recursive
 ```
 
-2. Write `main.tf`. Leave the `local_file` block poorly indented on purpose. `terraform fmt` should rewrite that block. This configuration uses the `local` provider only. The resource writes `managed.txt` with content that Terraform owns.
+```bash
+cd environments/dev
+terraform init -input=false -backend=false
+terraform validate
+terraform test
+tflint --init
+tflint
+```
+
+```bash
+checkov -d ../backend --framework terraform
+```
+
+Expected: fmt, validate, test, and tflint exit 0. Checkov may still fail `CKV_AZURE_33`. Day 25 already trained that skip. Put the skip in `backend/.checkov.yml` if it is not there. Re-run Checkov. Record both the fail and the skip in the notes.
+
+2. Pin provider versions in every root you touch. Confirm `azurerm` is `5.9.0`, not `~> 5.0` without a lock file.
+
+```bash
+grep -R "required_providers" -A 6 environments/dev/main.tf backend/main.tf
+ls environments/dev/.terraform.lock.hcl backend/.terraform.lock.hcl
+```
+
+If a lock file is missing, run `terraform init` and commit it.
+
+3. Create the move drill. This uses `terraform_data` so you do not need Azure. It is not a substitute for the `azurerm` modules. It is the safe way to see a move.
+
+```bash
+mkdir -p infra/azure/loop-local/moved-demo
+```
+
+`infra/azure/loop-local/moved-demo/main.tf` (first apply):
 
 ```hcl
-terraform {
-  required_providers {
-    local = {
-      source  = "hashicorp/local"
-      version = "~> 2.5"
-    }
-  }
-}
-
-resource "local_file" "marker" {
-filename = "${path.module}/managed.txt"
-content  = "managed by terraform\n"
+resource "terraform_data" "old" {
+  input = "shopsphere"
 }
 ```
 
-3. Initialize Terraform. This downloads the `hashicorp/local` provider into `.terraform` in this directory. It also writes `.terraform.lock.hcl`. It does not create `managed.txt` yet.
-
 ```bash
+cd infra/azure/loop-local/moved-demo
 terraform init
-```
-
-4. Show the lock file. `ls` should list `.terraform.lock.hcl`. `cat` should show `hashicorp/local` as the selected provider. Copy the provider source and version into your notes. This is the file the lesson says to commit. Do not copy it into the course repository. Do not delete it.
-
-```bash
-ls -a
-cat .terraform.lock.hcl
-```
-
-5. Format the configuration. `terraform fmt` rewrites `main.tf` in place. Open `main.tf` and confirm the `filename` and `content` arguments now align with the resource block.
-
-```bash
-terraform fmt
-cat main.tf
-```
-
-6. Validate the configuration. This checks syntax and arguments against the initialized providers. It does not contact a cloud API. It should report success.
-
-```bash
-terraform validate
-```
-
-7. Preview the create. Read the plan. You should see one `local_file.marker` to add. Do not apply until the plan matches that expectation. Do not pass `-auto-approve` on apply. The lesson treats a Production auto-approve from a laptop as unsafe.
-
-```bash
-terraform plan
-```
-
-8. Apply the configuration. Type `yes` when Terraform asks to confirm. After apply, the working directory should contain `managed.txt`, `terraform.tfstate`, and `.terraform.lock.hcl`.
-
-```bash
-terraform apply
-```
-
-9. Confirm Terraform created the file. `cat managed.txt` should show `managed by terraform`. `terraform state list` should show `local_file.marker`. Copy both results into your notes.
-
-```bash
-cat managed.txt
+terraform apply -auto-approve
 terraform state list
-ls
 ```
 
-10. Edit the file outside Terraform. This is the drift. Do not change `main.tf`. Do not apply yet.
+Expected state address: `terraform_data.old`.
 
-```bash
-printf 'changed by hand\n' > managed.txt
-cat managed.txt
+4. Rename the resource **with** a `moved` block.
+
+```hcl
+resource "terraform_data" "new" {
+  input = "shopsphere"
+}
+
+moved {
+  from = terraform_data.old
+  to   = terraform_data.new
+}
 ```
-
-11. Run plan again. Terraform compares configuration, state, and the real file. Record the proposed action in your notes.
 
 ```bash
 terraform plan
 ```
 
-The plan should want to write `managed by terraform` back to `managed.txt`. With `local_file`, that action often shows as a create, not an in-place update. The provider uses the file checksum as the resource ID. When you change the file outside Terraform, that old ID no longer matches. The difference is still drift. Terraform is telling you the real file no longer matches the declared content.
-
-12. Investigate before you apply. Write these lines in `day-36-tf-governance-lab.md` before you type `yes`:
+Expected plan (Terraform 1.16.5 wording):
 
 ```text
-Expected Configuration: managed by terraform
-Actual Infrastructure: changed by hand
-Detected Drift: managed.txt content no longer matches local_file.marker
-Change Owner: this lab (manual edit in step 10)
-Intent: accidental / unauthorized for this restore path
-Resolution: apply to restore the declared content
+# terraform_data.old has moved to terraform_data.new
+Plan: 0 to add, 0 to change, 0 to destroy.
 ```
 
-Do not run `terraform apply -auto-approve`. The lesson order is detect, investigate, identify owner, determine intent, then reconcile or codify. Apply is the last step of that path, not the first reflex.
+Apply that plan. `terraform state list` now shows `terraform_data.new`. The object did not get a new id.
 
-13. Restore the declared content. The configuration is the source of truth for this lab. Type `yes` to confirm. Then `cat managed.txt` should show `managed by terraform`.
-
-```bash
-terraform apply
-cat managed.txt
-```
-
-14. Confirm restore. Plan should report no remaining changes. `terraform state list` should still show `local_file.marker`. `.terraform.lock.hcl` should still exist. You did not delete the lock file.
+5. Replay the mistake. Copy state aside, or start a second folder `moved-demo-bad` and apply `terraform_data.old` again. Then change the file to `terraform_data.new` **without** a `moved` block.
 
 ```bash
 terraform plan
-terraform state list
-ls -a
 ```
 
-15. Remote backend and locking, as a note only. Do not create an S3 bucket. Write three sentences in `day-36-tf-governance-lab.md`: a team would store this state in an S3 backend with versioning and `use_lockfile`; locking would block a second apply against the same state; this lab keeps `terraform.tfstate` on disk because the goal is fmt, validate, plan, the lock file, and drift investigation, not cloud spend.
+Expected:
+
+```text
+Plan: 1 to add, 0 to change, 1 to destroy.
+```
+
+Do not apply the bad plan on a real Azure resource. Destroying a VNet because you renamed a block is the production incident this Day prevents. Write both plan summaries in the notes.
+
+The older command `terraform state mv terraform_data.old terraform_data.new` still works. Prefer a `moved` block in Git so the next teammate gets the same plan.
 
 ---
 
 ## Verify
 
-Read the notes as if you are on a call. You should name the lock file, the fmt/validate/plan order, and the drift you caused.
-
-Check these points:
-
-- `terraform init` created `.terraform.lock.hcl`. `cat` showed `hashicorp/local`. You recorded that you would commit this file in a real repository.
-- `terraform fmt` rewrote the poorly indented `local_file` block.
-- `terraform validate` succeeded before the first apply.
-- The first `terraform plan` showed one `local_file.marker` to add. You typed `yes` on apply. You did not use `-auto-approve`.
-- After the hand edit, `terraform plan` proposed a write back to the declared content. With `local_file` that often appears as a create. You wrote owner and intent before you applied.
-- After restore, a later `terraform plan` reports no remaining changes. `managed.txt` again contains `managed by terraform`.
-
-If plan still wants to change `managed.txt`, read `main.tf` and `cat managed.txt` again. The declared content, the file on disk, and state must match before you stop.
+- `terraform fmt -check`, `validate`, `terraform test`, and `tflint` passed on Dev.
+- Checkov ran on the backend module. A skip, if any, lives in Git.
+- `.terraform.lock.hcl` is committed for each root.
+- You captured a move plan with `0 to add` and a bad rename plan with `1 to add, 1 to destroy`.
+- You did not apply the destroy-and-create plan against Azure.
 
 ---
 
 ## Break and fix
 
-You already broke the file on purpose in step 10. That is the drift this Day trains. The required fix is investigate, then restore.
+### Failure 1 — provider constraint missing
 
-If you restored with apply, break it once more so the investigation is not a one-time habit. Edit `managed.txt` by hand again. Run `terraform plan`. Fill the same expected/actual/owner/intent block in your notes. Then apply to restore. A later plan should report no changes.
+Remove `version = "5.9.0"` from a root on purpose. Run `terraform init`. Read whether Terraform picked a different version. Restore the pin and the lock file. The lock file is what a teammate downloads. A missing pin is how two laptops apply different provider bugs.
 
-Do not skip the notes. Do not auto-apply. Do not delete `.terraform.lock.hcl` to create a different failure. The lesson rule is detect, investigate, then reconcile. Apply is not the first reflex.
+### Failure 2 — Checkov gate skipped in CI only
 
-Two engineers applying at once is the other failure drill from this Day. Do not try to demo that against local state here. Write one sentence in your notes: locking prevents concurrent state writes; it does not prove the change is safe. Plan review, permissions, and approvals still matter.
+Run `checkov -d infra/azure/backend --framework terraform --check CKV_AZURE_33`. Expected: fail unless you added queue logging. If your workflow from Day 25 does not run Checkov, add the step now. A laptop gate that CI does not run will rot.
+
+---
+
+## Stretch
+
+- `terraform state mv` the demo resource back and forth once, then replace that habit with a `moved` block.
+- Add `tflint-ruleset-azurerm` to `.tflint.hcl` and run `tflint --init`. Record the plugin version.
 
 ---
 
 ## Clean up
 
-Destroy the lab resource, then remove the temp directory. Run destroy only after the last plan reports no changes, so Terraform still knows the resource. Type `yes` when Terraform asks to confirm destroy. In Production, unrestricted destroy is a governance problem. In this lab, destroy is the correct cleanup.
-
 ```bash
-terraform destroy
-ls
+cd infra/azure/loop-local/moved-demo
+terraform destroy -auto-approve
+rm -f terraform.tfstate terraform.tfstate.backup
 ```
 
-Confirm `managed.txt` is gone. Then leave the lab directory and delete it, including `.terraform`, `.terraform.lock.hcl`, `terraform.tfstate`, and any `tfplan` file.
+Destroy `moved-demo-bad` the same way. Keep the `moved` block file in Git if you want the example. Do not commit state.
 
-```bash
-cd /tmp
-rm -rf "$LAB_DIR"
-```
-
-If you copied notes you want to keep, move `day-36-tf-governance-lab.md` out before `rm -rf`. Do not leave state files in the course repository. You created no AWS or Azure resources, so there is no bucket, storage account, or resource group to delete.
+If this is the last IaC Day and you no longer need `rg-shopsphere-tfstate`, destroy that stack with the Day 10 commands.
 
 ---
 
 ## Interview story
 
-I treat Terraform as a team workflow, not as a laptop shortcut. I run `terraform init`, then I read `.terraform.lock.hcl` so provider versions stay reproducible across engineers and CI. I run `terraform fmt`, `terraform validate`, and `terraform plan` before apply. I do not use `-auto-approve` against a change I have not reviewed. When someone edits a managed file outside Terraform, plan shows drift. I do not apply first. I record expected content, actual content, owner, and intent. Then I restore from the configuration, or I update the configuration if the edit was the new desired state. For a team I would move that state to an S3 backend with versioning and `use_lockfile`. Locking would stop a second apply. It would not replace plan review.
+**Situation:** ShopSphere already had remote state, but engineers still renamed resources and trusted `validate` alone. **Task:** Make lint, policy, and tests required, and show that a rename without `moved` replaces the object. **Action:** I ran `terraform fmt -check`, `tflint` 0.55.1, Checkov 3.2.447, and `terraform test` on the existing Azure modules. I applied `terraform_data.old`, added a `moved` block to `terraform_data.new`, and got `0 to add, 0 to destroy`. I then planned the same rename without `moved` and got `1 to add, 1 to destroy`. **Result:** I can tell a panel the difference between a move and a replacement, and I can point at pipeline gates that fail before apply.
+
+---
+
+## Self-score checklist
+
+- [ ] I ran fmt, validate, test, tflint, and Checkov on the real modules.
+- [ ] I have a move plan with zero add/destroy.
+- [ ] I have a bad rename plan with add+destroy.
+- [ ] Provider version is pinned and locked.
+- [ ] I destroyed the local move drill.
+- [ ] Files live in ShopSphere.
