@@ -2,310 +2,391 @@
 
 This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [02-questions-and-answers.md](02-questions-and-answers.md). Then do this lab.
 
-Day 23 teaches Azure compute as a management-responsibility choice. A Spring Boot API can run on a VM, App Service, Container Apps, or AKS. The code can stay the same. What you operate changes. This lab records that choice in a decision table. Then you run the same tiny HTTP app two ways: as a local Python process, and as `docker run` if Docker exists. Those two runtimes stand in for “same workload, different compute abstraction.” You do not create Azure resources.
+Day 23 teaches Azure compute as a management-responsibility choice. Day 13 already built a multi-stage non-root catalog image. This Day is the **harder sibling**: you **bake** that image (Packer) or you **publish** the same digest to **Azure Container Apps**. You do not patch a running VM with SSH. You do not rebuild the image "for Production."
 
-Work only in a temporary directory that you create for this lab. Do not run the app inside the DevOps-Prep course repository. Do not run `az vm create`, `az webapp up`, or `az aks create`.
+Work in **your ShopSphere repository**. Finish [Day-13/03-implementation.md](../Day-13/03-implementation.md) first if `app/Dockerfile` is still one stage.
 
 ---
 
 ## Goal
 
-Fill one decision table for a standard Spring Boot REST API. Compare Azure VM, App Service, Container Apps, and AKS. Record what you manage, what Azure manages, how you scale, and how you roll back. Then serve the same `index.html` from `python3 -m http.server` on the host and, if Docker is present, from `docker run`.
+1. Write `packer/catalog.pkr.hcl` with a Docker source (local) and an `azure-arm` source (cloud, apply optional).
+2. Write `infra/azure/modules/container-app` that runs the catalog at **0.25 vCPU / 0.5Gi**, `revision_mode = "Single"`, `min_replicas = 1`. Run `terraform test`.
+3. Record the image digest you would pin. Do not rebuild it for the Container App.
 
-After the working `curl` succeeds, break the container on purpose. Keep `EXPOSE 8080`. Change `CMD` so the process listens on `9090`. Publish host port `8080` to container port `8080`. `curl` should fail. `docker logs` should show the listen port. That mismatch is the break. Fix `CMD`, rebuild, and curl again. Stop the process and the container when you finish.
+Time box: 75 to 90 minutes. Destroy Container Apps the same session if you apply.
 
-Time box: 45 to 75 minutes. Cost stays at ₹0. Stop when the table is complete, both runtimes have a successful `curl` (or Docker is recorded as missing), the broken `curl` is in your notes, and cleanup has stopped the process and removed the lab container.
+---
+
+## Capstone stage
+
+| Path in ShopSphere | What it adds |
+|:--|:--|
+| `packer/catalog.pkr.hcl` | Golden-image bake (Docker locally, Azure ARM in cloud) |
+| `infra/azure/modules/container-app/` | Azure Container Apps environment + app |
+| `infra/azure/modules/container-app/tests/aca.tftest.hcl` | CPU, memory, replica asserts |
+| `compose.yaml` | Local fallback: the Day 13 image |
+| `docs/day-23-compute.md` | Digest, size, bake-don't-patch note |
+
+Day 17 is AKS. Do not create AKS today. Do not create a Virtual Machine Scale Set. A `Standard_B2s` VM plus a gallery image can exceed USD 5.
 
 ---
 
 ## What you need
 
-You need a shell, `curl`, and Python 3. Check them first:
-
 ```bash
-command -v curl
-command -v python3
-python3 --version
+terraform version
+command -v packer && packer version
+command -v docker && docker version
+az account show --query name -o tsv
 ```
 
-Docker Engine is optional. Check it next:
+Terraform 1.16.5 and azurerm 5.9.0 are required for the module. Packer 1.11+ is preferred for the bake. Docker is the local Packer builder and the Compose fallback. Azure is optional.
 
-```bash
-command -v docker
-docker version
-```
+If Packer is missing, still write the HCL. Record `packer not executed`. If Docker is missing, still write `compose.yaml` and the ACA module. `terraform test` completes the Day.
 
-If `docker` is missing, still write the Dockerfile below. Write the `docker` commands into your notes. Run the local Python process. Do not invent another container tool. Do not create an Azure App Service or AKS cluster to compensate.
+---
 
-You do not need Java, Maven, Spring Boot, or an Azure subscription. `python3 -m http.server` is the stand-in for the API process. The image name `python:3.12-slim` is real. Do not switch images in the middle of this lab.
+## Cost
 
-Create the lab under `/tmp`, not under this course clone. Keep a notes file named `day-23-compute-lab.md` in that temp directory. Record the decision table, both `curl` bodies, the failed `curl`, and whether Docker ran. Do not paste secrets. This lab should not create any.
+| Path | Estimated USD (1–2 hours, then destroy) | Why it is not always zero |
+|:--|:--|:--|
+| Packer Docker builder + Compose + `terraform test` | **0.00** | Laptop CPU |
+| Azure Container Apps 0.25 vCPU / 0.5Gi, 1 replica, ~1 hour | **0.20–1.00** | vCPU-seconds and memory-seconds |
+| Packer `azure-arm` on `Standard_B2s` + gallery publish | **1.00–4.00** | Build VM time. Destroy the builder. Do not leave the VM. |
+| VMSS, NAT Gateway, or ACA CPU above 0.25 | **Stop. Change the code.** | |
+
+Create a budget first ([../capstone/COST.md](../capstone/COST.md)). Do not write "INR 0" if ACA or a build VM ran.
 
 ---
 
 ## Steps
 
-1. Create a throwaway directory and enter it. Use a unique folder name so you do not collide with another lab. Confirm the path is under `/tmp`.
+1. Open ShopSphere. Create folders.
 
 ```bash
-LAB_DIR="/tmp/day-23-compute-lab-$$"
-mkdir -p "$LAB_DIR"
-cd "$LAB_DIR"
-pwd
+mkdir -p packer infra/azure/modules/container-app/tests docs
 ```
 
-2. Create the notes file. Put the date at the top. Write one short paragraph: you will choose compute for a Spring Boot API on paper. You will run a tiny HTTP app as a local process. You will run the same app with `docker run` only if Docker is already on this machine.
+Record the Day 13 digest if you have it:
 
 ```bash
-touch day-23-compute-lab.md
-ls
+docker image inspect shopsphere-catalog:1.0.0 --format '{{.Id}}'
 ```
 
-3. Write the workload sentence before the table. The application is a standard Spring Boot REST API with conventional HTTP traffic. It talks to PostgreSQL. It does not need OS-level agents. It does not need custom Kubernetes controllers. Name that workload in the notes. Do not change it later to force AKS.
+If the image is missing, build it from Day 13 first, or use `nginx:1.27` as a stand-in and write that limit in the notes.
 
-Write at least one short paragraph. Say that the JAR can stay the same across VM, App Service, Container Apps, and AKS. Say that operational responsibility is what changes. Say that you pick the simplest compute model that meets the requirements.
+2. Write `packer/catalog.pkr.hcl`. Packer 1.11 HCL2. Two sources: Docker for the laptop, `azure-arm` for a gallery bake you probably will **not** apply.
 
-4. Add the decision table. Copy this block into the notes file. Fill every cell in your own words. Do not leave a cell as a product name only.
+```hcl
+packer {
+  required_version = ">= 1.11.0"
 
-```markdown
-| Question | Azure VM | App Service | Container Apps | AKS |
-|:--|:--|:--|:--|:--|
-| Who patches the OS? | | | | |
-| Who runs the Java process? | | | | |
-| How do you deploy a new version? | | | | |
-| How do you roll back? | | | | |
-| How does it scale? | | | | |
-| What Azure manages | | | | |
-| What your team still owns | | | | |
-| When this fits a Spring Boot API | | | | |
+  required_plugins {
+    docker = {
+      source  = "github.com/hashicorp/docker"
+      version = ">= 1.0.9, < 2.0.0"
+    }
+    azure = {
+      source  = "github.com/hashicorp/azure"
+      version = ">= 2.2.1, < 3.0.0"
+    }
+  }
+}
+
+variable "catalog_image" {
+  type    = string
+  default = "shopsphere-catalog:1.0.0"
+}
+
+source "docker" "catalog" {
+  image  = var.catalog_image
+  commit = true
+  changes = [
+    "USER 10001",
+    "EXPOSE 8080",
+  ]
+}
+
+source "azure-arm" "linux" {
+  use_azure_cli_auth = true
+  location           = "eastus"
+  vm_size            = "Standard_B2s"
+  os_type            = "Linux"
+  image_publisher    = "Canonical"
+  image_offer        = "0001-com-ubuntu-server-jammy"
+  image_sku          = "22_04-lts-gen2"
+  managed_image_resource_group_name = "rg-shopsphere-images"
+  managed_image_name                = "img-shopsphere-golden"
+}
+
+build {
+  name    = "catalog-docker"
+  sources = ["source.docker.catalog"]
+
+  provisioner "shell" {
+    inline = [
+      "id",
+      "python --version || python3 --version",
+    ]
+  }
+
+  post-processor "docker-tag" {
+    repository = "shopsphere-catalog"
+    tags       = ["golden-1.0.0"]
+  }
+}
+
+build {
+  name    = "catalog-azure"
+  sources = ["source.azure-arm.linux"]
+
+  provisioner "shell" {
+    inline = [
+      "sudo apt-get update",
+      "sudo apt-get install -y ca-certificates",
+    ]
+    execute_command = "chmod +x {{ .Path }}; {{ .Vars }} sudo -E sh '{{ .Path }}'"
+  }
+}
 ```
 
-Fill the VM column first. You install Java, run the JAR under `systemd`, patch the guest OS, and own disks and NSGs. Azure owns the host hardware. A restart is not high availability.
-
-Fill App Service next. Azure patches the platform. You deploy a JAR or a container to a plan. Slots support a staging swap. You still own the app, identity, and settings. You do not SSH into a guest OS.
-
-Fill Container Apps next. You push an image and run a revision. Azure hides nodes and the Kubernetes API. You own the image, ingress, scale rules, and identity.
-
-Fill AKS last. Azure manages the control plane. You still own node pools, Deployments, Services, probes, and cluster networking. Write one requirement that would justify AKS over Container Apps for this API. If you cannot name one, do not pick AKS.
-
-5. Write two sentences under the table. For this standard Spring Boot API, App Service or Container Apps usually fit. A VM is justified by OS-level need. AKS is justified by Kubernetes-native need. “Containers” is not that need. “More modern” is not a requirement.
-
-6. Write `index.html`. This is the file the HTTP server will return. The body must be easy to recognize in `curl`.
+The Docker build is the required bake on a laptop. It does not replace a CIS-hardened Ubuntu image. Write that limit. The Azure ARM build is the interview story: bake, scan, publish, roll. Do **not** run `catalog-azure` unless a budget exists and you will destroy `rg-shopsphere-images` the same session.
 
 ```bash
-printf 'day-23-lab\n' > index.html
-cat index.html
+packer init packer/catalog.pkr.hcl
+packer fmt packer/catalog.pkr.hcl
+packer validate -only=catalog-docker.docker.catalog packer/catalog.pkr.hcl
 ```
 
-7. Start the same app as a local Python process. Bind it to port `18080` on this machine. Run it in the background. Record the process ID.
+If Packer is missing, copy the expected commands into the notes. **Not executed** in the authoring environment (no Packer binary).
+
+3. Local fallback: Compose the Day 13 image. `compose.yaml` at the ShopSphere root:
+
+```yaml
+services:
+  catalog:
+    image: shopsphere-catalog:1.0.0
+    ports:
+      - "8080:8080"
+    read_only: true
+    user: "10001"
+    tmpfs:
+      - /tmp
+```
 
 ```bash
-python3 -m http.server 18080 --bind 127.0.0.1 > http-server.log 2>&1 &
-echo $! > http-server.pid
-cat http-server.pid
+docker compose up -d
+curl -sS http://127.0.0.1:8080/health
+docker compose down
 ```
 
-If port `18080` is already in use, stop. Choose `18082` instead and use that port in every later local `curl`. Write the port you used.
+Expected health: `{"status": "ok"}`. This is PaaS-shaped locally: you run a container, you do not SSH a VM. **Not executed** here (no Docker).
 
-8. Request the page from the host. You should see `day-23-lab`. This is the process model: you started the runtime, you own the listen port, and you must stop the process later.
+4. Write the Container Apps module. `infra/azure/modules/container-app/versions.tf`:
+
+```hcl
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "5.9.0"
+    }
+  }
+}
+```
+
+`infra/azure/modules/container-app/variables.tf`:
+
+```hcl
+variable "name" {
+  type = string
+}
+
+variable "location" {
+  type = string
+}
+
+variable "resource_group_name" {
+  type = string
+}
+
+variable "image" {
+  type        = string
+  description = "Catalog image including digest, for example myacr.azurecr.io/catalog@sha256:..."
+}
+```
+
+`infra/azure/modules/container-app/main.tf`. These arguments are valid on azurerm 5.9.0. `template.container` requires `cpu`, `image`, `memory`, and `name`. `ingress` requires `target_port`. Include `traffic_weight` because Azure still wants a 100 percent latest revision.
+
+```hcl
+resource "azurerm_container_app_environment" "this" {
+  name                = "${var.name}-env"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+}
+
+resource "azurerm_container_app" "this" {
+  name                         = var.name
+  container_app_environment_id = azurerm_container_app_environment.this.id
+  resource_group_name          = var.resource_group_name
+  revision_mode                = "Single"
+
+  template {
+    min_replicas = 1
+    max_replicas = 1
+
+    container {
+      name   = "catalog"
+      image  = var.image
+      cpu    = 0.25
+      memory = "0.5Gi"
+    }
+  }
+
+  ingress {
+    external_enabled = true
+    target_port      = 8080
+    transport        = "http"
+
+    traffic_weight {
+      latest_revision = true
+      percentage      = 100
+    }
+  }
+}
+```
+
+`min_replicas = 1` avoids a cold start in the lab. Scale-to-zero is a product choice, not a free lunch.
+
+5. Write `infra/azure/modules/container-app/tests/aca.tftest.hcl`.
+
+```hcl
+mock_provider "azurerm" {}
+
+run "sku" {
+  command = plan
+
+  variables {
+    name                = "ca-shopsphere-dev"
+    location            = "eastus"
+    resource_group_name = "rg-shopsphere-aca-dev"
+    image               = "nginx:1.27"
+  }
+
+  assert {
+    condition     = azurerm_container_app.this.revision_mode == "Single"
+    error_message = "revision_mode must be Single"
+  }
+
+  assert {
+    condition     = azurerm_container_app.this.template[0].min_replicas == 1
+    error_message = "lab must not scale to zero"
+  }
+
+  assert {
+    condition     = azurerm_container_app.this.template[0].container[0].cpu == 0.25
+    error_message = "cpu must be 0.25"
+  }
+
+  assert {
+    condition     = azurerm_container_app.this.template[0].container[0].memory == "0.5Gi"
+    error_message = "memory must be 0.5Gi"
+  }
+}
+```
 
 ```bash
-curl -sS http://127.0.0.1:18080/
+cd infra/azure/modules/container-app
+terraform init
+terraform fmt
+terraform validate
+terraform test
 ```
 
-Paste the body into the notes. Confirm the PID file still exists. Do not stop the process yet. The container run should use a different host port so both can answer at the same time.
+Expected: `1 passed`. This was executed on Terraform 1.16.5 / azurerm 5.9.0 in the authoring environment.
 
-9. Write `Dockerfile`. `FROM` starts from `python:3.12-slim`. `WORKDIR` sets `/app`. `COPY` adds `index.html`. `EXPOSE 8080` documents the listen port. It does not publish a host port. `CMD` starts the process that actually listens.
-
-```dockerfile
-FROM python:3.12-slim
-
-WORKDIR /app
-
-COPY index.html .
-
-EXPOSE 8080
-
-CMD ["python", "-m", "http.server", "8080"]
-```
-
-Save that file as `Dockerfile` in `$LAB_DIR`. Confirm the files you care about exist:
+6. Optional ACA apply. Dedicated root `infra/azure/environments/aca-dev/`. Reuse Day 22 platform RG or create `rg-shopsphere-aca-dev`. Pin the image by **digest**, not `latest`.
 
 ```bash
-ls
-cat Dockerfile
+terraform -chdir=infra/azure/environments/aca-dev init
+terraform -chdir=infra/azure/environments/aca-dev plan
 ```
 
-You should see `Dockerfile`, `index.html`, `day-23-compute-lab.md`, and the PID file.
+Read the plan. One environment, one app, 0.25 CPU, no NAT Gateway. If the estimate would exceed USD 5, stop. Use Compose.
 
-10. Check Docker. If the command fails, write `docker missing — local process and decision table are the lab` in the notes. Skip every `docker` step through the break. Go to Verify. Do not invent a replacement.
+7. Decision table in `docs/day-23-compute.md`.
 
-```bash
-command -v docker
-docker version
+```text
+Workload          You manage              Azure manages           Roll back
+VM / VMSS         OS, agent, golden image Host, disk, fabric      New image version
+App Service       App bits                OS, patch, HTTP         Deployment slot
+Container Apps    Image digest, scale     K8s machinery           Previous revision
+AKS (Day 17)      Nodes, addons, YAML     Control plane           GitOps / rollout
 ```
 
-11. If Docker is present, build the image. The tag `day23-lab:1.0.0` is a human-readable name. Docker may pull `python:3.12-slim` on the first build. Wait for the build to finish.
-
-```bash
-docker build -t day23-lab:1.0.0 .
-```
-
-12. Run a container from that image. `-d` runs it in the background. `--name day23-lab` sets a stable name. `-p 18081:8080` publishes host port `18081` to container port `8080`. That host port is not the local process port. `EXPOSE` does not create the mapping. `-p` does.
-
-```bash
-docker run -d --name day23-lab -p 18081:8080 day23-lab:1.0.0
-```
-
-If host port `18081` is already in use, stop. Choose `18083` instead and use `-p 18083:8080` in every later `docker run` and `curl`. Write the host port you used.
-
-13. Prove the container path. List the container. Read the logs. Inspect the command and the port mapping. Then curl the published host port. You should see `day-23-lab` again. The body matches the local process. The execution model is different.
-
-```bash
-docker ps
-docker logs day23-lab
-docker inspect day23-lab
-curl -sS http://127.0.0.1:18081/
-```
-
-Copy the `CMD`, the published port, and both `curl` bodies into the notes. Write one sentence: the local process is the VM-style runtime you operate; the container is the image you would hand to App Service, Container Apps, or AKS.
+Write one paragraph: bake, don't patch in place. Day 13 produced the image. This Day publishes it. Day 33 promotes the **same digest**.
 
 ---
 
 ## Verify
 
-Read `day-23-compute-lab.md` as if you are on a call. You should name a compute choice for the Spring Boot API and say why the simpler option was not enough, or why it was enough.
-
-Check these points:
-
-- The table has rows for patching, the Java process, deploy, rollback, scale, Azure’s job, your job, and fit for a Spring Boot API.
-- The VM column says you patch the guest OS. The App Service column says Azure patches the platform.
-- Container Apps hides the Kubernetes API. AKS still gives you node pools and Deployments.
-- You picked App Service or Container Apps for this API unless you wrote a real OS or Kubernetes requirement.
-- `curl` to the local process returned `day-23-lab`. `cat http-server.pid` still shows a PID.
-- If Docker ran, `docker ps` shows `day23-lab`, `docker logs` shows the HTTP server on port `8080`, and `curl` to the published host port returned `day-23-lab`.
-- You did not treat `EXPOSE 8080` as a host publish. `-p` created the mapping.
-- You did not create Azure VMs, App Service plans, Container Apps, or AKS. Cost stays at ₹0.
-
-If a table cell is only a heading, fill it before you stop. A comparison with empty cells is not a design. If the local `curl` fails, read `http-server.log` and confirm the PID is still running.
+- Packer HCL exists with a Docker source and an `azure-arm` source.
+- ACA module validates and `terraform test` passed.
+- CPU is 0.25 and memory is 0.5Gi. `min_replicas` is 1.
+- Notes name bake-don't-patch and the image digest (or `nginx:1.27` stand-in).
+- You did not apply a VMSS.
+- Notes do **not** say ACA is free if it ran.
 
 ---
 
 ## Break and fix
 
-If Docker is missing, do this break on paper. Keep `EXPOSE 8080` in the Dockerfile. Write that `CMD` will listen on `9090` while `-p 18081:8080` still maps host `18081` to container `8080`. Write that `curl` to `18081` would fail because nothing listens on container port `8080`. Then put `CMD` back to `8080` in the notes. Go to Clean up and stop the local process.
+Do both failures.
 
-If Docker is present, the working container still holds port `18081`. Stop it and remove it before you run a broken one with the same name.
+### Failure 1 — scale to zero as the default
 
-```bash
-docker stop day23-lab
-docker rm day23-lab
-docker ps -a
-```
+Set `min_replicas = 0`. Run `terraform test`. Expected: the replica assert fails. Restore `1`. Write why: a catalog API with a 99.9 percent SLO should not pay a cold start on the first request of the day. Scale-to-zero is for async or internal tools.
 
-`docker ps -a` should no longer list `day23-lab`. The image `day23-lab:1.0.0` should still exist. The local Python process should still be running on `18080`.
+### Failure 2 — patch in place
 
-Now break `CMD`. Keep `EXPOSE 8080`. Change only the listen port in `CMD` to `9090`. The process will listen on `9090`. You will still publish `18081:8080`.
+On paper, SSH to a VM and `apt-get upgrade`. Write the blast: the next scale-out boots the old image and undoes the patch. The fix is a new Packer build and a rolling replace. Restore the bake path. Do not add a VM to this lab to prove SSH.
 
-```dockerfile
-FROM python:3.12-slim
+---
 
-WORKDIR /app
+## Stretch
 
-COPY index.html .
-
-EXPOSE 8080
-
-CMD ["python", "-m", "http.server", "9090"]
-```
-
-Rebuild the same tag, then run it the same way as before:
-
-```bash
-docker build -t day23-lab:1.0.0 .
-docker run -d --name day23-lab -p 18081:8080 day23-lab:1.0.0
-docker ps
-docker logs day23-lab
-docker inspect day23-lab
-curl -sS http://127.0.0.1:18081/
-```
-
-`curl` should fail. Nothing listens on container port `8080`. `docker logs` should show the server on port `9090`. `docker inspect` should show `CMD` with `9090`. `EXPOSE 8080` did not move the process onto `8080`. `-p 18081:8080` only maps the host port to container port `8080`.
-
-Record the failed `curl`, the log line, and the `CMD` in the notes. That is the evidence.
-
-Fix the Dockerfile. Put `CMD` back to port `8080`. `EXPOSE` and `-p` must match the port the process listens on.
-
-```dockerfile
-FROM python:3.12-slim
-
-WORKDIR /app
-
-COPY index.html .
-
-EXPOSE 8080
-
-CMD ["python", "-m", "http.server", "8080"]
-```
-
-Replace the broken container, rebuild, and run again:
-
-```bash
-docker stop day23-lab
-docker rm day23-lab
-docker build -t day23-lab:1.0.0 .
-docker run -d --name day23-lab -p 18081:8080 day23-lab:1.0.0
-docker logs day23-lab
-curl -sS http://127.0.0.1:18081/
-```
-
-`curl` should print `day-23-lab` again. Curl the local process too. It should still return `day-23-lab` on `18080`. Write one sentence in the notes: `CMD` sets the listen port, `EXPOSE` documents it, and `-p` publishes it. The local process has no `EXPOSE`. You chose the port when you started `python3`.
-
-Do not skip the investigation. Look at logs and inspect before you change the file. Restarting the broken container will not fix a wrong `CMD`.
+- Publish the Azure ARM image to Azure Compute Gallery (`azurerm_shared_image_version`). Destroy it.
+- Add an ACA revision and split traffic 90/10. That is the PaaS analog of canary.
 
 ---
 
 ## Clean up
 
-Stop the local Python process first. Use the PID you saved. Then confirm the port no longer answers.
-
 ```bash
-kill "$(cat http-server.pid)"
-sleep 1
-curl -sS http://127.0.0.1:18080/ || true
+docker compose down
+docker image rm shopsphere-catalog:golden-1.0.0 || true
+terraform -chdir=infra/azure/environments/aca-dev destroy
+az containerapp show --resource-group rg-shopsphere-aca-dev --name ca-shopsphere-dev
 ```
 
-The `curl` should fail. If the process is still running, check the PID and stop it again. Do not leave a Python HTTP server on this machine.
-
-If Docker ran, stop and remove the lab container. Then remove the lab image.
-
-```bash
-docker stop day23-lab
-docker rm day23-lab
-docker ps -a
-docker image rm day23-lab:1.0.0
-docker image ls
-```
-
-`docker ps -a` must not show `day23-lab`. `docker image ls` must not show `day23-lab:1.0.0`. If this lab pulled `python:3.12-slim` and you do not need that base image, remove it too:
-
-```bash
-docker image rm python:3.12-slim
-```
-
-If Docker refuses because another image still uses that base, leave it. Do not run a broad prune. Remove only what this lab created.
-
-Leave the lab directory and delete it:
-
-```bash
-cd /tmp
-rm -rf "$LAB_DIR"
-```
-
-If you copied notes you want to keep, move `day-23-compute-lab.md` out before `rm -rf`. You created no Azure or AWS resources, so there is no resource group, App Service plan, Container Apps environment, or AKS cluster to delete. Do not run `az group delete` as cleanup. You never created that group.
+Expected after destroy: the show command fails. If you ran Packer `azure-arm`, delete `rg-shopsphere-images` as well.
 
 ---
 
 ## Interview story
 
-I treat Azure compute as a choice about operational responsibility, not as a list of product names. For a standard Spring Boot API I fill a table across VM, App Service, Container Apps, and AKS. I ask who patches the OS, how I deploy, how I roll back, and what requirement removes the simpler option. I then run the same tiny HTTP app two ways. `python3 -m http.server` is the process I would operate on a VM. `docker run` is the image I would hand to App Service, Container Apps, or AKS. When `CMD` listens on `9090` and I still publish `8080`, `curl` fails. `EXPOSE` did not open that port. `docker logs` shows the mismatch. I fix `CMD`, rebuild, and stop both the process and the container so the lab leaves nothing running.
+**Situation:** Day 13 gave ShopSphere a container image, but production JDs asked how that image becomes a golden artifact or a PaaS revision. **Task:** Bake the catalog and show Azure Container Apps as the path that does not need a cluster. **Action:** I wrote Packer HCL with a Docker source for the laptop and `azure-arm` on `Standard_B2s` for a gallery bake I did not have to apply. I added `azurerm_container_app` at 0.25 vCPU / 0.5Gi with `min_replicas = 1` and covered CPU, memory, and replicas with `terraform test` on azurerm 5.9.0. I refused SSH patching and I refused scale-to-zero as the lab default. **Result:** I can explain bake-don't-patch, why ACA is not AKS, and why Day 33 must promote this digest instead of rebuilding it.
+
+---
+
+## Self-score checklist
+
+- [ ] Packer HCL exists with Docker and Azure sources.
+- [ ] ACA module `terraform test` passed.
+- [ ] I can say why min_replicas is 1 in the lab.
+- [ ] I wrote the patch-in-place blast.
+- [ ] I destroyed ACA, or I never applied.
+- [ ] Files live in ShopSphere.
+
+**Executed:** ACA module `terraform fmt`, `validate`, `terraform test` on Terraform 1.16.5 / azurerm 5.9.0 (authoring VM). **Not executed:** Packer, Docker Compose, ACA apply, azure-arm build VM.
