@@ -2,184 +2,220 @@
 
 This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [02-questions-and-answers.md](02-questions-and-answers.md). Then do this lab.
 
-Day 20 teaches telemetry and incident response. This lab runs a six-line Python HTTP server on your laptop. `/` returns HTTP 200. `/health` returns HTTP 500. You curl both paths, capture the server logs, and write a five-line incident timeline: detect, hypothesise, test, fix, verify. You page on the symptom users feel (HTTP 500), not on CPU.
+Day 20 teaches telemetry and paging on **symptoms**. The old lab was a six-line Python server in `/tmp`. This lab installs **kube-prometheus-stack** on `kind`, scrapes the ShopSphere `/metrics` path, and adds a **multi-window SLO burn-rate** rule. Day 35 adds Grafana-as-code and cardinality control.
 
-Work only in a temporary directory that you create for this lab. Do not run the server inside the DevOps-Prep course repository. You do not need Kubernetes, Prometheus, or a cloud account.
+Work in **your ShopSphere repository** on cluster `shopsphere`.
 
 ---
 
 ## Goal
 
-Start a local Python process that listens on `127.0.0.1:8080`. Prove `/` returns 200 and `/health` returns 500 with `curl -w '%{http_code}'`. Read the request log. Treat the 500 as the incident. Write a five-line timeline. Then change `/health` to return 200 and curl it again.
+Install kube-prometheus-stack. Deploy the catalog with a `/metrics` scrape. Apply a PrometheusRule that pages on a fast 5m burn and a slow 1h burn of a 99.9 percent availability SLO. Prove a 500 on `/health` is the symptom you page, not CPU.
 
-When you finish, you can explain why a process can be running while a health check fails, why you page on HTTP 500 instead of CPU, and how you verify recovery with the same curl command you used to detect the failure.
+Time box: 75 to 90 minutes.
 
-Time box: 30 to 45 minutes. Cost stays at ₹0. Stop when `/health` returns 200, the timeline file exists, and the Python process is stopped.
+---
+
+## Capstone stage
+
+| Path | Adds |
+|:--|:--|
+| `observability/kube-prometheus-stack-values.yaml` | Chart values |
+| `observability/rules/shopsphere-slo.yaml` | Burn-rate alerts |
+| `observability/otel/collector.yaml` | Optional Collector |
+| `docs/day-20-slo.md` | Recording of `up` and the rule |
 
 ---
 
 ## What you need
 
-You need Python 3 and `curl`. Check both first:
-
 ```bash
-python3 --version
-curl --version
+helm version
+kubectl -n shopsphere get deploy
 ```
 
-You do not need Docker, kind, Azure, or AWS. `python3` already includes `http.server`. The six-line script below subclasses `BaseHTTPRequestHandler`. That is enough to return 500 on one path and 200 on another. Plain `python3 -m http.server` always returns 200, so it cannot simulate this failure by itself.
+Helm 3.16+. kind cluster with the Day 14 namespace. If Helm cannot pull charts, you still write the rule YAML and a local Python scrape of `/metrics` (USD 0.00).
 
-Create the lab under `/tmp`, not under this course clone. The server writes a log file in the working directory. You must be able to delete that directory when you clean up.
+---
 
-Keep a notes file named `day-20-incident-lab.md` in the same temp directory. Record the curl output, the log lines, and the five-line timeline. Do not paste secrets. This lab should not create any.
+## Cost
+
+kind + the stack: **USD 0.00** (laptop RAM; the stack is heavy — give Docker 4Gi). Do not install this on a one-node AKS lab unless you will destroy it. AKS + the stack can exceed USD 5.
 
 ---
 
 ## Steps
 
-1. Create a throwaway directory and enter it. Use a unique folder name so you do not collide with another lab. Confirm the path is under `/tmp`.
+1. Add values. `observability/kube-prometheus-stack-values.yaml`:
+
+```yaml
+grafana:
+  enabled: true
+alertmanager:
+  enabled: true
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
+```
+
+2. Install. Pin chart version `69.8.2` if that tag exists on the Helm repo. If `helm search` does not show it, install the current `69.x` and record the version `helm list` prints.
 
 ```bash
-LAB_DIR="/tmp/day-20-obs-lab-$$"
-mkdir -p "$LAB_DIR"
-cd "$LAB_DIR"
-pwd
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+helm upgrade --install kps prometheus-community/kube-prometheus-stack \
+  -n monitoring --create-namespace \
+  -f observability/kube-prometheus-stack-values.yaml
+kubectl -n monitoring rollout status deploy/kps-grafana --timeout=180s
 ```
 
-2. Write `app.py`. This six-line script returns HTTP 500 for `/health` and HTTP 200 for every other path. It binds only to `127.0.0.1` on port `8080`.
+If the install fails on memory, reduce replicas in values (`prometheus.prometheusSpec.replicas: 1` is the default). Do not add a second node.
 
-```python
-from http.server import BaseHTTPRequestHandler, HTTPServer
-class H(BaseHTTPRequestHandler):
-    def do_GET(self):
-        c = 500 if self.path.split("?")[0] == "/health" else 200
-        self.send_response(c); self.end_headers(); self.wfile.write(b"fail\n" if c == 500 else b"ok\n")
-HTTPServer(("127.0.0.1", 8080), H).serve_forever()
+3. Expose catalog metrics. The starter API already serves `/metrics` as `shopsphere_up 1`. If you still run `nginx:1.27`, add an annotation and skip the custom metric. Prefer the Python image from Day 13 / 37.
+
+ServiceMonitor:
+
+```yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: catalog
+  namespace: shopsphere
+  labels:
+    release: kps
+spec:
+  selector:
+    matchLabels:
+      app: catalog
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
 ```
 
-3. Start the server in the background. Send stdout and stderr to `app.log` so you can read the request log later. Save the process id.
+The Service must name the port `http`. Patch Day 14 `service.yaml` if the port is unnamed.
 
-```bash
-python3 app.py > app.log 2>&1 &
-echo $! > app.pid
-cat app.pid
+4. Write `observability/rules/shopsphere-slo.yaml`. SLO: 99.9 percent availability. Error budget is 0.001. Multi-window burn (Google SRE workbook style):
+
+- Fast window 5m, page if burn > 14.4 × budget
+- Slow window 1h, page if burn > 6 × budget
+
+```yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: shopsphere-slo
+  namespace: monitoring
+  labels:
+    release: kps
+spec:
+  groups:
+    - name: shopsphere.slo
+      rules:
+        - alert: ShopSphereErrorBudgetBurnFast
+          expr: |
+            (
+              sum(rate(shopsphere_http_requests_total{code=~"5.."}[5m]))
+              /
+              clamp_min(sum(rate(shopsphere_http_requests_total[5m])), 1e-9)
+            ) > (14.4 * 0.001)
+          for: 2m
+          labels:
+            severity: page
+          annotations:
+            summary: Fast burn of the 99.9% availability SLO
+        - alert: ShopSphereErrorBudgetBurnSlow
+          expr: |
+            (
+              sum(rate(shopsphere_http_requests_total{code=~"5.."}[1h]))
+              /
+              clamp_min(sum(rate(shopsphere_http_requests_total[1h])), 1e-9)
+            ) > (6 * 0.001)
+          for: 15m
+          labels:
+            severity: page
+          annotations:
+            summary: Slow burn of the 99.9% availability SLO
 ```
 
-Wait one second so the socket is listening. Then confirm the process is still running.
+The starter API does **not** yet emit `shopsphere_http_requests_total`. Add a counter in `app/main.py` (increment on each GET, label `code`) **or** change the rule to `shopsphere_up == 0` for this Day. Prefer the counter. That is the SLI.
 
-```bash
-sleep 1
-ps -p "$(cat app.pid)"
-```
-
-4. Curl the healthy path first. `curl -w '%{http_code}'` prints the HTTP status code after the body. You should see `ok` and then `200`.
-
-```bash
-curl -s -w '%{http_code}' http://127.0.0.1:8080/
-echo
-```
-
-Copy that output into `day-20-incident-lab.md`. This is the baseline. The process is up. `/` succeeds.
-
-5. Curl `/health`. You should see `fail` and then `500`. This is the symptom. Users (or a load balancer) would feel this as a failed health check.
-
-```bash
-curl -s -w '%{http_code}' http://127.0.0.1:8080/health
-echo
-```
-
-Copy that output into the notes. Do not look at CPU. The lesson rule is: alert on symptoms users feel (errors, latency), not on causes (CPU). HTTP 500 is the page.
-
-6. Read the server log. `BaseHTTPRequestHandler` writes one line per request to stderr, which you redirected to `app.log`.
-
-```bash
-cat app.log
-```
-
-You should see a `200` line for `/` and a `500` line for `/health`. That log is the evidence. Metrics would say error rate rose. The log says which path failed.
-
-7. Write a five-line incident timeline in `day-20-incident-lab.md`. Use these five verbs, one line each: detect, hypothesise, test, fix, verify. Fill the lines with what you just did. A valid first draft looks like this:
+If you cannot change the app, use:
 
 ```text
-Detect: curl -s -w '%{http_code}' http://127.0.0.1:8080/health returned 500.
-Hypothesise: /health is coded to return 500; the process is still running because / returned 200.
-Test: app.log shows GET /health 500 and GET / 200. CPU is not the signal.
-Fix: change the 500 in app.py to 200, then restart the process.
-Verify: curl -s -w '%{http_code}' http://127.0.0.1:8080/health returns 200.
+shopsphere_up == 0
 ```
 
-Keep the timeline to five lines. This is the start of an incident record, not a full RCA.
-
-8. Leave the 500 in place for a moment. That is the break. The process is still running. `/` is still 200. `/health` is still 500. Write one sentence in the notes: you would page a human on HTTP 500, not on CPU. CPU is not in this lab and does not need to be. The symptom is enough.
-
-9. Fix `/health`. Stop the process. Change `500` to `200` in `app.py` so `/health` returns 200. Start the server again.
+as a stand-in and write that a real SLO uses request success ratio.
 
 ```bash
-kill "$(cat app.pid)"
-sed -i 's/500 if/200 if/' app.py
-python3 app.py >> app.log 2>&1 &
-echo $! > app.pid
-sleep 1
+kubectl apply -f observability/rules/shopsphere-slo.yaml
+kubectl -n monitoring get prometheusrules
 ```
 
-10. Verify recovery with the same curl command you used to detect the failure. You should see `ok` and then `200` for both `/` and `/health`.
+5. Optional OpenTelemetry Collector. `observability/otel/collector.yaml` can wait if RAM is tight. A one-container Collector (`otel/opentelemetry-collector-contrib:0.119.0`) that receives OTLP 4317 and exports to Prometheus is enough. Do not add a vendor SaaS.
+
+6. Local fallback (no Helm).
 
 ```bash
-curl -s -w '%{http_code}' http://127.0.0.1:8080/
-echo
-curl -s -w '%{http_code}' http://127.0.0.1:8080/health
-echo
-cat app.log
+python3 app/main.py
+curl -sS http://127.0.0.1:8080/metrics
 ```
 
-Copy the new status codes into the notes. Update the Verify line of the timeline if you wrote it before the fix. Recovery is proven when `/health` returns 200, not when the process merely exists.
+Expected: `shopsphere_up 1`. Write the two burn-rate formulas in `docs/day-20-slo.md` even if Prometheus is not installed.
 
 ---
 
 ## Verify
 
-Read the notes as if you are on a call. You should name the failed path, the status code, and the log line that proved it.
-
-Check these points:
-
-- `curl -s -w '%{http_code}' http://127.0.0.1:8080/` returned 200 while `/health` still returned 500. A running process is not a healthy service.
-- `app.log` recorded both requests. You did not guess the status code. You read it from curl and from the log.
-- The timeline has five lines: detect, hypothesise, test, fix, verify.
-- You wrote that the page is HTTP 500, not CPU.
-- After the fix, `curl -s -w '%{http_code}' http://127.0.0.1:8080/health` returned 200.
-
-If `/health` still returns 500, open `app.py` and confirm the `500 if` line is now `200 if`. Then confirm `ps -p "$(cat app.pid)"` shows the new process, not the old one.
+- Chart version is recorded.
+- A PrometheusRule with **two** windows exists in Git.
+- You can say why CPU is not the page (symptom is user-facing errors).
+- `/metrics` returns `shopsphere_up` or the request counter.
 
 ---
 
 ## Break and fix
 
-You already broke `/health` on purpose in step 2. That is the incident this Day trains.
+### Failure 1 — ServiceMonitor selects nothing
 
-If you skipped the pause in step 8, do it now. Put `500` back for `/health`, restart the process, and curl again. Confirm 500. Write the page sentence: HTTP 500 is the symptom. CPU is not. Then restore `200` and curl until `/health` returns 200.
+`kubectl -n shopsphere get servicemonitor` exists. Prometheus targets stay empty. Diagnose labels: Service `app: catalog` versus ServiceMonitor `matchLabels`. The `release: kps` label must match the Helm release name.
 
-Do not restart the process as the fix while `app.py` still contains `500`. A restart of a broken handler still returns 500. Change the code, then restart, then verify with curl.
+### Failure 2 — page on CPU
+
+Write an alert `node_cpu > 80`. Then delete it. Record: that is a cause. The burn-rate rules are the symptom. Day 35 will punish high-cardinality labels.
+
+---
+
+## Stretch
+
+- Port-forward Grafana (`kubectl -n monitoring port-forward svc/kps-grafana 3000:80`) and screenshot the empty dashboard. Day 35 puts JSON in Git.
+- Add the 6h/3d windows from the SRE workbook.
 
 ---
 
 ## Clean up
 
-Stop the Python process, then remove the temp directory. Kill only the pid you saved. Confirm the process is gone before you delete the folder.
-
 ```bash
-kill "$(cat app.pid)"
-sleep 1
-ps -p "$(cat app.pid)" || echo "process stopped"
-cd /tmp
-rm -rf "$LAB_DIR"
+helm uninstall kps -n monitoring
+kubectl delete ns monitoring
 ```
 
-If `kill` does not stop the process, run `kill -9 "$(cat app.pid)"` once, then confirm with `ps`. Do not leave a listener on port 8080.
-
-If you copied notes you want to keep, move `day-20-incident-lab.md` out before `rm -rf`. You created no Kubernetes objects and no cloud resources, so there is no Deployment, Service, or resource group to delete.
+Keep the YAML. The stack uses a lot of RAM. Do not leave it on a paid AKS node.
 
 ---
 
 ## Interview story
 
-I treat a running process as insufficient proof of health. I start a six-line Python server that returns 200 on `/` and 500 on `/health`. `curl -w '%{http_code}'` shows the status code. The request log shows the same 500. I page on that symptom, not on CPU. I write a five-line timeline: detect, hypothesise, test, fix, verify. Then I change the handler to 200, restart, and curl `/health` again. Recovery is the 200, not the fact that Python is still running.
+**Situation:** ShopSphere had logs in a terminal and no SLO. **Task:** Page on user-facing error budget, not on CPU. **Action:** I installed kube-prometheus-stack on kind, scraped `/metrics`, and wrote two PrometheusRule alerts: a 5-minute fast burn and a 1-hour slow burn of a 99.9 percent SLO. I refused a CPU page as the primary alert. **Result:** I can draw SLI → SLO → budget → multi-window burn, and I can uninstall the stack so a laptop stays usable.
+
+---
+
+## Self-score checklist
+
+- [ ] Two-window rule is in Git.
+- [ ] I can explain 14.4 × 0.001.
+- [ ] I did not page on CPU as the primary alert.
+- [ ] I uninstalled the stack or I never installed it and I still wrote the rule.
+
+> **Note:** Helm install of kube-prometheus-stack was **not executed in CI**.
