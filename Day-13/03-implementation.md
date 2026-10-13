@@ -2,257 +2,307 @@
 
 This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [02-questions-and-answers.md](02-questions-and-answers.md). Then do this lab.
 
-Day 13 teaches a container as an isolated process started from a layered image. This lab builds a small HTTP image from `python:3.12-slim`. You run the container, read `docker ps`, `docker logs`, and `docker inspect`, then you stop and remove it. You also break the listen port on purpose, watch `curl` fail, and fix `CMD`.
+Day 13 teaches a container as an isolated process started from a layered image. The old lab built a one-stage `python:3.12-slim` HTTP server in `/tmp`. This lab lands the **ShopSphere catalog image** in your product repo: a **multi-stage, non-root Dockerfile**, a size comparison against a fat base, and a **Trivy** scan. Day 23 is the harder sibling. It bakes a golden image or publishes the same digest to Azure Container Apps.
 
-Work only in a temporary directory. Do not build inside this course repository. `python:3.12-slim` and `nginx:alpine` are real images. This lab uses `python:3.12-slim` so you can set the listen port in `CMD`.
+Work in **your ShopSphere repository**. Copy [../capstone/shopsphere-starter/](../capstone/shopsphere-starter/) first if that repo does not exist yet. The starter `app/Dockerfile` is a single-stage non-root file. You replace it today.
 
 ---
 
 ## Goal
 
-Create one image and one container. Prove that the process inside the container serves HTTP on port `8080`. Then change `CMD` so the process listens on `9090` while you still publish host port `8080` to container port `8080`. `curl` should fail. `docker logs` and `docker inspect` should show the mismatch. Restore `CMD`, rebuild, and confirm `curl` works.
+Rewrite `app/Dockerfile` as a multi-stage image. The runtime stage runs as UID `10001`. The process listens on `0.0.0.0:8080`, not `127.0.0.1`. Build the image. Record its size. Build a fat `python:3.12` variant and record that size too. Scan the slim image with Trivy (or `trivy fs` if Docker is missing).
 
-When you finish, you can explain image versus container, `EXPOSE` versus `-p`, and why `CMD` must match the port you publish. You also remove every container and image this lab created.
+When you finish, you can explain image versus container, why `USER` matters, why `EXPOSE` is not `-p`, and why a listen address of `127.0.0.1` is a silent production failure inside a container.
 
-Time box: 45 to 75 minutes. Cost stays at ₹0. Stop when the working `curl` succeeds, the broken `curl` is in your notes, and cleanup has removed the lab container and the lab image.
+Time box: 60 to 90 minutes.
+
+---
+
+## Capstone stage
+
+| Path in ShopSphere | What it adds |
+|:--|:--|
+| `app/Dockerfile` | Multi-stage, non-root catalog image |
+| `app/main.py` | `HOST = "0.0.0.0"` so the container is reachable |
+| `docs/day-13-image.md` | Size table, Trivy summary, user ID |
+
+Do not push to ACR today unless you will delete the repository the same session. Day 19 adds Cosign. Day 23 publishes the digest.
 
 ---
 
 ## What you need
 
-You need a shell, `curl`, and Docker Engine. Check them first:
+You need a shell, Python 3.12, and a text editor.
 
 ```bash
-command -v curl
+python3 --version
 command -v docker
 docker version
+command -v trivy
 ```
 
-If `docker` is missing, still create the Dockerfile and `index.html` below. Write the same commands into your notes. Run them when Docker is on your `PATH`. Do not invent flags. Do not skip the files.
+Docker Engine 27+ is the preferred path. Trivy 0.58.1 (or current 0.58+) scans the image. If Docker is missing, still write the Dockerfile and the `HOST` change. Run `python3 app/main.py` on the host. Run `trivy fs app` if Trivy is installed. Do not invent a container runtime.
 
-You do not need Azure, AWS, Kubernetes, Maven, or a Spring Boot project. `python -m http.server` is part of the Python image. The image name `python:3.12-slim` is real. `nginx:alpine` is also real and listens on port `80`. Do not switch images in the middle of this lab.
+You do not need Azure, AWS, Kubernetes, or a paid registry.
 
-Create the lab under `/tmp`, not under this course clone. Docker writes image layers on the host. You must be able to delete the directory and the lab image when you clean up.
+---
 
-Keep a notes file named `day-13-docker-lab.md` in the same temp directory. Record command output, the failed `curl`, and the `CMD` you saw in `docker inspect`. Do not paste secrets. This lab should not create any.
+## Cost
+
+| Path | Estimated USD | Why |
+|:--|:--|:--|
+| Local Docker build + Trivy + Python | **0.00** | Laptop CPU and a public base-image pull |
+| Push to Azure Container Registry | **0.05–0.40** | Storage and operations. Delete the repo after the session. |
+
+Do not write "cost stays at INR 0" if you pushed to ACR. A leftover registry is cheap. Say so in the notes if you keep it on purpose.
 
 ---
 
 ## Steps
 
-1. Create a throwaway directory and enter it. Use a unique folder name so you do not collide with another lab. Confirm the path is under `/tmp`.
+1. Open ShopSphere. Confirm you are not inside DevOps-Prep.
 
 ```bash
-LAB_DIR="/tmp/day-13-docker-lab-$$"
-mkdir -p "$LAB_DIR"
-cd "$LAB_DIR"
 pwd
+git rev-parse --show-toplevel
+ls app/Dockerfile app/main.py app/requirements.txt
+mkdir -p docs
 ```
 
-2. Write `index.html`. This is the file the HTTP server will return. The body must be easy to recognize in `curl`.
+The starter Dockerfile already has `USER 10001`. It is still one stage. `app/main.py` binds `HOST = "127.0.0.1"`. That works on your laptop. It does **not** work when another container or the host curls a published port.
+
+2. Fix the listen address. In `app/main.py`, change only the host constant.
+
+```python
+HOST = "0.0.0.0"
+PORT = 8080
+```
+
+`0.0.0.0` means every interface inside the container. The process still serves `/health`, `/products`, and `/metrics`. Run the starter check on the host. `app/test_api.py` is a script, not a `unittest` module. It starts a short-lived server and curls `/health` and `/products`.
 
 ```bash
-printf 'day-13-lab\n' > index.html
-cat index.html
+python3 app/test_api.py
 ```
 
-3. Write `Dockerfile`. `FROM` starts from `python:3.12-slim`. `WORKDIR` sets `/app`. `COPY` adds `index.html`. `EXPOSE 8080` documents the listen port. It does not publish a host port. `CMD` starts the process that actually listens.
+Expected: `app/test_api.py: ok`. The script opens `http://HOST:PORT`. `HOST = "0.0.0.0"` still answers on this machine.
+
+3. Prove the bind on the host. Start the API. In a second terminal, curl it.
+
+```bash
+python3 app/main.py
+```
+
+```bash
+curl -sS http://127.0.0.1:8080/health
+curl -sS http://127.0.0.1:8080/products
+curl -sS http://127.0.0.1:8080/metrics
+```
+
+Expected: `{"status": "ok"}`, a product list, and `shopsphere_up 1`. Stop the process with Ctrl+C.
+
+This Python path was executed on Python 3.12.3 in the authoring environment after the `HOST` change.
+
+4. Replace `app/Dockerfile`. Multi-stage even when `requirements.txt` is empty. The builder is the install step. The runtime is the process you ship.
 
 ```dockerfile
+# syntax=docker/dockerfile:1.7
+FROM python:3.12-slim AS builder
+WORKDIR /build
+COPY requirements.txt .
+RUN python -m pip install --upgrade pip \
+ && python -m pip install --prefix=/install --no-cache-dir -r requirements.txt
+
 FROM python:3.12-slim
-
+RUN useradd --create-home --uid 10001 shopsphere
+COPY --from=builder /install /usr/local
 WORKDIR /app
-
-COPY index.html .
-
+COPY main.py test_api.py requirements.txt ./
+USER 10001
 EXPOSE 8080
-
-CMD ["python", "-m", "http.server", "8080"]
+CMD ["python", "main.py"]
 ```
 
-Save that file as `Dockerfile` in `$LAB_DIR`. Confirm the four files you care about exist:
+`USER 10001` is the numeric UID. Kubernetes `runAsNonRoot` accepts it. `EXPOSE 8080` documents the port. It does not publish a host port. `-p` does that.
 
-```bash
-ls
-cat Dockerfile
+Write `app/.dockerignore` if it is missing:
+
+```text
+__pycache__/
+*.pyc
+.pytest_cache/
 ```
 
-You should see `Dockerfile` and `index.html`.
-
-4. Build the image. The tag `day13-lab:1.0.0` is a human-readable name. Docker may pull `python:3.12-slim` on the first build. Wait for the build to finish.
+5. Build the slim image. Docker may pull `python:3.12-slim` on the first build.
 
 ```bash
-docker build -t day13-lab:1.0.0 .
+docker build -t shopsphere-catalog:1.0.0 -f app/Dockerfile app
+docker image ls shopsphere-catalog:1.0.0
+docker image inspect shopsphere-catalog:1.0.0 --format '{{.Size}} {{.Config.User}}'
 ```
 
-If `docker` is missing, copy this command into the notes and continue writing files. Do not replace it with a made-up tool.
+Expected `User`: `10001`. Record the size in bytes in `docs/day-13-image.md`.
 
-5. Confirm the image exists on this machine.
-
-```bash
-docker image ls
-```
-
-You should see `day13-lab` with tag `1.0.0`. Record the image ID in the notes.
-
-6. Run a container from that image. `-d` runs it in the background. `--name day13-lab` sets a stable name. `-p 8080:8080` publishes host port `8080` to container port `8080`. `EXPOSE` does not do that job.
+6. Run the container. Publish host `8080` to container `8080`.
 
 ```bash
-docker run -d --name day13-lab -p 8080:8080 day13-lab:1.0.0
-```
-
-If host port `8080` is already in use, stop. Choose `18080` instead and use `-p 18080:8080` in every later `docker run` and `curl`. Write the host port you used.
-
-7. List running containers. The container named `day13-lab` should be up while the Python process runs.
-
-```bash
+docker run -d --name shopsphere-catalog -p 8080:8080 shopsphere-catalog:1.0.0
 docker ps
+docker logs shopsphere-catalog
+docker exec shopsphere-catalog id
+curl -sS http://127.0.0.1:8080/health
 ```
 
-8. Read the process output. You should see that `http.server` is serving on port `8080`.
+Expected logs: `shopsphere listening on http://0.0.0.0:8080`. Expected `id`: `uid=10001(shopsphere)`. Expected curl: `{"status": "ok"}`.
+
+If host port `8080` is in use, use `-p 18080:8080` and curl `18080`. Write the host port you used.
+
+7. Build a fat image so the size comparison is real. Keep it as a local tag only.
+
+```dockerfile
+# app/Dockerfile.fat — teaching file, not the ship path
+FROM python:3.12
+WORKDIR /app
+COPY main.py test_api.py requirements.txt ./
+CMD ["python", "main.py"]
+```
 
 ```bash
-docker logs day13-lab
+docker build -t shopsphere-catalog:fat -f app/Dockerfile.fat app
+docker image ls shopsphere-catalog
 ```
 
-9. Inspect the container. Find the command, the image, and the port mapping. `CMD` should show `python -m http.server 8080`. The published port should map host `8080` to container `8080`.
+Record both sizes. The fat `python:3.12` image is hundreds of megabytes larger. That is why the runtime stage uses `python:3.12-slim`. Commit `Dockerfile.fat` only if you want the teaching file. Prefer to delete it after the notes exist.
+
+8. Scan. Trivy 0.58.1 (or current 0.58+) is the pin in [../capstone/VERSIONS.md](../capstone/VERSIONS.md).
 
 ```bash
-docker inspect day13-lab
+trivy image --severity HIGH,CRITICAL --exit-code 0 shopsphere-catalog:1.0.0
 ```
 
-Copy those fields into the notes. Do not paste unrelated host configuration.
+`--exit-code 0` keeps the lab moving when the base image has known CVEs. Record the count. Do not "fix" a Debian CVE by switching to `latest`. Day 19 adds the pipeline gate.
 
-10. Request the page from the host. You should see `day-13-lab`.
+If Docker is missing:
 
 ```bash
-curl -sS http://127.0.0.1:8080/
+trivy fs --scanners vuln,secret,misconfig app
 ```
 
-If you published `18080`, curl `http://127.0.0.1:18080/` instead. Paste the body into the notes. This is the working baseline.
+If Trivy is missing, write both commands in the notes and record `trivy not executed`. Do not invent flags.
+
+9. Optional registry push. Budget first. Use a throwaway ACR only if you will delete it.
+
+```bash
+az acr create --resource-group rg-shopsphere-dev --name <uniqueacr> --sku Basic
+az acr login --name <uniqueacr>
+docker tag shopsphere-catalog:1.0.0 <uniqueacr>.azurecr.io/catalog:1.0.0
+docker push <uniqueacr>.azurecr.io/catalog:1.0.0
+```
+
+Skip this if you have no Azure account. The local image is enough.
 
 ---
 
 ## Verify
 
-Read the notes as if you are on a call. You should name the image, the container, the published port, and the process command.
+Read the notes on a call. You should name the two stages, the UID, the listen address, and the size delta.
 
 Check these points:
 
-- `docker image ls` shows `day13-lab:1.0.0`.
-- `docker ps` shows `day13-lab` while the server runs.
-- `docker logs day13-lab` shows the HTTP server on port `8080`.
-- `docker inspect day13-lab` shows `CMD` listening on `8080` and a host mapping to container port `8080`.
-- `curl` returned `day-13-lab`.
-- You did not treat `EXPOSE 8080` as a host publish. `-p` created the mapping.
-
-If `curl` fails before the break step, read `docker ps` and `docker logs` again. Confirm the container is running and that you curled the host port you published.
+- `app/Dockerfile` has a `builder` stage and a runtime stage.
+- Runtime uses `USER 10001` and `python:3.12-slim`.
+- `app/main.py` sets `HOST = "0.0.0.0"`.
+- `python3 app/test_api.py` printed `ok`, or you recorded why.
+- You recorded slim versus fat sizes, or you recorded `docker missing`.
+- Trivy ran against the image or the filesystem, or you recorded `trivy not executed`.
+- You did not treat `EXPOSE` as a host publish.
+- Files live in ShopSphere, not only under `/tmp`.
 
 ---
 
 ## Break and fix
 
-The working container still holds port `8080`. Stop it and remove it before you run a broken one with the same name.
+Do both failures.
+
+### Failure 1 — listen on localhost inside the container
+
+Put `HOST = "127.0.0.1"` back. Rebuild and run the same `-p 8080:8080`.
 
 ```bash
-docker stop day13-lab
-docker rm day13-lab
-docker ps -a
+docker stop shopsphere-catalog && docker rm shopsphere-catalog
+docker build -t shopsphere-catalog:1.0.0 -f app/Dockerfile app
+docker run -d --name shopsphere-catalog -p 8080:8080 shopsphere-catalog:1.0.0
+curl -sS --max-time 3 http://127.0.0.1:8080/health || true
+docker logs shopsphere-catalog
 ```
 
-`docker ps -a` should no longer list `day13-lab`. The image `day13-lab:1.0.0` should still exist.
+Expected: `curl` fails or times out. Logs still say the process is listening on `127.0.0.1`. The published port maps to the container namespace. Nothing in that namespace accepts connections from the bridge. Diagnose with logs, not with a new NSG.
 
-Now break `CMD`. Keep `EXPOSE 8080`. Change only the listen port in `CMD` to `9090`. The process will listen on `9090`. You will still publish `8080:8080`.
+Restore `HOST = "0.0.0.0"`. Rebuild. Curl again. Expected: `{"status": "ok"}`.
 
-```dockerfile
-FROM python:3.12-slim
+If Docker is missing, bind the host process to `127.0.0.1` and write the same diagnosis. The failure is the listen address, not Docker.
 
-WORKDIR /app
+### Failure 2 — image runs as root
 
-COPY index.html .
-
-EXPOSE 8080
-
-CMD ["python", "-m", "http.server", "9090"]
-```
-
-Rebuild the same tag, then run it the same way as before:
+Remove `USER 10001` from the runtime stage. Rebuild and run.
 
 ```bash
-docker build -t day13-lab:1.0.0 .
-docker run -d --name day13-lab -p 8080:8080 day13-lab:1.0.0
-docker ps
-docker logs day13-lab
-docker inspect day13-lab
-curl -sS http://127.0.0.1:8080/
+docker exec shopsphere-catalog id
 ```
 
-`curl` should fail. Nothing listens on container port `8080`. `docker logs` should show the server on port `9090`. `docker inspect` should show `CMD` with `9090`. `EXPOSE 8080` did not move the process onto `8080`. `-p 8080:8080` only maps the host port to container port `8080`.
+Expected: `uid=0(root)`. That is the break. A CVSS in the app now has the container's root. Restore `USER 10001`. Rebuild. `id` must show `10001`.
 
-Record the failed `curl`, the log line, and the `CMD` in the notes. That is the evidence.
+If Docker is missing, write the `id` you would expect for each file. Keep `USER 10001` in Git.
 
-Fix the Dockerfile. Put `CMD` back to port `8080`. `EXPOSE` and `-p` must match the port the process listens on.
+---
 
-```dockerfile
-FROM python:3.12-slim
+## Stretch
 
-WORKDIR /app
-
-COPY index.html .
-
-EXPOSE 8080
-
-CMD ["python", "-m", "http.server", "8080"]
-```
-
-Replace the broken container, rebuild, and run again:
-
-```bash
-docker stop day13-lab
-docker rm day13-lab
-docker build -t day13-lab:1.0.0 .
-docker run -d --name day13-lab -p 8080:8080 day13-lab:1.0.0
-docker logs day13-lab
-curl -sS http://127.0.0.1:8080/
-```
-
-`curl` should print `day-13-lab` again. Write one sentence in the notes: `CMD` sets the listen port, `EXPOSE` documents it, and `-p` publishes it.
-
-Do not skip the investigation. Look at logs and inspect before you change the file. Restarting the broken container will not fix a wrong `CMD`.
+- Add `HEALTHCHECK --interval=10s CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')"` so Docker restarts a dead process. Inside the container, `127.0.0.1` is correct for a self-check.
+- Pin `python:3.12-slim` by digest. Record the digest in the notes.
+- Compare `docker history shopsphere-catalog:1.0.0` to the fat image. Name the layer that disappeared.
 
 ---
 
 ## Clean up
 
-Stop and remove the lab container. Then remove the lab image. Run these commands from any directory. They use the container name and image tag from this lab.
-
 ```bash
-docker stop day13-lab
-docker rm day13-lab
-docker ps -a
-docker image rm day13-lab:1.0.0
+docker stop shopsphere-catalog
+docker rm shopsphere-catalog
+docker image rm shopsphere-catalog:1.0.0 shopsphere-catalog:fat || true
 docker image ls
 ```
 
-`docker ps -a` must not show `day13-lab`. `docker image ls` must not show `day13-lab:1.0.0`. If this lab pulled `python:3.12-slim` and you do not need that base image, remove it too:
+`docker ps -a` must not show `shopsphere-catalog`. Keep `python:3.12-slim` if later Days will rebuild. Remove `Dockerfile.fat` if you do not want it in Git.
+
+If you created ACR:
 
 ```bash
-docker image rm python:3.12-slim
+az acr delete --name <uniqueacr> --yes
 ```
 
-If Docker refuses because another image still uses that base, leave it. Do not run a broad prune. Remove only what this lab created.
+Confirm the registry is gone. Do not leave a Basic SKU running unused.
 
-Leave the lab directory and delete it:
-
-```bash
-cd /tmp
-rm -rf "$LAB_DIR"
-```
-
-If you copied notes you want to keep, move `day-13-docker-lab.md` out before `rm -rf`. You created no Azure or AWS resources, so there is no resource group, cluster, or registry to delete.
+Commit `app/Dockerfile`, the `HOST` change, and the notes. Do not commit image tarballs.
 
 ---
 
 ## Interview story
 
-I treat a container as an isolated process started from an image, not as a small virtual machine. I write a Dockerfile from `python:3.12-slim`, set `CMD` to `python -m http.server 8080`, and publish that port with `-p 8080:8080`. `EXPOSE` only documents the port. It does not open the host mapping. When `CMD` listens on `9090` and I still publish `8080:8080`, `curl` fails. `docker logs` and `docker inspect` show the mismatch. I fix `CMD`, rebuild, and run the same image tag again. Then I `docker stop`, `docker rm`, and `docker image rm` so the lab leaves no container or image behind.
+**Situation:** ShopSphere shipped a single-stage image that still bound HTTP to `127.0.0.1`, so a published port looked healthy in `docker ps` and failed on `curl`. **Task:** Make the catalog image multi-stage, non-root, and reachable, and prove size plus scan before Day 23 publishes it. **Action:** I rewrote `app/Dockerfile` with a builder stage and `python:3.12-slim` runtime, set `USER 10001`, and changed `HOST` to `0.0.0.0`. I compared the slim image to `python:3.12` and scanned with Trivy 0.58. I reproduced the localhost bind and the root user, then restored both. **Result:** I can explain image versus container, why `EXPOSE` is not `-p`, and why Day 23 must bake or promote this digest instead of rebuilding it by hand.
+
+---
+
+## Self-score checklist
+
+- [ ] Dockerfile has two stages and `USER 10001`.
+- [ ] `HOST` is `0.0.0.0` and `/health` works.
+- [ ] I recorded slim versus fat size, or I recorded `docker missing`.
+- [ ] Trivy ran, or I recorded `trivy not executed`.
+- [ ] I broke the localhost bind and I used logs to diagnose it.
+- [ ] I broke root and I restored `USER 10001`.
+- [ ] I removed the lab container and the fat tag.
+- [ ] Files live in ShopSphere, not only under `/tmp`.
+
+Count the boxes. 7 or 8 is done.
+
+**Executed:** Python 3.12.3 `python3 app/test_api.py` (`ok`) and `curl /health` plus `/metrics` on the host after `HOST = "0.0.0.0"`. **Not executed:** `docker build`, `docker run`, `trivy image`, ACR push.
