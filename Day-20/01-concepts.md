@@ -262,6 +262,12 @@ Managed Prometheus / Grafana          ↔ Managed Prometheus / Grafana
 
 The exact service combination depends on the workload.
 
+Treat dashboards and alert rules as code, not as clicks in a GUI. Write them in Terraform (the provider talks to Grafana, Azure Monitor, or CloudWatch) or in Crossplane, then review the change in a pull request the same way you review a security group. A panel built only in the GUI creates drift: nobody can see who changed the alert, and you cannot roll it back with Git.
+
+Keep metric-label cardinality low. A label with an unbounded value such as `user_id` or `request_id` creates a new time series for every distinct value. That explodes storage cost and makes queries slow or fail. Put those IDs in logs and traces, not on metric labels. Day 35 drills this with ShopSphere.
+
+If many subscriptions or accounts emit telemetry, bring it into one view (a central logging account or a shared Grafana). When a service calls a model, treat token usage and model cost as metrics, next to latency and errors. A surprise token bill is an observability miss, not a finance surprise.
+
 ---
 
 ## Part 8 — Alerting: Detecting Problems Without Creating Noise
