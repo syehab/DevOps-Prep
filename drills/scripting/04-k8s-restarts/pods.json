@@ -1,0 +1,22 @@
+{
+  "items": [
+    {
+      "metadata": { "name": "catalog-a", "namespace": "shopsphere" },
+      "status": {
+        "containerStatuses": [{ "name": "catalog", "restartCount": 0, "ready": true }]
+      }
+    },
+    {
+      "metadata": { "name": "catalog-b", "namespace": "shopsphere" },
+      "status": {
+        "containerStatuses": [{ "name": "catalog", "restartCount": 12, "ready": false }]
+      }
+    },
+    {
+      "metadata": { "name": "coredns-x", "namespace": "kube-system" },
+      "status": {
+        "containerStatuses": [{ "name": "coredns", "restartCount": 1, "ready": true }]
+      }
+    }
+  ]
+}

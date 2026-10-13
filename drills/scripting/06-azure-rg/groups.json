@@ -1,0 +1,6 @@
+{
+  "value": [
+    { "name": "rg-shopsphere-dev", "location": "eastus" },
+    { "name": "rg-shopsphere-tfstate", "location": "eastus" }
+  ]
+}
