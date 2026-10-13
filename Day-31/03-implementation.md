@@ -2,425 +2,233 @@
 
 This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [02-questions-and-answers.md](02-questions-and-answers.md). Then do this lab.
 
-Day 31 starts the ShopSphere engineering phase. The lesson rule is that you write architecture decisions before you write infrastructure code. This lab is a foundation slice only. You write three short ADRs, then a Terraform skeleton that uses the `hashicorp/local` provider. The skeleton stands in for network and app modules. You do not build Spring Boot, Angular, a real VPC, or the rest of the multi-day project.
+Day 31 starts the ShopSphere engineering phase. The lesson rule is that you write architecture decisions before you write infrastructure code. The old lab used `local_file` as a stand-in for network and app modules. This lab writes **three ADRs** and a real `azurerm` network module: resource group, VNet, and one subnet. The app module records the runtime decision. It does **not** create AKS. Day 17 does that.
 
-Work only in a temporary directory that you create for this lab. Do not run Terraform inside the DevOps-Prep course repository. Do not create AWS or Azure resources. Local files are enough here.
+Work in **your ShopSphere repository**. Reuse `infra/azure/modules/rg` from Day 8 if it exists. Add `modules/network` beside it.
 
 ---
 
 ## Goal
 
-Write three Architecture Decision Records for ShopSphere v1: runtime, private database, and IaC. Use the ADR fields from this Day: context, decision, why, trade-offs, alternatives, and consequences. Then create a Terraform layout with `modules/network` and `modules/app`. Call both modules from an `environments/dev` folder. Use `local_file` resources so apply writes files that record those decisions.
+Write ADR-001 (runtime), ADR-002 (private data store), and ADR-003 (IaC and state). Then create `modules/network` with `azurerm_virtual_network` and `azurerm_subnet`. Call it from `environments/dev`. Run `terraform test`. Keep the app module as a documented Container Apps or App Service decision, not a Kubernetes cluster.
 
-After apply, you can show a reviewer the ADR files, the module folders, and the files Terraform wrote. You can also explain why the app module describes a managed container runtime, not a Kubernetes cluster.
+Time box: 70 to 90 minutes.
 
-Time box: 45 to 75 minutes. Cost stays at ₹0. Stop when three ADRs exist, `terraform plan` shows no remaining changes after apply, the README names the three decisions, and `terraform destroy` has removed the lab files. Do not continue into CI/CD, UAT, Production, or failure drills.
+---
+
+## Capstone stage
+
+| Path | Adds |
+|:--|:--|
+| `docs/adr/001-runtime.md` | Container API, not VMs |
+| `docs/adr/002-private-data.md` | Private PostgreSQL later, no public IP |
+| `docs/adr/003-iac.md` | Terraform + remote state + Bicep extra |
+| `infra/azure/modules/network/` | VNet + `snet-app` |
+| `infra/azure/modules/app/README.md` | Why this module is not AKS |
+| `docs/day-31-foundation-lab.md` | Test output |
 
 ---
 
 ## What you need
 
-You need Terraform 1.0 or later, a text editor, and a shell. Check the version first:
-
 ```bash
 terraform version
+test -d infra/azure/environments/dev && echo "dev root present"
 ```
 
-You do not need Maven, Docker, AWS, Azure, Kubernetes, or a cloud account. This lab uses the `hashicorp/local` provider and local state in `terraform.tfstate`. Remote backends stay a design note in ADR-003. They are not a required apply step.
+Azure is optional. `terraform test` with `mock_provider` is the required path. A live VNet apply costs a little and needs destroy the same day.
 
-Create the lab under `/tmp`, not under this course clone. Terraform writes `terraform.tfstate` in the working directory. You must be able to delete that directory when you clean up.
+---
 
-Keep a notes file named `day-31-foundation-lab.md` in the same temp directory. Record the three decisions, the plan resource addresses, and the break-and-fix result. Do not paste secrets. This lab should not create any.
+## Cost
+
+| Path | Estimated USD |
+|:--|:--|
+| ADRs + `terraform test` | **0.00** |
+| Apply one VNet + one subnet, no NAT Gateway, no public IP | **0.00-0.20** |
+| NAT Gateway or Application Gateway | **Do not create** (often more than USD 5) |
+
+Budget first if you apply. See [../capstone/COST.md](../capstone/COST.md).
 
 ---
 
 ## Steps
 
-1. Create a throwaway directory and enter it. Use a unique folder name so you do not collide with another lab. Confirm the path is under `/tmp`.
+1. Create the ADR folder.
 
 ```bash
-LAB_DIR="/tmp/day-31-shopsphere-foundation-lab-$$"
-mkdir -p "$LAB_DIR"
-cd "$LAB_DIR"
-pwd
+mkdir -p docs/adr infra/azure/modules/network infra/azure/modules/app
 ```
 
-2. Create the foundation folders. Match the ownership split from this Day: documentation, reusable modules, and one environment. Do not add UAT or Prod folders in this lab.
+2. Write `docs/adr/001-runtime.md`. Use these headings: Context, Decision, Why, Trade-offs, Alternatives, Consequences.
 
-```bash
-mkdir -p docs/adr modules/network modules/app environments/dev
-ls -R
-```
+Decision to record: ShopSphere v1 is the Python catalog API in `app/`, packaged as a container, run on Azure Container Apps in cloud and on `kind` locally. It is not a Kubernetes cluster in v1. Day 17 may change this. Point at that future ADR.
 
-3. Write `docs/adr/ADR-001-runtime.md` first. Do not open a `.tf` file yet. ShopSphere v1 is a long-running Spring Boot API. The initial requirements do not name Kubernetes APIs, operators, or cluster networking.
+3. Write `docs/adr/002-private-data.md`. Decision: the data store is private. No public IP on PostgreSQL. Local fallback is a Docker `postgres:16` container on a user-defined network. Cloud path (later Day) uses a private endpoint. Do not apply a database today.
 
-```markdown
-# ADR-001: Application Runtime
+4. Write `docs/adr/003-iac.md`. Decision: Terraform `azurerm` 5.9.0 is the primary IaC. State lives in Azure Storage with Azure AD and a lock (Day 10). Bicep remains for what-if on one module. GitHub Actions plans on the PR (Day 25).
 
-Context:
-ShopSphere v1 is a containerized Spring Boot API with Dev, UAT, and Prod. The first production-style loop needs deploy, scale, identity, and a health check. It does not name custom controllers or cluster networking.
-
-Decision:
-Use a managed container runtime for v1, not Kubernetes.
-
-Why:
-A managed container runtime gives deploy, scale, and workload identity with a smaller operational surface. Kubernetes is a second control plane. v1 does not require it.
-
-Trade-offs:
-Less cluster control. No Kubernetes Service or NetworkPolicy yet. A later move to AKS or EKS is a new architecture, not a tag change.
-
-Alternatives:
-AKS or EKS now. Virtual machines.
-
-Consequences:
-The app Terraform module describes a container app or ECS service stand-in. It does not describe a cluster, node pool, or in-cluster Service.
-```
-
-Write one extra sentence at the bottom of the file in your own words. Name the requirement that would justify Kubernetes later. Do not write “because Kubernetes is more powerful.”
-
-4. Write `docs/adr/ADR-002-private-database.md`. The security NFR is no public database access.
-
-```markdown
-# ADR-002: Private Database
-
-Context:
-PostgreSQL holds orders and customer data. Internet users must not reach the database port. The application must reach the database on a private path.
-
-Decision:
-Place the database on a private subnet. Allow the application subnet or Security Group only. Do not give the database a public endpoint.
-
-Why:
-Public TCP 5432 is out of scope for this project’s security NFR. Resolve, route, connect, authenticate, and query are five different checks. The private path is the only intended path.
-
-Trade-offs:
-You cannot debug the database from the public internet. Operators need a controlled jump path or an equivalent private session.
-
-Alternatives:
-A public database with a tight firewall. A public endpoint plus IP allow lists.
-
-Consequences:
-The network module records public ingress, application, and database subnets. The app module records a private database hostname, not a public one.
-```
-
-5. Write `docs/adr/ADR-003-iac.md`. Infrastructure is Terraform-managed. Modules hold design. Environments hold values.
-
-```markdown
-# ADR-003: Infrastructure as Code
-
-Context:
-ShopSphere needs a repeatable network and application runtime. Several people and a pipeline will change it. A laptop apply against Production is not an approval process.
-
-Decision:
-Use Terraform. Put reusable design in `modules/network` and `modules/app`. Pass environment values from `environments/dev`. Keep state per environment. Review `terraform plan` before apply.
-
-Why:
-One architecture pattern with environment-specific inputs. A Java change must not apply a VPC change. Plan review answers why each resource exists, who owns it, what depends on it, and what happens if it is deleted.
-
-Trade-offs:
-More repository structure. You must not copy three unrelated Terraform trees.
-
-Alternatives:
-Click the portal. Copy the whole stack for every environment. One giant state file for the platform.
-
-Consequences:
-This lab uses local state because the goal is the skeleton. A team would use a remote backend with locking and separate keys for `dev`, `uat`, and `prod`.
-```
-
-6. Write `README.md` at the lab root. This is the decision index, not a product brochure. Name the three ADRs and the Terraform layout in prose. Write at least one short paragraph. Do not leave the README as headings with no text.
-
-```markdown
-# ShopSphere foundation lab
-
-This directory is a local stand-in for the ShopSphere foundation. Read the ADRs before you read the Terraform.
-
-ADR-001 chooses a managed container runtime for v1, not Kubernetes. ADR-002 keeps PostgreSQL private. ADR-003 puts network and app design in Terraform modules and keeps Dev values in `environments/dev`.
-
-`modules/network` writes a local file that records public, application, and database subnets. `modules/app` writes a local file that records a managed container runtime and a private database hostname. Neither module creates a cloud VPC or a Kubernetes cluster.
-
-Work in a temp directory. Run `terraform init`, `terraform fmt`, `terraform validate`, and `terraform plan` from `environments/dev` before apply. Destroy the lab when you finish.
-```
-
-7. Write the network module. Put this in `modules/network/variables.tf`. The module must not hard-code the environment name.
+5. Write `infra/azure/modules/network/main.tf`. These resources validate on azurerm 5.9.0.
 
 ```hcl
-variable "environment" {
+variable "name" {
   type = string
 }
 
-variable "network_plan" {
-  type = string
-}
-```
-
-Put this in `modules/network/main.tf`. The resource writes the network plan that ADR-002 requires: public ingress, application, and database subnets.
-
-```hcl
-resource "local_file" "network_plan" {
-  filename = "${path.root}/network-${var.environment}.txt"
-  content  = var.network_plan
-}
-```
-
-Put this in `modules/network/outputs.tf`.
-
-```hcl
-output "filename" {
-  value = local_file.network_plan.filename
-}
-```
-
-8. Write the app module. Put this in `modules/app/variables.tf`.
-
-```hcl
-variable "environment" {
+variable "location" {
   type = string
 }
 
-variable "runtime_plan" {
+variable "address_space" {
+  type = list(string)
+}
+
+variable "subnet_prefix" {
   type = string
 }
-```
 
-Put this in `modules/app/main.tf`. The content comes from the caller. ADR-001 says that content is a managed container runtime, not a cluster.
-
-```hcl
-resource "local_file" "runtime_plan" {
-  filename = "${path.root}/app-${var.environment}.txt"
-  content  = var.runtime_plan
-}
-```
-
-Put this in `modules/app/outputs.tf`.
-
-```hcl
-output "filename" {
-  value = local_file.runtime_plan.filename
-}
-```
-
-9. Write `environments/dev/main.tf`. This is the caller. It passes Dev values. It does not copy the resources. The `runtime_plan` string must match ADR-001 and ADR-002.
-
-```hcl
-terraform {
-  required_providers {
-    local = {
-      source  = "hashicorp/local"
-      version = "~> 2.5"
-    }
+resource "azurerm_resource_group" "net" {
+  name     = var.name
+  location = var.location
+  tags = {
+    project = "shopsphere"
+    day     = "31"
   }
 }
 
+resource "azurerm_virtual_network" "this" {
+  name                = "${var.name}-vnet"
+  location            = azurerm_resource_group.net.location
+  resource_group_name = azurerm_resource_group.net.name
+  address_space       = var.address_space
+}
+
+resource "azurerm_subnet" "app" {
+  name                 = "snet-app"
+  resource_group_name  = azurerm_resource_group.net.name
+  virtual_network_name = azurerm_virtual_network.this.name
+  address_prefixes     = [var.subnet_prefix]
+}
+
+output "vnet_name" {
+  value = azurerm_virtual_network.this.name
+}
+
+output "subnet_name" {
+  value = azurerm_subnet.app.name
+}
+```
+
+6. Call the module from Dev. Add this module block to `infra/azure/environments/dev/main.tf` (keep the Day 8 `rg` module if it is there).
+
+```hcl
 module "network" {
-  source = "../../modules/network"
-
-  environment = "dev"
-  network_plan = <<-EOT
-    environment: dev
-    public_ingress: yes
-    application_subnet: private
-    database_subnet: private
-    database_public_endpoint: no
-  EOT
+  source        = "../../modules/network"
+  name          = "rg-shopsphere-net-dev"
+  location      = "eastus"
+  address_space = ["10.10.0.0/16"]
+  subnet_prefix = "10.10.1.0/24"
 }
 
-module "app" {
-  source = "../../modules/app"
-
-  environment = "dev"
-  runtime_plan = <<-EOT
-    environment: dev
-    runtime: managed-container
-    kubernetes_cluster: no
-    database_hostname: shopsphere.internal
-    database_public: no
-  EOT
-}
-
-output "network_file" {
-  value = module.network.filename
-}
-
-output "app_file" {
-  value = module.app.filename
+output "vnet_name" {
+  value = module.network.vnet_name
 }
 ```
 
-10. Initialize Terraform from `environments/dev`. This downloads the `hashicorp/local` provider into `.terraform` in that folder. It does not write the plan files yet.
+7. Write `infra/azure/environments/dev/tests/network.tftest.hcl`.
+
+```hcl
+mock_provider "azurerm" {}
+
+run "cidr" {
+  command = plan
+
+  variables {
+    name     = "rg-shopsphere-dev"
+    location = "eastus"
+  }
+
+  assert {
+    condition     = module.network.vnet_name == "rg-shopsphere-net-dev-vnet"
+    error_message = "vnet name"
+  }
+
+  assert {
+    condition     = module.network.subnet_name == "snet-app"
+    error_message = "subnet name"
+  }
+}
+```
 
 ```bash
-cd "$LAB_DIR/environments/dev"
+cd infra/azure/environments/dev
 terraform init
-```
-
-11. Format and validate. Run `terraform fmt` in the environment folder and in each module folder. Read the output. Fix syntax before you plan.
-
-```bash
-terraform fmt
-terraform fmt ../../modules/network
-terraform fmt ../../modules/app
 terraform validate
+terraform test
 ```
 
-`terraform fmt` rewrites `.tf` files in that directory. Confirm it reports the files it rewrote, or reports nothing if they were already formatted.
+Expected: `1 passed` for this run, or both Day 8 and Day 31 tests passing if both files exist.
 
-12. Preview the create. Read the plan. You should see `module.network.local_file.network_plan` and `module.app.local_file.runtime_plan` to add. Do not apply until the plan matches that expectation.
+8. Write `infra/azure/modules/app/README.md`. Four sentences: this module will describe Azure Container Apps (or App Service) for the catalog API; it will not create AKS; AKS is a later ADR; local fallback is Docker and `kind`.
 
-```bash
-terraform plan
-```
-
-Copy both resource addresses into `day-31-foundation-lab.md`. For each resource write why Terraform is creating it, who owns it, what depends on it, and what happens if it is deleted. That is the plan-review habit from this Day.
-
-13. Apply the configuration. Type `yes` when Terraform asks to confirm. After apply, this folder should contain `network-dev.txt`, `app-dev.txt`, and `terraform.tfstate`.
-
-```bash
-terraform apply
-```
-
-14. Read the files Terraform wrote. Confirm they match the ADRs. The app file must say `managed-container` and `kubernetes_cluster: no`. The network file must say `database_public_endpoint: no`.
-
-```bash
-cat network-dev.txt
-cat app-dev.txt
-terraform state list
-terraform output
-```
-
-Copy `terraform state list` into your notes. You should see two `local_file` addresses. Do not commit `terraform.tfstate`. Do not copy it into the course repository.
+Do not add `azurerm_kubernetes_cluster` today.
 
 ---
 
 ## Verify
 
-Read the ADRs and the two output files as if you are on a call. You should name the runtime, the private database path, and the module split without opening the lesson.
-
-Check these points:
-
-- `docs/adr/` contains `ADR-001-runtime.md`, `ADR-002-private-database.md`, and `ADR-003-iac.md`. Each file has context, decision, why, trade-offs, alternatives, and consequences.
-- `README.md` names those three decisions and the `modules/network` plus `modules/app` layout.
-- You ran `terraform init`, `terraform fmt`, `terraform validate`, and `terraform plan` before apply.
-- `terraform state list` shows `module.network.local_file.network_plan` and `module.app.local_file.runtime_plan`.
-- `app-dev.txt` records a managed container runtime, not a Kubernetes cluster.
-- `network-dev.txt` records a private database subnet and no public database endpoint.
-- You created no AWS VPC, Azure VNet, AKS cluster, or RDS instance.
-
-If `app-dev.txt` mentions a node pool or a Deployment, stop. That file does not match ADR-001. Change the `runtime_plan` value, plan, and apply so the file matches the decision.
+- Three ADRs exist and each has Why and Trade-offs.
+- `modules/network` contains `azurerm_virtual_network` and `azurerm_subnet`.
+- `terraform test` passed on the VNet name and `snet-app`.
+- The app module README says the runtime is not AKS.
+- No NAT Gateway and no public IP appear in the module.
 
 ---
 
 ## Break and fix
 
-The lesson says you make the decision before you write the code. Break that rule on purpose, then repair it.
+### Failure 1 — overlapping CIDR
 
-Create a second throwaway copy of the layout so you do not destroy the good lab. Stay under `/tmp`.
+Set `subnet_prefix` to `10.20.1.0/24` while `address_space` stays `10.10.0.0/16`. Azure would reject this on apply. `terraform validate` may still pass. Add an assert if you expose the prefix as an output, or write in the notes: validate does not check that the subnet sits inside the VNet. Fix the prefix back to `10.10.1.0/24`.
 
-```bash
-BROKEN_DIR="/tmp/day-31-shopsphere-skip-adr-$$"
-mkdir -p "$BROKEN_DIR"
-cd "$BROKEN_DIR"
-mkdir -p modules/k8s environments/dev
-```
+### Failure 2 — app module secretly becomes AKS
 
-Skip the ADR. Jump straight to Terraform. Put this in `modules/k8s/main.tf`. This module assumes Kubernetes is the v1 runtime even though no requirement asked for it.
+Add `azurerm_kubernetes_cluster` to `modules/app` on purpose, then delete it. Write why that violates ADR-001. The break is the decision, not a crashed cluster. Restore the README-only module.
 
-```hcl
-variable "environment" {
-  type = string
-}
+---
 
-resource "local_file" "cluster_plan" {
-  filename = "${path.root}/k8s-${var.environment}.txt"
-  content  = <<-EOT
-    environment: ${var.environment}
-    runtime: kubernetes
-    node_pool: default
-    kubernetes_cluster: yes
-  EOT
-}
-```
+## Stretch
 
-Put this in `environments/dev/main.tf`. There is no ADR file in this broken copy yet.
-
-```hcl
-terraform {
-  required_providers {
-    local = {
-      source  = "hashicorp/local"
-      version = "~> 2.5"
-    }
-  }
-}
-
-module "k8s" {
-  source = "../../modules/k8s"
-
-  environment = "dev"
-}
-```
-
-Initialize and apply from `environments/dev`.
-
-```bash
-cd "$BROKEN_DIR/environments/dev"
-terraform init
-terraform apply
-cat k8s-dev.txt
-```
-
-You now have Terraform that describes a cluster. No requirement asked for a node pool. Write `docs/adr/ADR-001-runtime.md` in `$BROKEN_DIR` using the same managed-container decision from step 3. Then record the mismatch in `day-31-foundation-lab.md`:
-
-The ADR says managed containers. The code says Kubernetes. The decision that changes the code is ADR-001. Remove `modules/k8s`. Add `modules/app` with the managed-container `runtime_plan` from step 9. Replace the `module "k8s"` block with the `module "app"` block. Run `terraform plan`. The plan should want to destroy `module.k8s.local_file.cluster_plan` and create `module.app.local_file.runtime_plan`.
-
-```bash
-mkdir -p "$BROKEN_DIR/modules/app"
-```
-
-Copy `modules/app` from the good lab, or write the same three files you wrote in step 8. Update `environments/dev/main.tf` so it calls `module.app` and does not call `module.k8s`. Run `terraform init` again because the module source changed. Then plan and apply.
-
-```bash
-cd "$BROKEN_DIR/environments/dev"
-terraform init
-terraform plan
-terraform apply
-cat app-dev.txt
-```
-
-Confirm `k8s-dev.txt` is gone and `app-dev.txt` says `managed-container`. Write one sentence in your notes: skipping the ADR produced a Kubernetes module; adding ADR-001 changed the module from `k8s` to `app`.
-
-Do not keep the broken Kubernetes module as the good design. The good lab in `$LAB_DIR` already matches the ADRs. Destroy the broken copy after you have the plan evidence.
-
-```bash
-cd "$BROKEN_DIR/environments/dev"
-terraform destroy
-cd /tmp
-rm -rf "$BROKEN_DIR"
-```
+- Add an NSG on `snet-app` that allows TCP 8080 from the VNet only.
+- Draw the VNet in `docs/system-map.md` from Day 1.
 
 ---
 
 ## Clean up
 
-Destroy the good lab resource, then remove the temp directory. Run destroy only after the last plan reports no remaining changes, so Terraform still knows the resources. Type `yes` when Terraform asks to confirm destroy.
+If you did not apply, keep the module. If you applied:
 
 ```bash
-cd "$LAB_DIR/environments/dev"
-terraform destroy
-ls
+cd infra/azure/environments/dev
+terraform destroy -input=false
 ```
 
-Confirm `network-dev.txt` and `app-dev.txt` are gone. Then leave the lab directory and delete it, including `.terraform` and `terraform.tfstate`.
-
-```bash
-cd /tmp
-rm -rf "$LAB_DIR"
-```
-
-If you copied notes you want to keep, move `day-31-foundation-lab.md` out before `rm -rf`. Do not leave state files in the course repository. You created no AWS or Azure resources, so there is no VPC, cluster, database, or resource group to delete.
-
-The ShopSphere platform in later Days is a separate project. This lab was a local skeleton. Do not keep billable cloud leftovers from an experiment you did not run here.
+Confirm `rg-shopsphere-net-dev` is gone. Do not leave a VNet overnight.
 
 ---
 
 ## Interview story
 
-I do not start ShopSphere by opening the Terraform provider docs. I write ADRs first. v1 is a containerized Spring Boot API, so I choose a managed container runtime instead of Kubernetes. PostgreSQL stays private. Terraform modules hold the network and app design, and the environment folder holds Dev values. In this lab those modules write `local_file` stand-ins, so I can run `terraform init`, `fmt`, `validate`, `plan`, and `apply` without a cloud account. When I skipped the runtime ADR, I created a Kubernetes module that no requirement asked for. Adding ADR-001 changed the code: I deleted `modules/k8s` and described a managed container runtime in `modules/app`. That is the foundation habit. Decision, then code.
+**Situation:** ShopSphere was about to grow Terraform files without written decisions, which is how a platform becomes a pile of resources. **Task:** Record runtime, data, and IaC choices, then express the network as real `azurerm` code I can test without a subscription. **Action:** I wrote three ADRs. I added `modules/network` with a `/16` VNet and `snet-app`, and I ran `terraform test` with `mock_provider` so the names stay stable. I refused to put AKS in the app module because ADR-001 says Container Apps and `kind` for v1. **Result:** A reviewer can read why the network looks this way, and `terraform test` fails if someone renames the subnet.
+
+---
+
+## Self-score checklist
+
+- [ ] Three ADRs have Why and Trade-offs.
+- [ ] Network module uses `azurerm_virtual_network`, not `local_file`.
+- [ ] `terraform test` passed.
+- [ ] I can explain why validate does not catch a subnet outside the VNet.
+- [ ] App module is not AKS.
+- [ ] I destroyed any applied VNet.
+- [ ] Files live in ShopSphere.
