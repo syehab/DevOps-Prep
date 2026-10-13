@@ -2,323 +2,304 @@
 
 This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [02-questions-and-answers.md](02-questions-and-answers.md). Then do this lab.
 
-Day 32 teaches who can talk to whom, and why that path is allowed. A public subnet has a route to an Internet Gateway. A private database has no such path. This lab uses Docker Compose as a local stand-in. You run an app service and PostgreSQL on one Compose network. You do not publish PostgreSQL to the host. The app reaches the database by the Compose service name `db`. That is private connectivity.
+Day 32 teaches who can talk to whom, and why that path is allowed. The old lab used Docker Compose so PostgreSQL had no host port. This lab writes a **Private Endpoint** to Azure Key Vault on a dedicated subnet. The vault has **no public network**. The app reaches it through a private IP and Private DNS `privatelink.vaultcore.azure.net`. Day 12 supplied the VNet. Day 24 supplied peering and Private DNS links. Day 18 supplied Key Vault CSI. This Day is the network path those lessons assumed.
 
-Work only in a temporary directory. Do not run Compose inside this course repository. Do not create an AWS VPC, a NAT Gateway, or a load balancer. The Compose file is the lab even if Docker is missing on this machine.
+Work in **your ShopSphere repository**. Terraform 1.16.5 and azurerm 5.9.0 are required. Azure apply is optional and costs more than a paper lab.
 
 ---
 
 ## Goal
 
-Write `compose.yaml` with two services: `app` and `db`. Put both on one user-defined Compose network named `shopsphere`. Publish host port `8080` only on `app`. Do not add a `ports` key on `db`. PostgreSQL must listen inside the Compose network on TCP `5432`. It must not listen on the host.
+Add `infra/azure/modules/private-endpoint` that creates a Key Vault with `rbac_authorization_enabled = true`, a `snet-pe` subnet, a Private Endpoint on subresource `vault`, and a Private DNS zone `privatelink.vaultcore.azure.net`. Run `terraform test`. Apply only after a budget exists and the plan shows no NAT Gateway.
 
-The app resolves `db` through Compose DNS and opens TCP `5432`. A request to `http://127.0.0.1:8080/` from the host should report that the database is reachable. A direct connection from the host to `127.0.0.1:5432` should fail. Then you add `5432:5432` on `db` on purpose, prove the host can now reach PostgreSQL, remove that mapping, and explain public versus private.
+When you finish, you can explain public versus private: a host port on Compose was the toy. A Private Endpoint is the cloud object.
 
-Time box: 45 to 75 minutes. Cost stays at ₹0. Stop when the notes file records the private path, the public break, the restore, and Compose has been taken down.
+Time box: 70 to 90 minutes. Destroy the vault the same session if you apply. Soft-delete can keep it for days and still bill a little.
+
+---
+
+## Capstone stage
+
+| Path in ShopSphere | What it adds |
+|:--|:--|
+| `infra/azure/modules/private-endpoint/` | KV + PE subnet + Private Endpoint + Private DNS |
+| `infra/azure/modules/private-endpoint/tests/pe.tftest.hcl` | Public-network and subresource asserts |
+| `docs/day-32-private-endpoint.md` | Path diagram, public-vs-private, destroy evidence |
 
 ---
 
 ## What you need
 
-You need a shell and a text editor. Check Docker Compose first:
-
 ```bash
-docker compose version
+terraform version
+az account show --query name -o tsv
+kind get clusters
 ```
 
-If that command fails, still write every file in Steps. Copy the same commands into your notes. Run them when `docker compose` is on your `PATH`. Do not invent a substitute tool. Do not skip `compose.yaml`.
+`kind` is the local stand-in: extra network, no public port on a database container. It is **not** a Private Endpoint. Write that limit.
 
-You do not need AWS, Azure, Terraform, Kubernetes, or a Spring Boot project. The app is a small Python HTTP process. It uses the standard library only. The images `python:3.12-slim` and `postgres:16` are real. Do not replace them.
+---
 
-Create the lab under `/tmp`, not under this course clone. Compose writes containers, a network, and a volume on the host. You must be able to delete them.
+## Cost
 
-Keep a notes file named `day-32-network-lab.md` in that temp directory. Record command output and the public versus private sentence. The lab password below is for this directory only. Do not reuse it. Do not paste production secrets. This lab should not create any.
+| Path | Estimated USD (1–2 hours, then destroy) | Why it is not always zero |
+|:--|:--|:--|
+| `terraform test` + kind/Compose notes | **0.00** | Local only |
+| Key Vault standard + few ops + Private Endpoint + DNS zone | **0.50–2.00** | PE has an hourly NIC/IP cost. Soft-deleted vaults retain. |
+| NAT Gateway or public Key Vault + PE | **Stop. Change the code.** | |
 
-Use only these real Compose keys: `services`, `build`, `ports`, `environment`, `depends_on`, `networks`, `image`. On `db`, omit `ports`. Do not add a `version` key. Do not invent Compose keys.
+Create a budget first ([../capstone/COST.md](../capstone/COST.md)). Do not write "INR 0" if the vault or PE exists.
+
+Teardown must **purge** only this lab vault if policy allows. Otherwise record the soft-delete name and the date it will expire.
 
 ---
 
 ## Steps
 
-1. Create a throwaway directory and enter it. Use a unique folder name so you do not collide with another lab. Confirm the path is under `/tmp`.
+1. Open ShopSphere. Create folders.
 
 ```bash
-LAB_DIR="/tmp/day-32-compose-lab-$$"
-mkdir -p "$LAB_DIR"
-cd "$LAB_DIR"
-pwd
+mkdir -p infra/azure/modules/private-endpoint/tests docs
 ```
 
-2. Write `app.py`. This process listens on TCP `8080`. On each GET request it opens a TCP connection to `DATABASE_HOST` on `DATABASE_PORT`. It does not need a PostgreSQL driver. A successful TCP handshake is enough to prove the path.
+Draw the path:
 
-```python
-import os
-import socket
-from http.server import BaseHTTPRequestHandler, HTTPServer
-
-db_host = os.environ.get("DATABASE_HOST", "db")
-db_port = int(os.environ.get("DATABASE_PORT", "5432"))
-
-
-def db_reachable():
-    try:
-        with socket.create_connection((db_host, db_port), timeout=3):
-            return True
-    except OSError:
-        return False
-
-
-class Handler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        ok = db_reachable()
-        body = b"db reachable\n" if ok else b"db unreachable\n"
-        self.send_response(200 if ok else 503)
-        self.send_header("Content-Type", "text/plain")
-        self.end_headers()
-        self.wfile.write(body)
-
-    def log_message(self, format, *args):
-        return
-
-
-if __name__ == "__main__":
-    HTTPServer(("0.0.0.0", 8080), Handler).serve_forever()
+```text
+Catalog pod / Container App
+        ↓ DNS  kv-shopsphere-dev.privatelink.vaultcore.azure.net
+        ↓ private IP on snet-pe
+        ↓ Private Endpoint
+        ↓ Key Vault (public network disabled)
 ```
 
-3. Write `Dockerfile`. `FROM` starts from `python:3.12-slim`. `COPY` adds `app.py`. `EXPOSE 8080` documents the listen port. It does not publish a host port. `CMD` starts the process.
+2. Write `infra/azure/modules/private-endpoint/versions.tf`. No provider block.
 
-```dockerfile
-FROM python:3.12-slim
-
-WORKDIR /app
-
-COPY app.py .
-
-EXPOSE 8080
-
-CMD ["python", "app.py"]
+```hcl
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "5.9.0"
+    }
+  }
+}
 ```
 
-4. Write `compose.yaml`. Both services join the `shopsphere` network. The app publishes `8080:8080`. The `db` service has no `ports` key. Compose DNS names the database `db`. That name is how the app finds PostgreSQL.
+3. Write `infra/azure/modules/private-endpoint/variables.tf`. `tenant_id` is **required** on `azurerm_key_vault` in 5.9.0. Pass it in. Do not call `data.azurerm_client_config` inside the module if you want `terraform test` to stay offline.
 
-```yaml
-services:
-  app:
-    build: .
-    ports:
-      - "8080:8080"
-    environment:
-      DATABASE_HOST: db
-      DATABASE_PORT: "5432"
-    depends_on:
-      - db
-    networks:
-      - shopsphere
-  db:
-    image: postgres:16
-    environment:
-      POSTGRES_USER: shopsphere
-      POSTGRES_PASSWORD: lab-only
-      POSTGRES_DB: shopsphere
-    networks:
-      - shopsphere
-networks:
-  shopsphere:
+```hcl
+variable "location" {
+  type    = string
+  default = "eastus"
+}
+
+variable "resource_group_name" {
+  type = string
+}
+
+variable "vnet_name" {
+  type = string
+}
+
+variable "pe_prefix" {
+  type    = string
+  default = "10.20.4.0/24"
+}
+
+variable "tenant_id" {
+  type        = string
+  description = "Entra tenant GUID for the Key Vault."
+}
+
+variable "key_vault_name" {
+  type        = string
+  description = "Globally unique vault name, 3 to 24 characters."
+}
+
+variable "vnet_id" {
+  type        = string
+  description = "Resource ID of the spoke VNet from Day 12 or Day 24."
+}
 ```
 
-Confirm the three files exist:
+4. Write `infra/azure/modules/private-endpoint/main.tf`. Valid on azurerm 5.9.0. `rbac_authorization_enabled` is required. `private_endpoint_network_policies` on the subnet is a string. `Disabled` allows the Private Endpoint NIC.
+
+```hcl
+resource "azurerm_subnet" "pe" {
+  name                              = "snet-pe"
+  resource_group_name               = var.resource_group_name
+  virtual_network_name              = var.vnet_name
+  address_prefixes                  = [var.pe_prefix]
+  private_endpoint_network_policies = "Disabled"
+}
+
+resource "azurerm_key_vault" "this" {
+  name                          = var.key_vault_name
+  location                      = var.location
+  resource_group_name           = var.resource_group_name
+  tenant_id                     = var.tenant_id
+  sku_name                      = "standard"
+  rbac_authorization_enabled    = true
+  public_network_access_enabled = false
+  purge_protection_enabled      = false
+  soft_delete_retention_days    = 7
+}
+
+resource "azurerm_private_dns_zone" "vault" {
+  name                = "privatelink.vaultcore.azure.net"
+  resource_group_name = var.resource_group_name
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "vault" {
+  name                 = "link-vault"
+  private_dns_zone_id  = azurerm_private_dns_zone.vault.id
+  virtual_network_id   = var.vnet_id
+  registration_enabled = false
+}
+
+resource "azurerm_private_endpoint" "vault" {
+  name                = "pe-kv-shopsphere"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  subnet_id           = azurerm_subnet.pe.id
+
+  private_service_connection {
+    name                           = "psc-kv-shopsphere"
+    is_manual_connection           = false
+    private_connection_resource_id = azurerm_key_vault.this.id
+    subresource_names              = ["vault"]
+  }
+
+  private_dns_zone_group {
+    name                 = "vault"
+    private_dns_zone_ids = [azurerm_private_dns_zone.vault.id]
+  }
+}
+```
+
+Pass `vnet_id` from the Day 12 or Day 24 VNet output when you apply. The test uses a fake ARM ID. `terraform test` does not talk to Azure.
+
+5. Write `infra/azure/modules/private-endpoint/tests/pe.tftest.hcl`.
+
+```hcl
+mock_provider "azurerm" {}
+
+run "private_vault" {
+  command = plan
+
+  variables {
+    resource_group_name = "rg-shopsphere-net-dev"
+    vnet_name           = "vnet-shopsphere-spoke"
+    vnet_id             = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-shopsphere-net-dev/providers/Microsoft.Network/virtualNetworks/vnet-shopsphere-spoke"
+    tenant_id           = "00000000-0000-0000-0000-000000000000"
+    key_vault_name      = "kvshopspherelab"
+  }
+
+  assert {
+    condition     = azurerm_key_vault.this.public_network_access_enabled == false
+    error_message = "vault public network must be disabled"
+  }
+
+  assert {
+    condition     = azurerm_key_vault.this.rbac_authorization_enabled == true
+    error_message = "vault must use RBAC"
+  }
+
+  assert {
+    condition     = azurerm_subnet.pe.private_endpoint_network_policies == "Disabled"
+    error_message = "PE subnet policies must be Disabled"
+  }
+
+  assert {
+    condition     = azurerm_private_endpoint.vault.private_service_connection[0].subresource_names[0] == "vault"
+    error_message = "PE subresource must be vault"
+  }
+
+  assert {
+    condition     = azurerm_private_dns_zone.vault.name == "privatelink.vaultcore.azure.net"
+    error_message = "vault Private DNS zone"
+  }
+}
+```
+
+If `subresource_names` is a set, switch the assert to `contains(azurerm_private_endpoint.vault.private_service_connection[0].subresource_names, "vault")`.
 
 ```bash
-ls
-cat compose.yaml
+cd infra/azure/modules/private-endpoint
+terraform init
+terraform fmt
+terraform validate
+terraform test
 ```
 
-You should see `app.py`, `Dockerfile`, and `compose.yaml`. `compose.yaml` must not list `ports` under `db`.
+Expected: `1 passed`.
 
-5. If `docker compose version` failed, copy that fact into the notes. Keep the three files. Skip the remaining run commands. Continue at Verify and write the public versus private sentence from the file itself. Do not invent another runtime.
+6. Local fallback. Compose from the old lab is still useful as the mental model: no `ports` on `db`. On `kind`, do not NodePort the database. Write `compose.yaml` only if it is not already in ShopSphere from an earlier Day. Do not publish `5432`.
 
-6. Start the stack. Compose builds the app image, pulls `postgres:16` if needed, creates the `shopsphere` network, and starts both services.
-
-```bash
-docker compose up -d --build
-```
-
-Wait a few seconds so PostgreSQL can accept connections. Then list the services.
-
-```bash
-docker compose ps
-```
-
-Both `app` and `db` should be running. Copy the names into the notes.
-
-7. Read the rendered Compose config. Confirm `app` has a host port and `db` does not.
-
-```bash
-docker compose config
-```
-
-Look at `ports` under each service. `app` should map `8080`. `db` should have no host mapping. That missing mapping is the private database. Record that observation.
-
-8. Prove Compose DNS from the app container. The name `db` must resolve on the `shopsphere` network.
-
-```bash
-docker compose exec app python -c "import socket; print(socket.getaddrinfo('db', 5432)[0][4])"
-```
-
-You should see a private container IP, not `127.0.0.1` on the host. DNS success is only the first layer. Copy the IP into the notes.
-
-9. Prove TCP `5432` from the app to that name. This is the application-to-database path.
-
-```bash
-docker compose exec app python -c "import socket; socket.create_connection(('db', 5432), timeout=5); print('app to db ok')"
-```
-
-Print `app to db ok` in the notes. If this fails, read `docker compose logs db` and wait for PostgreSQL to finish startup. Then run the same command again. Do not add `ports` on `db` to make this work.
-
-10. Request the app from the host. The host talks to the published app port. The app talks to PostgreSQL on the private network.
-
-```bash
-curl -sS http://127.0.0.1:8080/
-```
-
-You should see `db reachable`. If host port `8080` is already in use, stop. Change the app `ports` value to `"18080:8080"` and curl `http://127.0.0.1:18080/` instead. Write the host port you used.
-
-11. Prove the forbidden path. From the host, try TCP `5432` on localhost. Do not use ping. ICMP does not prove PostgreSQL.
-
-```bash
-python3 -c "import socket; socket.create_connection(('127.0.0.1', 5432), timeout=2)"
-```
-
-This command should fail. Connection refused or a timeout is the expected result. PostgreSQL is on the Compose network. It is not published to the host. Copy the error into the notes. That is evidence that the database is private.
+7. Optional apply. Dedicated root. Budget first. Pass a real `tenant_id` from `az account show --query tenantId -o tsv`. Vault names are globally unique. Destroy and purge.
 
 ---
 
 ## Verify
 
-Read the notes as if you are on a call. You should name the Compose network, the service name `db`, the published app port, and the missing database `ports` key.
-
-Check these points:
-
-- `compose.yaml` exists even if Docker Compose was missing.
-- `db` has no `ports` key in the private design.
-- `app` and `db` share the `shopsphere` network.
-- If Compose ran, `docker compose exec` reached `db:5432` from `app`.
-- If Compose ran, `curl` from the host returned `db reachable`.
-- If Compose ran, the host could not open `127.0.0.1:5432`.
-- You did not treat a successful ping as database connectivity.
-
-If Compose is missing, the notes must say so. The files are still the lab. The private design is the missing `ports` key on `db`, not a cloud security group.
+- Vault `public_network_access_enabled` is false. RBAC is true.
+- PE subresource is `vault`. DNS zone is `privatelink.vaultcore.azure.net`.
+- `terraform test` passed.
+- Notes do **not** claim the PE is free.
+- Files live in ShopSphere.
 
 ---
 
 ## Break and fix
 
-The working stack keeps PostgreSQL private because `db` has no `ports` mapping. Now make it public on purpose. Add a host mapping on `db` only. Do not change the app. Do not change security groups. There are none here.
+Do both failures.
 
-Replace `compose.yaml` with this broken file. The only change is `ports` on `db`:
+### Failure 1 — public vault plus Private Endpoint
 
-```yaml
-services:
-  app:
-    build: .
-    ports:
-      - "8080:8080"
-    environment:
-      DATABASE_HOST: db
-      DATABASE_PORT: "5432"
-    depends_on:
-      - db
-    networks:
-      - shopsphere
-  db:
-    image: postgres:16
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: shopsphere
-      POSTGRES_PASSWORD: lab-only
-      POSTGRES_DB: shopsphere
-    networks:
-      - shopsphere
-networks:
-  shopsphere:
-```
+Set `public_network_access_enabled = true`. Run `terraform test`. Expected: the public-network assert fails. A PE with a public vault is two paths. Attackers still hit the public endpoint. Restore `false`. Private Endpoint is not a firewall on a public vault. It is the only path.
 
-Apply the change:
+### Failure 2 — PE on the database subnet with policies Enabled
 
-```bash
-docker compose up -d
-```
+Set `private_endpoint_network_policies = "Enabled"` (or omit `snet-pe` and reuse `snet-db`). A live apply often fails to attach the PE NIC, or NSGs on the DB subnet start blocking the PE. Restore `snet-pe` with `Disabled`. Diagnose with the subnet property, not by opening `5432` to the Internet.
 
-From the host, open TCP `5432` again:
+---
 
-```bash
-python3 -c "import socket; socket.create_connection(('127.0.0.1', 5432), timeout=2); print('host to db ok')"
-```
+## Stretch
 
-This time the command should print `host to db ok`. The database is still on the Compose network. `ports: "5432:5432"` also published it to the host. That is the public path. It is the local analog of an Internet Gateway route plus a public address on the database. Copy the success into the notes.
-
-The app path should still work:
-
-```bash
-curl -sS http://127.0.0.1:8080/
-docker compose exec app python -c "import socket; socket.create_connection(('db', 5432), timeout=5); print('app to db still ok')"
-```
-
-Public exposure did not improve the app path. The app already reached `db` by service name. Publishing `5432` only widened who else can connect.
-
-If Compose is missing, still save the broken `compose.yaml` in the notes. Write that `ports` on `db` publishes PostgreSQL to the host. That is public. Omitting `ports` keeps it on the Compose network. That is private.
-
-Fix the design. Remove `ports` from `db`. Restore the original `compose.yaml` from Step 4. Recreate the stack:
-
-```bash
-docker compose up -d
-```
-
-Test both paths again:
-
-```bash
-curl -sS http://127.0.0.1:8080/
-python3 -c "import socket; socket.create_connection(('127.0.0.1', 5432), timeout=2)"
-docker compose exec app python -c "import socket; socket.create_connection(('db', 5432), timeout=5); print('app to db ok')"
-```
-
-`curl` and the app-to-`db` check should succeed. The host connection to `127.0.0.1:5432` should fail again. Write one sentence in the notes: omitting `ports` on `db` is private connectivity; adding `5432:5432` is public exposure.
-
-Do not leave the broken file as the running design. The restored file must have no `ports` key on `db`.
+- Add `azurerm_private_endpoint` for a Storage account blob subresource. Same `snet-pe`.
+- Map this to AWS Interface PrivateLink (`aws_vpc_endpoint` Interface type) in the notes. Do not apply it.
 
 ---
 
 ## Clean up
 
-If you never started Compose, leave the notes if you want them, then delete the temp directory.
-
 ```bash
-cd /tmp
-rm -rf "$LAB_DIR"
+terraform destroy
+az keyvault show --name kvshopspherelab
+az keyvault list-deleted --query "[].name" -o tsv
+# purge only the lab vault you created, and only if policy allows
+az keyvault purge --name kvshopspherelab
 ```
 
-If you started Compose, take the stack down from `$LAB_DIR`. `-v` removes the PostgreSQL volume. `--rmi local` removes the app image this lab built.
+Expected: `show` fails. Confirm the PE NIC is gone. Soft-deleted vaults can still bill.
 
-```bash
-cd "$LAB_DIR"
-docker compose down -v --rmi local
-docker compose ps -a
-```
-
-`docker compose ps -a` should show no lab containers. Do not run a broad prune. Do not remove `python:3.12-slim` or `postgres:16` unless you know nothing else on the machine needs them.
-
-Then delete the temp directory.
-
-```bash
-cd /tmp
-rm -rf "$LAB_DIR"
-```
-
-If you want to keep the notes, copy `day-32-network-lab.md` out before `rm -rf`. You created no AWS VPC, NAT Gateway, load balancer, or RDS instance, so there is no cloud resource to delete.
+Keep `kind` cluster `shopsphere` for later Days.
 
 ---
 
 ## Interview story
 
-I keep ShopSphere PostgreSQL private. The application reaches it by name on a private path. The internet does not. On a laptop I model that with Docker Compose. `app` and `db` share the `shopsphere` network. `app` publishes `8080:8080`. `db` has no `ports` key. The app resolves `db` and opens TCP `5432`. The host cannot open `127.0.0.1:5432`. When I add `5432:5432`, the host can connect. That mapping is public exposure. It is the same idea as an Internet Gateway route on a database subnet. I remove `ports` from `db` so only the app path remains. Routing and publish rules decide who can reach the database. A security group is a later allow. It does not replace a private path.
+**Situation:** ShopSphere private connectivity was a Compose file with no host port on PostgreSQL, so I could not show a Private Endpoint in an Azure interview. **Task:** Put Key Vault behind a PE on a dedicated subnet with public network disabled. **Action:** I wrote `azurerm_key_vault` with `rbac_authorization_enabled` and `public_network_access_enabled = false`, a `snet-pe` prefix `10.20.4.0/24`, and `azurerm_private_endpoint` subresource `vault` plus `privatelink.vaultcore.azure.net` on azurerm 5.9.0. I covered those properties with `terraform test`. I broke a public vault plus PE, then restored private-only. **Result:** I can explain that Compose-without-ports is the idea and Private Endpoint is the cloud object, and I can destroy and purge the lab vault.
+
+---
+
+## Self-score checklist
+
+- [ ] PE module validates and `terraform test` passed.
+- [ ] Vault public network is disabled.
+- [ ] I used `snet-pe`, not the database subnet, for the PE.
+- [ ] I broke public-plus-PE and I restored private-only.
+- [ ] I destroyed and purged, or I never applied.
+- [ ] Files live in ShopSphere.
+
+**Executed:** `terraform fmt`, `validate`, `terraform test` (1 passed) on Terraform 1.16.5 / azurerm 5.9.0. **Not executed:** live PE apply, vault purge, Compose, kind extra network.
