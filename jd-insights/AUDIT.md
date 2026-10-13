@@ -160,3 +160,30 @@ Kubernetes request-path debugging, landing-zone hierarchy, FinOps cost loop, age
 - No Terraform `aws_eks_cluster` resource sketch was added. The course teaches the shape (VPC, IAM, cluster, pipeline), not a new module.
 
 > **Remember:** Fresh JDs update the card first. Touch a Day only when the card exposes a missing model or a name the interview will ask out loud.
+
+## JD coverage audit (2026-10-13)
+
+Date: 2026-10-13. Scope: five market themes merged into existing cards in the jd-insights PR, then only the Days those cards map to. Cards first, Days only when a model or an interview name was missing. STE house style kept. No vacancy IDs.
+
+### Theme coverage
+
+| Theme | Card | Days mapped | Status |
+|:--|:--|:--|:--|
+| Agent as a versioned bundle | agentic-devops | 4, 19, 33, 34 | Card carries the analog. Days already teach the loop, gates, promotion, and rollback. No Day edit. |
+| Observability as code | sre-slos-observability | 8, 20, 35 | Fixed on Day-20 (dashboards/alerts in Git, cardinality at first teaching, token/cost metric). Day-8 and Day-35 already cover IaC and the cardinality drill. |
+| Scarce GPU / quota lead time | finops-cost | 17, 22, 39 | Fixed on Day-39 (capacity reservation vs savings-plan discount). Day-17 GPU pools and Day-22 quota definition already hold. |
+| Developer-portal catalog links | gitops-platform | 16, 33 | Card carries the catalog map. Day-16 already defines the paved road. No Day edit. |
+| CDC (Debezium → Kafka / MSK) | aws-eks-terraform | 27 | Fixed on Day-27 next to the RDS / ElastiCache / OpenSearch model. |
+| Karpenter vs Cluster Autoscaler | kubernetes-production | 17, 37 | Fixed on Day-37 Part 17. Day-17 already teaches HPA vs node capacity. |
+
+### Already well covered (no Day edit)
+
+Day-4 AI-in-the-loop note, Day-8 IaC desired-state model, Day-16 paved road, Day-17 GPU pools and node autoscaling, Day-19 supply-chain gates, Day-22 quota as platform capacity, Day-33 same-artifact promotion, Day-34 health gates and rollback, Day-35 high-cardinality drill.
+
+### Gap noted (left on the card)
+
+- Backstage plugin work and portal ownership stay a Look-up on the GitOps card. Day-16 already teaches the paved road underneath.
+- GPU product knobs (Capacity Blocks instance types, reservation billing) stay Look-up. The lesson is the inventory-versus-discount split.
+- Debezium connector settings and MSK topic design stay Look-up. The lesson is "the log is the source of events."
+
+> **Remember:** Fresh themes update the card first. Touch a Day only when the card exposes a missing model or a name the interview will ask out loud.
