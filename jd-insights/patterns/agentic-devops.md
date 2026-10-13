@@ -2,7 +2,7 @@
 
 ## In one sentence
 
-Newer JDs (Sezzle, EPAM GenAI-flavoured roles) expect you to use AI tools and agents to speed up DevOps work, and to talk about it honestly.
+Newer JDs (Sezzle, EPAM GenAI-flavoured roles) expect you to use AI tools in DevOps work, and some now expect you to ship AI agents the same way you ship any other service.
 
 ## What employers ask for
 
@@ -34,6 +34,28 @@ The safety rule is the same as GitOps: every change still goes through review, t
 
 > **Treat AI output like a fast junior engineer: great first drafts, zero accountability. Review stays human, gates stay in the pipeline.**
 
+## Shipping an agent like software
+
+An agent you run in production is not a chat window. Treat it as a release artifact, the same way you treat a container image in a CI/CD pipeline.
+
+```text
+Agent bundle (versioned, immutable)
+  ├── container image
+  ├── prompt
+  ├── tool list
+  └── policy
+        ↓
+  automated evals (quality gates)
+        ↓
+  promote: dev → qa → prod
+        ↓
+  tested rollback (last good bundle)
+```
+
+The pipeline still owns promotion. Automated evals are the quality gate, like tests before you promote an image. Rollback is a known-good bundle, not a prompt edit in production.
+
+> **Remember:** Ship the agent as a versioned bundle. Eval gates promote it. A tested rollback path brings the last good bundle back.
+
 ## Platform teams now also run AI traffic (emerging, seen in a few JDs)
 
 A newer ask, so treat it as an early signal, not a core requirement:
@@ -52,6 +74,8 @@ AI assists existing loops, so study the loops:
 1. [Day-04/01-concepts.md](../../Day-04/01-concepts.md) - the delivery loop AI plugs into
 2. [Day-19/01-concepts.md](../../Day-19/01-concepts.md) - the gates that stay human-owned
 3. [Day-20/01-concepts.md](../../Day-20/01-concepts.md) - the ops loop AI can summarise
+4. [Day-33/01-concepts.md](../../Day-33/01-concepts.md) - build once, promote the same artifact
+5. [Day-34/01-concepts.md](../../Day-34/01-concepts.md) - health gates and a tested rollback
 
 ## Common interview question
 
@@ -71,4 +95,4 @@ Emerging note: some Azure cloud JDs now name Azure AI or RAG next to the usual c
 
 ## Source tags
 
-Sezzle SRE (AI tooling expected) · EPAM Azure AI/GenAI DevOps themes · EPAM Lead Azure (AI gateway) · EPAM Senior Azure (GenAI/RAG on AKS) · EPAM Lead Cloud (Copilot standard) · EPAM Azure Cloud (KZ, Azure AI / RAG named) · EPAM Senior AI DevOps/SRE (LLM + RAG in production) · Turkey / Central Asia Senior DevOps (daily AI assistants) · Turkey / Central Asia Principal / AI Solution (LLM evaluation, emerging)
+Sezzle SRE (AI tooling expected) · EPAM Azure AI/GenAI DevOps themes · EPAM Lead Azure (AI gateway) · EPAM Senior Azure (GenAI/RAG on AKS) · EPAM Lead Cloud (Copilot standard) · EPAM Azure Cloud (KZ, Azure AI / RAG named) · EPAM Senior AI DevOps/SRE (LLM + RAG in production) · Turkey / Central Asia Senior DevOps (daily AI assistants) · Turkey / Central Asia Principal / AI Solution (LLM evaluation, emerging) · 2026-10-13 market (agent as a versioned bundle)

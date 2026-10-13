@@ -15,6 +15,7 @@ AWS senior roles ask for the same loop as Azure ones (Terraform plus a managed K
 - Observability on top of the cluster (often Prometheus, Grafana, or Datadog)
 - Lead roles add advisor work: explain and defend a design choice (accounts, IAM, network, security, cost) and its trade-offs to a client, not just build it
 - Data and messaging operations: RDS (PostgreSQL), ElastiCache (Redis), MSK (Kafka). JDs ask backups, replication, failover, and DR with RTO and RPO. Multi-region is a plus. Service knobs are Look-up
+- Change data capture (CDC): Debezium (or equivalent) reads the database change log and publishes row changes as events on Kafka / Amazon MSK. The application writes to the database once. Downstream services consume events. They do not need a second write from the app (a dual-write that drifts)
 - Some product roles want a Terraform module per tenant, applied only by a pipeline, with a check after apply
 
 ## Mental model
@@ -76,4 +77,4 @@ If your daily cloud is Azure, say that, then prove the mapping: "I run AKS in pr
 
 ## Source tags
 
-EPAM Senior AWS DevOps · Sezzle SRE · EPAM Lead AWS DevOps · Turkey product co Senior Platform (AWS) · Turkey / Central Asia Senior DevOps (MSK, RDS, ElastiCache DR) · Turkey / Central Asia Platform (module per tenant)
+EPAM Senior AWS DevOps · Sezzle SRE · EPAM Lead AWS DevOps · Turkey product co Senior Platform (AWS) · Turkey / Central Asia Senior DevOps (MSK, RDS, ElastiCache DR) · Turkey / Central Asia Platform (module per tenant) · 2026-10-13 market (CDC: Debezium to Kafka / MSK)

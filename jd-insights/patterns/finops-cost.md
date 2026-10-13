@@ -11,6 +11,8 @@ Lead cloud JDs (Azure and AWS) add "cost-effective" next to "secure and scalable
 - Right-sizing: match compute and storage to real usage
 - Environment hygiene: non-prod does not run like prod
 - Explain cost trade-offs to non-engineers
+- Scarce compute: GPU capacity is often not on the shelf. A capacity reservation (AWS On-Demand Capacity Reservations, EC2 Capacity Blocks for ML) holds the machines. A savings plan only buys a discount. Those are different controls
+- Service quotas: request increases before the release, not during it. Quota is platform capacity. Capacity planning is part of the release plan
 
 ## Mental model
 
@@ -31,6 +33,7 @@ Easy wins to name in interviews:
 - Orphaned disks, IPs, and old snapshots deleted
 - Steady workloads on reservations or savings plans
 - Autoscale instead of sized-for-peak
+- Scarce SKUs (GPUs): reserve capacity and raise quotas before go-live, not during the incident
 
 | Concept | Azure | AWS |
 |:--|:--|:--|
@@ -47,7 +50,9 @@ Easy wins to name in interviews:
 
 1. [Day-39/01-concepts.md](../../Day-39/01-concepts.md) - cost engineering project
 2. [Day-11/01-concepts.md](../../Day-11/01-concepts.md) - structure enables attribution
-3. [Day-30/01-concepts.md](../../Day-30/01-concepts.md) - cost shows up in design reviews
+3. [Day-17/01-concepts.md](../../Day-17/01-concepts.md) - GPU and other special node pools
+4. [Day-22/01-concepts.md](../../Day-22/01-concepts.md) - quota is platform capacity
+5. [Day-30/01-concepts.md](../../Day-30/01-concepts.md) - cost shows up in design reviews
 
 Also note: every hands-on Day lesson ends with a cost check and cleanup section. That habit is FinOps in miniature.
 
@@ -67,4 +72,4 @@ You do not need a FinOps certificate for these roles. Showing the loop above, pl
 
 ## Source tags
 
-EPAM Lead Azure Cloud ("cost-effective Azure solutions") · EPAM Lead Platform · EPAM Lead AWS DevOps (cost optimisation and billing)
+EPAM Lead Azure Cloud ("cost-effective Azure solutions") · EPAM Lead Platform · EPAM Lead AWS DevOps (cost optimisation and billing) · 2026-10-13 market (GPU capacity reservations, quota lead time)

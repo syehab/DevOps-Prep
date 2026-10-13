@@ -12,6 +12,7 @@ Nearly every Senior or Lead DevOps JD expects you to run Kubernetes day 2: deplo
 - Upgrades, scaling, and node lifecycle
 - Securing workloads: identities, secrets, network policies
 - AKS day 2 extras: add-ons (ingress, cert-manager, external-dns, monitoring, policy) and onboarding new namespaces or tenants
+- Node autoscaling: Cluster Autoscaler scales the node groups you already defined. Karpenter provisions the right node just in time and does not need a pre-sized group for every shape. Product knobs are Look-up. Know the difference.
 
 ## Mental model
 
@@ -69,5 +70,4 @@ JDs name many add-ons (service mesh, specific CNIs, cluster autoscalers). You do
 
 ## Source tags
 
-EPAM Azure Lead · EPAM Senior Azure DevOps · EPAM AWS DevOps · EPAM Lead Cloud (AKS add-ons) · Sezzle SRE · Fundraise Up DevOps
-EPAM Azure Lead · EPAM Senior Azure DevOps · EPAM AWS DevOps · EPAM Senior Azure Cloud (KZ, AKS ops) · Sezzle SRE · Fundraise Up DevOps
+EPAM Azure Lead · EPAM Senior Azure DevOps · EPAM AWS DevOps · EPAM Lead Cloud (AKS add-ons) · EPAM Senior Azure Cloud (KZ, AKS ops) · Sezzle SRE · Fundraise Up DevOps · 2026-10-13 market (Karpenter vs Cluster Autoscaler)
