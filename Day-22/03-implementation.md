@@ -2,207 +2,370 @@
 
 This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [02-questions-and-answers.md](02-questions-and-answers.md). Then do this lab.
 
-Day 22 teaches Azure as a stack of boundaries: Entra tenant, management groups, subscriptions, resource groups, then resources. This lab makes you draw that stack for ShopSphere. You write management groups, three subscriptions, resource groups, one VNet, and one Key Vault on paper. You do not need a billable VM, VNet, or vault in Azure.
+Day 22 teaches Azure as a stack of boundaries: Entra tenant, management groups, subscriptions, resource groups, then resources. The old lab drew that stack on paper and created one empty resource group. This lab writes a **platform module** that creates the ShopSphere resource group, a **Log Analytics workspace**, and a **resource-group budget** with 80 percent and 100 percent alerts. You create the budget in code so later Days cannot "forget" it. Day 11 already placed the management groups. Day 25 will plan this module on a PR.
 
-Azure CLI is optional. If `az account show` proves you are logged in, create one empty lab resource group and then delete that same group. If Azure CLI is missing or not logged in, keep the work in markdown. Do not invent extra `az` flags. Do not create a VM, VNet, or Key Vault in the cloud.
+Work in **your ShopSphere repository**. You need Terraform 1.16.5. Azure apply is optional.
 
 ---
 
 ## Goal
 
-Write one Azure platform sketch for ShopSphere. The sketch must name the Entra tenant, the management-group tree, three subscriptions, resource groups for one workload, one VNet, and one Key Vault. Say who owns each layer. Say what a delete at each layer would destroy.
+Add `infra/azure/modules/platform` that describes one resource group, one Log Analytics workspace (`PerGB2018`, 30-day retention), and one `azurerm_consumption_budget_resource_group` for USD 15 with notifications at 80 and 100. Run `terraform test`. Apply only after you confirm the plan has no compute and no NAT Gateway.
 
-Then break the sketch on purpose. Put Key Vault in the same resource group as a disposable lab VM. Write why that shared group is a lifecycle clash. Split them so the vault outlives the VM. If Azure CLI is logged in, prove control-plane create and delete on one lab resource group only.
+When you finish, you can say who owns each Azure layer, why a budget is a resource, and why Log Analytics is not free once it ingests logs.
 
-Time box: 45 to 75 minutes. Cost stays at ₹0 unless you create the optional lab resource group, and even then you delete it in the same session. Stop when the sketch is complete, the break-and-fix note explains the clash, and any lab resource group is gone.
+Time box: 60 to 90 minutes.
+
+---
+
+## Capstone stage
+
+| Path in ShopSphere | What it adds |
+|:--|:--|
+| `infra/azure/modules/platform/` | RG + LAW + budget |
+| `infra/azure/modules/platform/tests/platform.tftest.hcl` | SKU, retention, budget asserts |
+| `infra/azure/environments/platform-dev/` | Optional apply root |
+| `docs/day-22-platform-lab.md` | Hierarchy sketch, test output, destroy evidence |
+
+Do not create a VM, VNet, or Key Vault in this module. Day 12 owns the VNet. Day 18 owns Key Vault.
 
 ---
 
 ## What you need
 
-You need a text editor and a shell. You do not need Terraform, Bicep, a VM, or a paid Azure service. The required deliverable is a markdown sketch.
-
-Azure CLI is optional. Check it first with the same command the lesson uses:
-
 ```bash
-az account show
+terraform version
+az account show --query name -o tsv
 ```
 
-If that command prints a subscription and a tenant, you may run the optional `az group create` and `az group delete` steps. If the command fails, write `az not logged in` in your notes and skip every Azure CLI step. Do not guess flags. Do not open the portal to create extra resources.
+Terraform 1.16.5 and `hashicorp/azurerm` 5.9.0 are the pins this lab tested. Azure login is optional. `terraform test` does not need a subscription.
 
-Create the lab under `/tmp`, not under this course clone. Keep a notes file named `day-22-platform-lab.md`. Record the hierarchy, the resource-group split, and whether Azure CLI ran. Do not paste secrets, subscription IDs you must not share, or access tokens.
+---
 
-Use only these Azure CLI commands, and only if `az account show` succeeded. Every flag below already appears in this Day:
+## Cost
+
+| Path | Estimated USD (1–2 hours, then destroy) | Why it is not always zero |
+|:--|:--|:--|
+| `terraform test` + notes | **0.00** | Local only |
+| Empty resource group + budget | **0.00** | Budget alerts do not bill. The resources they watch do. |
+| Log Analytics `PerGB2018`, 30-day retention, little or no ingest | **0.20–1.00** | Ingestion and retention. An idle workspace is cheap, not free. |
+| LAW 730-day retention or a VM in the same group | **Stop. Change the code.** | Retention and compute blow the USD 5 cap. |
+
+Create the budget **in this module** before any later Day applies AKS or Container Apps. See [../capstone/COST.md](../capstone/COST.md). Do not write "cost stays at INR 0" if the workspace exists.
+
+Teardown:
 
 ```bash
-az account show
-az group create \
-  --name rg-day22-platform-lab \
-  --location centralindia
-az group show \
-  --name rg-day22-platform-lab
-az group list --output table
-az resource list \
-  --resource-group rg-day22-platform-lab \
-  --output table
-az group delete \
-  --name rg-day22-platform-lab \
-  --yes \
-  --no-wait
-az group exists \
-  --name rg-day22-platform-lab
+terraform -chdir=infra/azure/environments/platform-dev destroy
+az group show --name rg-shopsphere-platform-dev
 ```
-
-Do not add tags, VMs, VNets, or Key Vault with CLI in this lab. The sketch holds those objects. The optional CLI path creates and deletes one empty resource group.
 
 ---
 
 ## Steps
 
-1. Create a throwaway directory and enter it. Use a unique folder name so you do not collide with another lab. Confirm the path is under `/tmp`.
+1. Open ShopSphere. Create folders.
 
 ```bash
-LAB_DIR="/tmp/day-22-platform-lab-$$"
-mkdir -p "$LAB_DIR"
-cd "$LAB_DIR"
 pwd
+git rev-parse --show-toplevel
+mkdir -p infra/azure/modules/platform/tests
+mkdir -p infra/azure/environments/platform-dev
+mkdir -p docs
 ```
 
-2. Create `day-22-platform-lab.md`. Put the date at the top. Write one short paragraph: ShopSphere is one company with one Entra tenant. The tenant holds users, groups, applications, and service principals. Subscriptions under that tenant hold resources. A tenant is not a subscription.
-
-3. Draw the management-group tree. Start at the root. Add Platform, Production, and NonProduction. Write that management groups govern subscriptions. They do not hold VMs or Key Vault. Assign Policy and RBAC at these groups so child subscriptions inherit the rules.
-
-Copy this block into the notes, then add one sentence in your own words that says why you did not make one management group per team:
+Write the hierarchy into `docs/day-22-platform-lab.md` before you write HCL. Keep it short:
 
 ```text
-Root
- ├── Platform
- ├── Production
- └── NonProduction
+Entra tenant
+  management groups (Day 11)
+    subscription
+      rg-shopsphere-platform-dev   ← this Day
+        law-shopsphere-dev
+        budget shopsphere-lab
 ```
 
-4. Place three subscriptions. Put a Dev subscription and a UAT subscription under NonProduction. Put a Production subscription under Production. If you also want a network or shared-services subscription, keep it as a note under Platform. Do not replace the required three. The three required subscriptions are the isolation units for this lab: Dev, UAT, and Production.
+A tenant is not a subscription. A management group does not hold the workspace. The resource group is the lifecycle boundary.
 
-Write why Production is separate. A bad Dev deploy must not share Production RBAC, quota, or billing. One subscription per environment is a design choice. Name the choice. Do not treat it as a law.
+2. Write `infra/azure/modules/platform/variables.tf`.
 
-5. Place resource groups, a VNet, and Key Vault for ShopSphere Production. Use names a stranger can read:
+```hcl
+variable "rg_name" {
+  type        = string
+  description = "Platform resource group name."
+}
 
-```text
-sub-shopsphere-prod
-  ├── rg-shopsphere-prod-api
-  │     └── vnet-shopsphere-prod
-  └── rg-shopsphere-prod-data
-        └── kv-shopsphere-prod
+variable "location" {
+  type    = string
+  default = "eastus"
+}
+
+variable "law_name" {
+  type        = string
+  description = "Log Analytics workspace name. Must be unique in the region."
+}
+
+variable "budget_amount" {
+  type    = number
+  default = 15
+}
+
+variable "budget_start" {
+  type        = string
+  description = "First day of the month, RFC3339, for example 2026-10-01T00:00:00Z."
+}
+
+variable "budget_email" {
+  type        = string
+  description = "Alert email. Do not commit a personal inbox you do not want public."
+  default     = "ops@example.com"
+}
 ```
 
-Write a short paragraph under that tree. The VNet is the network boundary for the workload. Key Vault holds secrets. Both are Azure resources. They sit inside resource groups. They do not sit in the management group. The resource group is a lifecycle and ownership boundary. It is not a subnet, a region, or an availability zone.
+3. Write `infra/azure/modules/platform/versions.tf`. No `provider` block in the module.
 
-6. Repeat a thinner Dev and UAT sketch so the three subscriptions stay visible. You may reuse the same resource-group pattern with `dev` and `uat` in the names. Keep Production stronger: tighter RBAC, Deny-style region Policy, and no standing human Contributor.
+```hcl
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "5.9.0"
+    }
+  }
+}
+```
 
-7. Write ownership next to each layer. Entra holds identity. Platform owns Policy at the management group. The network team owns the hub story even if this sketch only shows one VNet. The ShopSphere team owns the API resource group. Security cares about Key Vault. Cost uses tags such as `Environment`, `Application`, and `Owner`. You do not need to apply tags in Azure for this lab.
+4. Write `infra/azure/modules/platform/main.tf`. These arguments are valid on azurerm 5.9.0. `azurerm_consumption_budget_resource_group` needs `time_period.start_date` and at least one `notification` block.
 
-8. Optional Azure CLI path. Run this step only if step `az account show` already succeeded. Create one empty lab resource group in `centralindia`. Then show it and list it. Confirm it is empty with `az resource list`.
+```hcl
+resource "azurerm_resource_group" "this" {
+  name     = var.rg_name
+  location = var.location
+  tags = {
+    project = "shopsphere"
+    purpose = "platform"
+    day     = "22"
+  }
+}
+
+resource "azurerm_log_analytics_workspace" "this" {
+  name                = var.law_name
+  location            = azurerm_resource_group.this.location
+  resource_group_name = azurerm_resource_group.this.name
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+  daily_quota_gb      = 0.1
+}
+
+resource "azurerm_consumption_budget_resource_group" "this" {
+  name              = "shopsphere-lab"
+  resource_group_id = azurerm_resource_group.this.id
+  amount            = var.budget_amount
+  time_grain        = "Monthly"
+
+  time_period {
+    start_date = var.budget_start
+  }
+
+  notification {
+    enabled        = true
+    threshold      = 80
+    operator       = "GreaterThan"
+    threshold_type = "Actual"
+    contact_emails = [var.budget_email]
+  }
+
+  notification {
+    enabled        = true
+    threshold      = 100
+    operator       = "GreaterThan"
+    threshold_type = "Actual"
+    contact_emails = [var.budget_email]
+  }
+}
+```
+
+`daily_quota_gb = 0.1` caps ingest for the lab. Production workspaces use a real quota. `PerGB2018` is the current LAW SKU name on this provider line.
+
+5. Write `infra/azure/modules/platform/outputs.tf`.
+
+```hcl
+output "resource_group_name" {
+  value = azurerm_resource_group.this.name
+}
+
+output "resource_group_id" {
+  value = azurerm_resource_group.this.id
+}
+
+output "law_id" {
+  value = azurerm_log_analytics_workspace.this.id
+}
+```
+
+6. Write `infra/azure/modules/platform/tests/platform.tftest.hcl`.
+
+```hcl
+mock_provider "azurerm" {}
+
+run "sku_budget" {
+  command = plan
+
+  variables {
+    rg_name       = "rg-shopsphere-platform-dev"
+    law_name      = "law-shopsphere-dev"
+    budget_start  = "2026-10-01T00:00:00Z"
+    budget_email  = "ops@example.com"
+  }
+
+  assert {
+    condition     = azurerm_log_analytics_workspace.this.sku == "PerGB2018"
+    error_message = "LAW sku must be PerGB2018"
+  }
+
+  assert {
+    condition     = azurerm_log_analytics_workspace.this.retention_in_days == 30
+    error_message = "lab retention must be 30 days"
+  }
+
+  assert {
+    condition     = azurerm_consumption_budget_resource_group.this.amount == 15
+    error_message = "budget amount must be 15 USD"
+  }
+
+  assert {
+    condition     = azurerm_resource_group.this.name == "rg-shopsphere-platform-dev"
+    error_message = "platform RG name"
+  }
+}
+```
+
+7. Test the module. This does not create Azure resources.
 
 ```bash
-az group create \
-  --name rg-day22-platform-lab \
-  --location centralindia
-
-az group show \
-  --name rg-day22-platform-lab
-
-az group list --output table
-
-az resource list \
-  --resource-group rg-day22-platform-lab \
-  --output table
+cd infra/azure/modules/platform
+terraform init
+terraform fmt
+terraform validate
+terraform test
 ```
 
-Write the group name and location into your notes. Do not create other resources in this group. This is control-plane practice only. If `az account show` failed, skip this step and stay on the markdown sketch.
+Expected: `Success! 1 passed, 0 failed.` Copy that line into the notes.
+
+8. Optional apply root `infra/azure/environments/platform-dev/main.tf`.
+
+```hcl
+terraform {
+  required_version = ">= 1.9.0, < 2.0.0"
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "5.9.0"
+    }
+  }
+}
+
+provider "azurerm" {
+  features {}
+  resource_provider_registrations = "none"
+}
+
+module "platform" {
+  source       = "../../modules/platform"
+  rg_name      = "rg-shopsphere-platform-dev"
+  law_name     = "law-shopsphere-dev"
+  budget_start = "2026-10-01T00:00:00Z"
+  budget_email = "ops@example.com"
+}
+```
+
+Set `budget_start` to the first day of the **current** month. Azure rejects other dates. Set `budget_email` to an inbox you own. Do not commit a personal address if the repo is public. Use a gitignored `terraform.tfvars`.
+
+```bash
+cd infra/azure/environments/platform-dev
+terraform init
+terraform plan -input=false
+```
+
+Read the plan. Expected: one resource group, one workspace, one budget. No VM, no NAT Gateway, no public IP. Apply only when you will destroy in the same session.
+
+If `az account show` failed, write `apply skipped — no Azure login`. The test is your evidence.
+
+9. Ownership table in the notes.
+
+```text
+Layer              Owner              Delete blast
+Entra tenant       Identity           Company-wide
+Management group   Platform           Child subscriptions inherit
+Subscription       Platform / FinOps  Every RG in it
+This resource group ShopSphere platform  LAW + budget
+LAW                Platform           Logs and bills for ingest
+```
 
 ---
 
 ## Verify
 
-Read the notes as if you are on a call. You should name the tenant, the three subscriptions, and where Key Vault lives without opening the lesson.
-
-Check these points:
-
-- The sketch shows Root → Platform, Production, NonProduction.
-- Dev, UAT, and Production are three subscriptions, not three resource groups inside one subscription.
-- Production has a VNet and a Key Vault. Each has a resource group.
-- The notes say a management group does not contain application resources.
-- The notes say deleting a resource group can delete the resources inside it.
-- If Azure CLI ran, `az group show` named `rg-day22-platform-lab`, and `az resource list` showed no extra resources in that group.
-- If Azure CLI did not run, the notes say `az not logged in` and the sketch is still complete.
-
-If a heading has no paragraph under it, fill it before you stop. An empty tree is not a platform design.
+- `terraform test` printed `1 passed, 0 failed`.
+- LAW uses `PerGB2018` and 30-day retention.
+- Budget amount is 15 with 80 and 100 percent notifications.
+- Plan has no compute and no NAT Gateway.
+- Notes do **not** say the workspace is free if it exists.
+- Files live in ShopSphere.
 
 ---
 
 ## Break and fix
 
-Copy the finished sketch so you can keep the good design. Do not overwrite it until you have written the lifecycle note.
+Do both failures.
 
-```bash
-cp day-22-platform-lab.md day-22-platform-lab-broken.md
-```
+### Failure 1 — 730-day retention
 
-Open `day-22-platform-lab-broken.md`. Put a disposable lab VM and Key Vault in the same resource group:
+Set `retention_in_days = 730`. Run `terraform test`. Expected: the retention assert fails. That is the pipeline catching a cost leak. Restore `30`. Long retention is a production choice. It is the wrong default for a 90-minute lab.
 
-```text
-rg-shopsphere-prod-lab
-  ├── vm-shopsphere-jump
-  └── kv-shopsphere-prod
-```
+### Failure 2 — budget after compute
 
-Write a section titled `Lifecycle clash`. Answer these questions in prose, not as a checklist.
+On paper, create AKS in this same group first, then add the budget. Write the blast: the node already billed; the alert cannot prevent a charge that already happened. Restore the module order: budget and LAW here, AKS on Day 17 in a **different** apply root. A resource group that mixes a disposable VM with LAW has the same lifecycle clash as the old lab. Do not add a VM to this module to "try it."
 
-A lab VM is short-lived. You create it, use it, and delete it. Key Vault holds secrets that the application still needs after the jump box is gone. Resource-group delete is not selective. If you delete `rg-shopsphere-prod-lab` to remove the VM, Azure can delete Key Vault as well. The secrets go with the vault. That is the clash: two resources that should not share a lifecycle now share a delete boundary.
+---
 
-RBAC follows the same mistake. Contributor on that group can change the VM and the vault. A person who only needed a jump box now sits on the secret store. Blast radius grew because the group mixed a disposable compute object with a durable secret object.
+## Stretch
 
-Then fix the main file `day-22-platform-lab.md`. Split the group. Put the disposable VM in `rg-shopsphere-prod-lab`. Put Key Vault in `rg-shopsphere-prod-data`. Keep the VNet in `rg-shopsphere-prod-api` or in a network group if you already drew one. Write one paragraph that says deleting the lab group now removes the VM only. The vault survives. That is the resource-group lesson from this Day.
-
-Do not leave the mixed group as the main design. Keep `day-22-platform-lab-broken.md` as evidence of the mistake.
+- Add `azurerm_monitor_action_group` with one `email_receiver` and point `contact_groups` at it instead of a raw email list.
+- Map the same three objects to AWS: account + CloudWatch Logs + AWS Budget.
 
 ---
 
 ## Clean up
 
-If you skipped Azure CLI, this lab created markdown only. There is no cloud resource to destroy.
-
-If you created `rg-day22-platform-lab`, delete that group and no other group. Confirm it is the lab group before you delete. Do not delete `rg-azure-architecture-lab` unless you created that name yourself in another exercise and you know it holds only lab resources.
+If you applied:
 
 ```bash
-az group delete \
-  --name rg-day22-platform-lab \
-  --yes \
-  --no-wait
-
-az group exists \
-  --name rg-day22-platform-lab
+cd infra/azure/environments/platform-dev
+terraform destroy -input=false
+az group show --name rg-shopsphere-platform-dev
+az monitor log-analytics workspace show --resource-group rg-shopsphere-platform-dev --workspace-name law-shopsphere-dev
 ```
 
-`az group exists` may still print `true` for a short time because `--no-wait` returns before the delete finishes. Run it again until it prints `false`. Then list resources so you did not leave an object in another group:
+Expected: both show commands fail with not found. Soft-delete does not apply to LAW the same way as Key Vault. Confirm the group is gone.
 
-```bash
-az resource list --output table
-```
-
-Do not delete shared, production, or centrally managed resources.
-
-If you want to keep the sketch, copy `day-22-platform-lab.md` out of the temp directory first. Then leave the lab directory and delete it.
-
-```bash
-cd /tmp
-rm -rf "$LAB_DIR"
-```
-
-Do not copy the files into the course repository unless you are submitting homework through a path your instructor named.
+Keep the module in Git.
 
 ---
 
 ## Interview story
 
-I design Azure from the tenant down, not from a service catalog. ShopSphere has one Entra tenant, management groups for Platform, Production, and NonProduction, and three subscriptions for Dev, UAT, and Production. Resource groups hold resources that share a lifecycle. A VNet and Key Vault are resources inside those groups. They are not children of the management group. I then put Key Vault in the same resource group as a disposable VM. Deleting that group to remove the VM would also delete the vault, so secrets would vanish with a jump box. I split them. The lab VM can die. The vault stays. If Azure CLI was logged in, I created one empty lab resource group and deleted that same group. I did not leave billable resources running.
+**Situation:** ShopSphere Azure work started from a paper tenant sketch, so nothing stopped a later Day from applying AKS before a budget existed. **Task:** Make the platform resource group, the log workspace, and the USD 15 budget real Terraform that CI can test. **Action:** I wrote `azurerm_resource_group`, `azurerm_log_analytics_workspace` (`PerGB2018`, 30 days, 0.1 GB daily quota), and `azurerm_consumption_budget_resource_group` with 80 and 100 percent notifications on azurerm 5.9.0. I covered SKU, retention, and amount with `terraform test`. I refused 730-day retention and I refused a VM in this group. **Result:** I can walk tenant → management group → subscription → resource group, and I can say the budget is a resource that must exist before compute.
+
+---
+
+## Self-score checklist
+
+- [ ] Platform module validates and `terraform test` passed.
+- [ ] Budget amount is 15 with two thresholds.
+- [ ] LAW retention is 30 days, not 730.
+- [ ] I wrote the budget-after-compute blast radius.
+- [ ] I destroyed the group, or I never applied.
+- [ ] Files live in ShopSphere.
+
+**Executed:** `terraform fmt`, `validate`, `terraform test` (1 passed) on Terraform 1.16.5 / azurerm 5.9.0. **Not executed:** live apply of LAW or the budget, Azure portal.
