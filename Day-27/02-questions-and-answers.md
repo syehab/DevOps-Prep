@@ -897,6 +897,21 @@ All stay private. None of them belong as a database inside the container.
 
 ---
 
+## 41b. CDC from RDS to Kafka / MSK, not a dual-write
+
+Why would you use change data capture (Debezium reading the RDS change log into Kafka / Amazon MSK) instead of letting the application write to the database and to Kafka in the same request?
+
+<details>
+<summary>Answer</summary>
+
+The application writes to RDS once. Debezium reads the database change log and publishes row changes as events. Downstream consumers read Kafka / MSK.
+
+A dual-write (the app writes RDS and Kafka) drifts when one write fails. The log is the source of events.
+
+</details>
+
+---
+
 ## 42. How deployment differs across EC2, ECS, EKS, and Lambda
 
 How does deployment differ across EC2, ECS, EKS and Lambda?
