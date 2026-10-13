@@ -292,4 +292,4 @@ Expected after destroy: Storage show fails. Confirm both regions. Soft-deleted v
 - [ ] I destroyed billed objects, or I never applied.
 - [ ] Files live in ShopSphere. `var/dr-lab` is gone or gitignored.
 
-**Executed:** timed local tar copy/restore (RTO/RPO seconds) and vault `terraform test` on Terraform 1.16.5 / azurerm 5.9.0. **Not executed:** Azure blob copy, vault apply, Infracost, Velero.
+**Executed:** timed local tar copy/restore (`RTO_seconds=0`, `RPO_seconds=2`, matching SHA-256) and vault `terraform test` (1 passed) on Terraform 1.16.5 / azurerm 5.9.0. **Not executed:** Azure blob copy, vault apply, Infracost, Velero.
