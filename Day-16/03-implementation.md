@@ -2,273 +2,269 @@
 
 This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [02-questions-and-answers.md](02-questions-and-answers.md). Then do this lab.
 
-Day 16 teaches Helm as the package and release layer on Kubernetes, and GitOps as the two-loop operating model. This lab makes the Helm half concrete. You create a chart, render it, install it on a local cluster, upgrade it, then break it with a bad image tag and roll back. GitOps reconciliation stays a design note. You do not install a GitOps controller here.
+Day 16 teaches Helm as the package and GitOps as the second loop. The old lab stopped at `helm rollback` and left GitOps as a note. This lab installs a chart, then installs **Argo CD** on `kind` and applies an **app-of-apps** that points at Dev and Prod.
 
-Work in a temporary directory. Do not create charts or releases inside the DevOps-Prep course repository. Prefer `kind` for the cluster. If Helm or `kind` is missing, still use the real commands in this file. Install Helm from [helm.sh](https://helm.sh). Install `kind` from [kind.sigs.k8s.io](https://kind.sigs.k8s.io). Then come back and run the same commands. Do not invent other cluster or package tools.
+Work in **your ShopSphere repository** on cluster `shopsphere`.
 
 ---
 
 ## Goal
 
-Create a Helm chart with `helm create`, or copy a tiny chart with the same three core files. Render Dev and Prod values with `helm template` so you see replica counts before Kubernetes is involved. Install the release on a local `kind` cluster if one is available. Upgrade the release, then point the image tag at a name that does not exist.
+Create `charts/shopsphere`. Render Dev and Prod values. Install the chart once with Helm so you see a release. Then install Argo CD and apply `gitops/bootstrap/root.yaml` plus `gitops/apps/shopsphere-dev.yaml`. Break the image tag, watch the sync stay healthy while the Deployment is not. Roll back or fix the tag in Git.
 
-Watch the Deployment fail, often with `ImagePullBackOff`. Roll the release back with `helm rollback`. Confirm Pods recover. When you finish, you can explain chart versus release, template versus cluster, upgrade versus rollback, and why a Helm success is not the same as a healthy application.
+When you finish, you can say: CI builds the image, GitOps applies the manifest, a green sync is not a healthy Pod.
 
-Time box: 45 to 75 minutes. Cost stays at ₹0. Stop when template output matches the values files, rollback has restored a good revision, notes are written, and cleanup has uninstalled the release. If this lab created the `kind` cluster, delete that cluster too.
+Time box: 75 to 90 minutes.
+
+---
+
+## Capstone stage
+
+| Path | Adds |
+|:--|:--|
+| `charts/shopsphere/` | Chart, `values.yaml`, `values-dev.yaml`, `values-prod.yaml` |
+| `gitops/bootstrap/root.yaml` | App-of-apps |
+| `gitops/apps/shopsphere-dev.yaml` | Dev Application |
+| `gitops/apps/shopsphere-prod.yaml` | Prod Application (sync off until Day 33) |
+| `docs/day-16-gitops-lab.md` | `helm template` replica counts, Argo sync |
 
 ---
 
 ## What you need
 
-You need a shell, Helm 3, `kubectl`, Docker, and `kind`. Helm renders charts and manages releases. `kind` runs Kubernetes nodes as Docker containers. `kubectl` talks to the API Server. Check what is already on your `PATH`:
-
 ```bash
-command -v helm
-command -v kubectl
-command -v docker
-command -v kind
 helm version
 kubectl version --client
+kind get clusters
 ```
 
-If `helm` is missing, install Helm from [helm.sh](https://helm.sh). Follow that site. Come back and run the same `helm create`, `helm template`, `helm install`, `helm upgrade`, `helm rollback`, and `helm uninstall` commands below. The commands do not change. If `kind` is missing, install it from [kind.sigs.k8s.io](https://kind.sigs.k8s.io). You can still run `helm create` and `helm template` without a cluster. `helm install`, `helm upgrade`, `helm rollback`, and `helm uninstall` need a cluster.
+Helm 3.16+. Cluster `shopsphere` from Day 14. A GitHub repo Argo CD can read. If the repo is private, create a repo Secret. If you cannot expose Git, `helm install` is the required path and Argo stays apply-from-file.
 
-`minikube` is an alternative local cluster. Prefer `kind` for this lab. Do not mix both tools against the same kubeconfig context unless you already know which context is active. Do not use a production cluster. Do not create AKS, EKS, or cloud load balancers.
+---
 
-Create a throwaway directory under `/tmp`. Keep notes in `day-16-helm-lab.md` in that directory. Record command output, replica counts from `helm template`, release revisions from `helm history`, and whether this lab created the cluster. Do not paste kubeconfig secrets, tokens, or registry passwords into a shared place.
+## Cost
 
-This lab uses the public `nginx` image from a default `helm create` chart. It does not need Azure, AWS, or a paid registry. You pull that image through the cluster runtime when the Pod starts. Uninstall the release and delete any `kind` cluster you created when you finish.
+kind + Argo CD: **USD 0.00**. Do not create AKS today.
 
 ---
 
 ## Steps
 
-1. Create a lab directory and enter it. Confirm the path is under `/tmp`. Stay in this directory for every file you write.
+1. Create the chart.
 
 ```bash
-LAB_DIR="/tmp/day-16-helm-lab-$$"
-mkdir -p "$LAB_DIR"
-cd "$LAB_DIR"
-pwd
+cd charts
+helm create shopsphere
 ```
 
-Write the date and the path at the top of `day-16-helm-lab.md`. Write one sentence: you will render a chart, install a release, then recover from a bad image tag with `helm rollback`.
+Edit `charts/shopsphere/values.yaml` so the image is `nginx` and the tag is `1.27`. Set `replicaCount` to `1` in the default file.
 
-2. Create the chart. `helm create` writes `Chart.yaml`, `values.yaml`, and `templates/`. If Helm is not installed yet, install it from [helm.sh](https://helm.sh) and run the same command. As a fallback, copy a tiny chart by hand: `Chart.yaml`, `values.yaml`, and one Deployment template that reads `.Values.replicaCount` and `.Values.image`. Prefer `helm create`.
-
-```bash
-helm create myapp
-ls
-find myapp -maxdepth 2 -type f
-```
-
-Do not deploy yet. Identify `Chart.yaml`, `values.yaml`, and the files under `templates/`. Copy the `version` and `appVersion` fields from `Chart.yaml` into your notes. They are related. They are not the same thing.
-
-3. Write environment values next to the chart, not inside a copied YAML tree. Dev uses one replica. Prod uses three replicas and an explicit nginx tag.
+`charts/shopsphere/values-dev.yaml`:
 
 ```yaml
-# values-dev.yaml
 replicaCount: 1
-
 image:
+  repository: nginx
   tag: "1.27"
 ```
+
+`charts/shopsphere/values-prod.yaml`:
 
 ```yaml
-# values-prod.yaml
-replicaCount: 3
-
+replicaCount: 2
 image:
+  repository: nginx
   tag: "1.27"
 ```
 
-The chart stays one reusable design. These files supply the values that change.
-
-4. Render both environments. Helm replaces template expressions and prints normal Kubernetes YAML. The API Server is not involved yet.
+2. Render both.
 
 ```bash
-helm template myapp ./myapp -f values-dev.yaml
-helm template myapp ./myapp -f values-prod.yaml
+helm template shopsphere charts/shopsphere -f charts/shopsphere/values-dev.yaml | grep -A2 replicas
+helm template shopsphere charts/shopsphere -f charts/shopsphere/values-prod.yaml | grep -A2 replicas
 ```
 
-Find the Deployment in each output. Dev should show one replica. Prod should show three. Confirm the image becomes `nginx:1.27` (or the repository from `values.yaml` plus that tag). If the YAML is wrong, fix the values file before you install. Copy both replica lines into your notes.
+Expected: Dev `replicas: 1`. Prod `replicas: 2`. Record both.
 
-5. Decide whether you need a new cluster. List `kind` clusters if `kind` is installed. If you already have a disposable local cluster and `kubectl get nodes` works, you may use it. Record the context. If you have no cluster, create one named `day16`.
+3. Install with Helm once (the CI loop half).
 
 ```bash
-kind get clusters
-kubectl config current-context
+kubectl create namespace shopsphere-dev --dry-run=client -o yaml | kubectl apply -f -
+helm upgrade --install shopsphere-dev charts/shopsphere \
+  -n shopsphere-dev \
+  -f charts/shopsphere/values-dev.yaml
+helm list -n shopsphere-dev
 ```
 
-Create a cluster only when you need one:
+Expected: status `deployed`. Then uninstall so GitOps owns the namespace:
 
 ```bash
-kind create cluster --name day16
+helm uninstall shopsphere-dev -n shopsphere-dev
 ```
 
-Wait until the command exits. Then confirm the API answers:
+4. Install Argo CD. Pin v2.14.11. If that tag 404s, use the latest **v2.14.x** patch on GitHub releases, not `stable`.
 
 ```bash
-kubectl cluster-info
-kubectl get nodes
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.14.11/manifests/install.yaml
+kubectl -n argocd rollout status deploy/argocd-server --timeout=180s
 ```
 
-Write `CREATED_KIND=yes` in your notes if you ran `kind create cluster --name day16`. Write `CREATED_KIND=no` if you reused an existing cluster. Cleanup uses that note.
+5. Write `gitops/apps/shopsphere-dev.yaml`. Replace the repo URL with yours.
 
-If `kind` is not installed and you have no cluster, install `kind` from [kind.sigs.k8s.io](https://kind.sigs.k8s.io) and run the same `kind create cluster --name day16` command. You can keep going through `helm template` while you do that. Still type the install, upgrade, rollback, and uninstall commands in this file. They are the real Helm release commands. Do not substitute a made-up tool.
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: shopsphere-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/REPLACE_ME/shopsphere.git
+    targetRevision: main
+    path: charts/shopsphere
+    helm:
+      valueFiles:
+        - values-dev.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: shopsphere-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+```
 
-6. Install the chart as release `myapp` with Dev values. Helm creates a release, then Kubernetes creates the resources.
+`gitops/apps/shopsphere-prod.yaml` is the same with `values-prod.yaml` and namespace `shopsphere-prod`. Leave Prod `syncPolicy.automated` **unset** so Dev is the only auto-sync today. Day 33 promotes the same digest.
+
+6. Write `gitops/bootstrap/root.yaml`.
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: shopsphere-root
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/REPLACE_ME/shopsphere.git
+    targetRevision: main
+    path: gitops/apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+```
+
+Commit and push these files to `main` **before** you apply the root. Argo CD reads Git, not your dirty working tree.
 
 ```bash
-helm install myapp ./myapp -f values-dev.yaml
+kubectl apply -f gitops/bootstrap/root.yaml
+kubectl -n argocd get applications
 ```
 
-Inspect the release and the cluster:
+Expected: `shopsphere-root` and then `shopsphere-dev`. `Synced` / `Healthy` after the first sync.
+
+If the repo is private:
 
 ```bash
-helm list
-helm status myapp
-helm get values myapp
-kubectl get all
+kubectl -n argocd create secret generic shopsphere-repo \
+  --from-literal=type=git \
+  --from-literal=url=https://github.com/REPLACE_ME/shopsphere.git \
+  --from-literal=password="$GITHUB_TOKEN" \
+  --from-literal=username=git
+kubectl -n argocd label secret shopsphere-repo argocd.argoproj.io/secret-type=repository
 ```
 
-`helm list` shows releases. `helm status` shows this release. `kubectl get all` shows the Kubernetes objects Helm created. Copy the revision number into your notes. It should be `1`.
-
-7. Upgrade the same release with Prod values. Do not install a second release with a new name.
+If Git is not available, apply the rendered chart:
 
 ```bash
-helm upgrade myapp ./myapp -f values-prod.yaml
+helm template shopsphere charts/shopsphere -f charts/shopsphere/values-dev.yaml \
+  | kubectl apply -n shopsphere-dev -f -
 ```
 
-Inspect history and the Deployment:
+Write `argocd git pull not executed` in the notes.
+
+7. Watch a green sync hide a bad image. Set `image.tag` to `1.27-does-not-exist` in `values-dev.yaml`. Commit and push. Wait for sync.
 
 ```bash
-helm history myapp
-helm get manifest myapp
-kubectl get deployment
-kubectl get pods
+kubectl -n shopsphere-dev get pods
+kubectl -n argocd get application shopsphere-dev
 ```
 
-`helm history` should show revision `1` and revision `2`. Prod values should raise the replica count to three. Wait until the new Pods are Ready. Record the history table in your notes.
+Expected: Application may still be `Synced`. Pods show `ImagePullBackOff`. GitOps applied what you wrote. It did not make the image exist.
 
-```bash
-kubectl rollout status deployment/myapp
-```
-
-The default `helm create` chart names the Deployment `myapp` when the release and the chart share that name. If `rollout status` reports a different name, use the name `kubectl get deployment` printed.
+Put the tag back to `1.27`. Push. Wait for Ready.
 
 ---
 
 ## Verify
 
-Read the notes as if you are on a call. You should name the chart files, the two replica counts from `helm template`, and the release revisions from `helm history`.
-
-Check these points:
-
-- `helm create myapp` produced `Chart.yaml`, `values.yaml`, and `templates/`, or your tiny chart has those same three parts.
-- `helm template` with `values-dev.yaml` rendered one replica. `helm template` with `values-prod.yaml` rendered three replicas.
-- `helm install myapp ./myapp -f values-dev.yaml` created release `myapp`. `helm list` shows it.
-- `helm upgrade myapp ./myapp -f values-prod.yaml` added a new revision. `helm history myapp` lists more than one revision.
-- `kubectl get pods` shows Ready Pods for the good image tag before you break the release.
-
-If `helm template` shows the wrong replica count, read the values file you passed with `-f`. Helm does not use a values file you did not name. If install fails because there is no cluster, finish the template steps and keep the install command in your notes. Then create the `kind` cluster and run install again.
+- `helm template` showed 1 and 2 replicas.
+- Argo CD `argocd-server` is Ready, or you recorded the Git fallback.
+- `shopsphere-root` points at `gitops/apps`.
+- A bad tag produced `ImagePullBackOff` while you understood sync versus health.
+- Prod Application exists but is not auto-synced.
 
 ---
 
 ## Break and fix
 
-A bad image tag is a desired-state problem that becomes a runtime problem. Helm will still render and apply the manifest. Kubernetes then cannot pull the image. Rollback restores an earlier release revision. It does not reverse database migrations. This lab has no database.
+### Failure 1 — bad image (step 7)
 
-1. Write a values file that keeps three replicas and points the tag at a name that does not exist.
+Diagnose with `kubectl -n shopsphere-dev describe pod` and `Events: Failed to pull image`. Do not delete Argo CD.
 
-```yaml
-# values-bad.yaml
-replicaCount: 3
-
-image:
-  tag: "not-a-real-tag-day16"
-```
-
-Render it first. Confirm the Deployment image is wrong before you touch the cluster.
+### Failure 2 — Application stuck `Unknown` / `ComparisonError`
 
 ```bash
-helm template myapp ./myapp -f values-bad.yaml
+kubectl -n argocd logs deploy/argocd-repo-server --tail=50
+kubectl -n argocd get application shopsphere-dev -o yaml | grep -A20 status
 ```
 
-2. Upgrade the live release with that file. Then inspect history and Pods.
+Usual causes: wrong `repoURL`, missing repo Secret, path typo. Fix Git. Do not `helm install` on top of an Application that already owns the namespace.
 
-```bash
-helm upgrade myapp ./myapp -f values-bad.yaml
-helm history myapp
-kubectl get pods
-kubectl get pods -o wide
-```
+---
 
-Pods should leave Ready. Events often show `ImagePullBackOff` or `ErrImagePull`. Describe one Pod and copy the image name from the events into your notes.
+## Stretch
 
-```bash
-kubectl describe pod -l app.kubernetes.io/name=myapp
-```
-
-If that label prints nothing, run `kubectl get pods` and describe a Pod by name. The failure is the tag. The chart structure is still valid. `helm template` already proved that.
-
-3. Roll back to the last good revision. Read `helm history myapp` and pick the revision that used `values-prod.yaml` and `nginx:1.27`. That is usually revision `2`.
-
-```bash
-helm rollback myapp 2
-```
-
-If history shows a different good revision, use that number in place of `2`. Then verify:
-
-```bash
-helm status myapp
-helm history myapp
-kubectl rollout status deployment/myapp
-kubectl get pods
-```
-
-Pods should become Ready again. The image should be the good tag. Helm rollback restored the managed release configuration toward that earlier revision. Record the new history row. Rollback creates another revision. It does not delete the failed one.
-
-Do not leave the bad tag applied. Confirm Ready Pods before you clean up.
+- `argocd login --core` and `argocd app sync shopsphere-dev`
+- Add `targetRevision: HEAD` versus a Git tag. Prefer a tag in Prod.
 
 ---
 
 ## Clean up
 
-Uninstall the Helm release. This removes the release and the resources Helm created, subject to how the chart was designed.
+Keep Argo CD if you will do Days 17, 33, or 37.
 
 ```bash
-helm uninstall myapp
+kubectl delete -f gitops/bootstrap/root.yaml
+kubectl delete -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.14.11/manifests/install.yaml
+kind delete cluster --name shopsphere   # only if you are done with K8s Days
 ```
 
-Verify:
-
-```bash
-helm list
-kubectl get all
-```
-
-`helm list` should no longer show `myapp`. Lab Pods, Services, and Deployments for this release should be gone. Do not delete shared cluster resources that belong to other workloads. Do not delete a shared chart repository or production GitOps configuration.
-
-If your notes say `CREATED_KIND=yes`, delete the cluster you created. This removes the `kind` nodes for `day16`.
-
-```bash
-kind delete cluster --name day16
-```
-
-If your notes say `CREATED_KIND=no`, do not run `kind delete cluster`. You reused a cluster that you did not create for this lab.
-
-Leave the lab directory and remove it, including the chart:
-
-```bash
-cd /tmp
-rm -rf "$LAB_DIR"
-```
-
-If you want to keep notes, copy `day-16-helm-lab.md` out before `rm -rf`. You created no Azure or AWS resources, so there is no resource group or VPC to delete.
+`make destroy-kind` is the cluster teardown. Cost stays USD 0.00.
 
 ---
 
 ## Interview story
 
-I treat Helm as the package and release layer, not as GitOps. I keep one chart and change environment values. I run `helm template` before I install so I can see replica count and image tag without asking the cluster. I install one named release, then I upgrade that same release when Prod values change. When I ship a bad image tag, Helm still applies the manifest and Kubernetes fails to pull. I do not debug the Service first. I roll back to the last good revision with `helm rollback`, then I confirm Ready Pods. GitOps would add a controller that pulls desired state from Git. This lab used push-style Helm on a local cluster so I could see upgrade, failure, and rollback on purpose.
+**Situation:** ShopSphere had raw YAML and no promotion story. **Task:** Package the app with Helm and let GitOps apply Dev. **Action:** I created `charts/shopsphere` with Dev and Prod values, rendered replica counts, then installed Argo CD v2.14.11 on `kind`. I applied an app-of-apps that watches `gitops/apps`. I pushed `nginx:1.27-does-not-exist` and saw `ImagePullBackOff` while the Application was still Synced. **Result:** I can explain the two loops: CI builds the digest, CD reconciles Git, and sync is not health.
+
+---
+
+## Self-score checklist
+
+- [ ] Chart exists with two values files.
+- [ ] App-of-apps YAML is in Git.
+- [ ] I saw ImagePullBackOff after a bad tag, or I recorded why Git was not reachable.
+- [ ] Prod is not auto-synced.
+- [ ] Files live in ShopSphere.
+
+> **Note:** Argo CD install and Helm install were **not executed in CI** (no cluster in the authoring VM).
