@@ -2,142 +2,318 @@
 
 This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [02-questions-and-answers.md](02-questions-and-answers.md). Then do this lab.
 
-Day 8 teaches Infrastructure as Code. This lab runs a real Terraform workflow with the `hashicorp/local` provider. You create a file on disk with a `local_file` resource. You do not create AWS or Azure resources.
+Day 8 teaches Infrastructure as Code. This lab writes **real Azure Terraform** (`hashicorp/azurerm` 5.9.0) and **one Bicep module**. You run `init`, `fmt`, `validate`, `terraform test`, then `plan`. You apply on Azure only after a budget alert exists. If you have no subscription, `terraform test` with `mock_provider` is the apply stand-in. You still walk the same command path.
+
+Work in **your ShopSphere repository**, not in `/tmp`, and not inside this course clone. Copy [../capstone/shopsphere-starter/](../capstone/shopsphere-starter/) first if that repo does not exist yet.
 
 ---
 
 ## Goal
 
-Use Terraform to create, inspect, and destroy one local file. Walk the same path the lesson taught: `init`, `fmt`, `validate`, `plan`, `apply`, `state list`, `show`, then `destroy`.
+Create a reusable Terraform module that describes one Azure resource group. Call it from `environments/dev`. Prove the loop: `init` → `fmt` → `validate` → `terraform test` → `plan`. Compile one Bicep file. Run `what-if` when Azure is available.
 
-When you finish, you can say what each command does. You can also explain drift: Terraform notices when the file on disk no longer matches the code, and you restore it with `apply` or you update the code.
+When you finish, you can say what each command does. You can also say why `terraform test` is not a substitute for a reviewed plan against a real subscription.
+
+Time box: 60 to 90 minutes.
+
+---
+
+## Capstone stage
+
+This stage adds the first IaC root to ShopSphere.
+
+| Path in ShopSphere | What it is |
+|:--|:--|
+| `infra/azure/modules/rg/` | Reusable resource-group module |
+| `infra/azure/environments/dev/` | Dev root module that calls `rg` |
+| `infra/azure/environments/dev/tests/rg.tftest.hcl` | `terraform test` with `mock_provider` |
+| `infra/bicep/rg.bicep` | Subscription-scope Bicep that creates the same group |
+| `docs/day-08-iac-lab.md` | Notes, command output, cost decision |
+
+Later Days add remote state (Day 10), pipelines (Day 25), and `tflint` / Checkov hardening (Day 36). Do not add those today.
 
 ---
 
 ## What you need
 
-You need a shell and Terraform. Work in a temp directory. Do not run this lab inside the course repository.
-
-If `terraform` is missing, install Terraform from [hashicorp.com](https://www.hashicorp.com/en/terraform). The steps below are the real commands either way. Run them after Terraform is on your `PATH`. Check with:
+You need Terraform 1.16.5 (or 1.9+), a shell, and Git. Check the version first:
 
 ```bash
 terraform version
 ```
 
-You do not need AWS, Azure, Docker, or a cloud account. The `hashicorp/local` provider writes a file on this machine. Cost stays at ₹0.
+Expected first line: `Terraform v1.16.5` or another 1.9+ release. Install 1.16.5 from [releases.hashicorp.com/terraform/1.16.5](https://releases.hashicorp.com/terraform/1.16.5/) if the command is missing.
 
-Create a notes file named `day-08-iac-lab.md` in a folder you control. You will paste command output into that file. Do not put passwords, keys, or account IDs in the file.
+Azure CLI is optional. Bicep CLI is optional. Check them:
 
-Time box: 45 to 75 minutes. Stop when you have applied, inspected state, seen drift, and destroyed the file.
+```bash
+az version
+az bicep version
+az account show --query "{name:name,id:id}" -o table
+```
+
+If `az account show` fails, use the **local path**. You still write the `azurerm` module and run `terraform test`. You do not invent a different provider. You do not skip the Bicep file. You run `az bicep build` when the CLI exists. If Bicep is missing, keep the `.bicep` file and record `bicep not installed`.
+
+Create notes at `docs/day-08-iac-lab.md` inside ShopSphere. Do not paste subscription GUIDs, tenant IDs, or access tokens.
+
+---
+
+## Cost
+
+| Path | Estimated USD | Why |
+|:--|:--|:--|
+| Local: `fmt`, `validate`, `terraform test`, `az bicep build` | **0.00** | No Azure API create |
+| Azure: budget + `terraform apply` of one resource group | **0.00-0.10** | An empty resource group does not bill. Nested resources would. |
+| Azure: `az deployment sub what-if` | **0.00** | Preview only |
+| Azure: `az deployment sub create` of the Bicep group | **0.00-0.10** | Same as the Terraform group. Do not create both and leave them. |
+
+Create the budget alert **before** any apply that can build compute. Today you create only a resource group, so the bill stays near zero. The habit still starts today. See [../capstone/COST.md](../capstone/COST.md).
+
+Do not write "cost stays at INR 0" in your notes if you applied in Azure. Write the estimate above.
 
 ---
 
 ## Steps
 
-1. Create a temp working directory. Do not use the course repo. Stay in this directory for every Terraform command in this lab.
+1. Open your ShopSphere repository. Confirm you are not inside DevOps-Prep.
 
 ```bash
-mkdir -p /tmp/day-08-iac-lab
-cd /tmp/day-08-iac-lab
+pwd
+git rev-parse --show-toplevel
 ```
 
-Write the hostname and the date at the top of your notes. Write one sentence: this lab manages a local file, not a cloud resource.
+Create the folders for this stage:
 
-2. Create `main.tf`. Write it with uneven spacing on purpose so `terraform fmt` has something to fix. Use the `hashicorp/local` provider and one `local_file` resource.
+```bash
+mkdir -p infra/azure/modules/rg
+mkdir -p infra/azure/environments/dev/tests
+mkdir -p infra/bicep
+mkdir -p docs
+```
+
+Write one sentence in `docs/day-08-iac-lab.md`: this Day manages one resource group as desired state. It does not manage AKS.
+
+2. Write the module. Put this in `infra/azure/modules/rg/variables.tf`.
+
+```hcl
+variable "name" {
+  type        = string
+  description = "Azure resource group name."
+}
+
+variable "location" {
+  type        = string
+  description = "Azure region, for example eastus."
+  default     = "eastus"
+}
+```
+
+Put this in `infra/azure/modules/rg/main.tf`. The resource is `azurerm_resource_group`. That name is real in provider 5.9.0.
+
+```hcl
+resource "azurerm_resource_group" "lab" {
+  name     = var.name
+  location = var.location
+  tags = {
+    project = "shopsphere"
+    purpose = "lab"
+    day     = "08"
+  }
+}
+```
+
+Put this in `infra/azure/modules/rg/outputs.tf`.
+
+```hcl
+output "name" {
+  value = azurerm_resource_group.lab.name
+}
+
+output "id" {
+  value = azurerm_resource_group.lab.id
+}
+```
+
+The module does not name Dev or Prod. The caller passes `name`.
+
+3. Write the Dev root. Put this in `infra/azure/environments/dev/main.tf`.
 
 ```hcl
 terraform {
+  required_version = ">= 1.9.0, < 2.0.0"
+
   required_providers {
-    local = {
-      source  = "hashicorp/local"
-      version = "~> 2.5"
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "5.9.0"
     }
   }
 }
 
-resource "local_file" "lab" {
-    content  = "managed by terraform\n"
-filename = "${path.module}/hello.txt"
+provider "azurerm" {
+  features {}
+  resource_provider_registrations = "none"
 }
 
-output "file_path" {
-  value = local_file.lab.filename
+variable "name" {
+  type    = string
+  default = "rg-shopsphere-dev"
+}
+
+module "rg" {
+  source   = "../../modules/rg"
+  name     = var.name
+  location = "eastus"
+}
+
+output "resource_group_name" {
+  value = module.rg.name
 }
 ```
 
-This says: I want a local file represented by `local_file.lab`. Terraform does not need AWS or Azure for this resource. The local provider writes the file on disk.
+`resource_provider_registrations = "none"` is the azurerm 5.x default. Set it so the plan does not try to register every Azure resource provider.
 
-3. Prepare the working directory. Run the command below. Then inspect `.terraform/` and `.terraform.lock.hcl`. Record whether any cloud resource appeared. Record what Terraform downloaded.
+4. Write the test. Put this in `infra/azure/environments/dev/tests/rg.tftest.hcl`. `mock_provider` is a real `terraform test` block. It does not call Azure.
+
+```hcl
+mock_provider "azurerm" {}
+
+run "plan_creates_rg" {
+  command = plan
+
+  assert {
+    condition     = module.rg.name == "rg-shopsphere-dev"
+    error_message = "module.rg.name must be rg-shopsphere-dev"
+  }
+}
+```
+
+5. Prepare the working directory. Stay in `infra/azure/environments/dev` for every Terraform command in this lab.
 
 ```bash
+cd infra/azure/environments/dev
 terraform init
 ```
 
-`init` prepares the directory. It downloads the local provider. It does not create `hello.txt`. Run `terraform init` a second time. Terraform should report that the project is already initialized.
+Expected: Terraform installs `hashicorp/azurerm` v5.9.0 and writes `.terraform.lock.hcl`. `init` does not create a resource group. Run `terraform init` a second time. Terraform should report that the directory is already initialized.
 
-4. Format and validate the configuration.
+Commit `.terraform.lock.hcl` later. Do not commit `.terraform/` or `terraform.tfstate`.
+
+6. Format and validate.
 
 ```bash
-terraform fmt
+terraform fmt -recursive ../..
 terraform validate
 ```
 
-Open `main.tf` after `fmt`. The spacing should now match Terraform style. The intended file has not changed. `validate` checks syntax and structure. It does not replace `plan`.
+Expected `validate` line: `Success! The configuration is valid.`
 
-5. Preview the change. Before you look at the result, predict `+ local_file.lab`.
+`fmt` changes spacing only. `validate` checks syntax and arguments. It does not replace `plan`.
+
+7. Run the unit test. This is the local apply stand-in.
 
 ```bash
-terraform plan
+terraform test
 ```
 
-Copy the action line into your notes. `plan` tells you what Terraform intends to do. It does not create `hello.txt`. Confirm that nothing is marked destroy.
+Expected:
 
-6. Make the change. Terraform shows the plan and asks for confirmation. Type `yes` when you accept it.
-
-```bash
-terraform apply
+```text
+tests/rg.tftest.hcl... pass
+  run "plan_creates_rg"... pass
+Success! 1 passed, 0 failed.
 ```
 
-After apply, check that the file exists:
+Copy that block into `docs/day-08-iac-lab.md`. If the test fails, stop. Fix the module or the assert before you continue.
+
+8. Preview against Azure **only** when `az account show` works. Create the budget first if this subscription has none. See [../capstone/COST.md](../capstone/COST.md).
 
 ```bash
-ls -la hello.txt
-cat hello.txt
+terraform plan -input=false
 ```
 
-The file content should be `managed by terraform`. Record that in the notes.
+Expected action: `+ azurerm_resource_group.lab` inside `module.rg`. Confirm that nothing is marked destroy. If plan fails with an authentication error, stay on the local path. Do not paste the error token.
 
-7. Inspect what Terraform knows. Run these three commands. Compare the results in the notes.
+Apply only when you will destroy in the same session:
 
 ```bash
-terraform show
+terraform apply -input=false
+```
+
+Type `yes` when you accept the plan. Then:
+
+```bash
+az group show --name rg-shopsphere-dev --query "{name:name,location:location}" -o table
 terraform state list
-terraform output
 ```
 
-`show` prints attributes Terraform stored. `state list` should print `local_file.lab`. `output` should print the file path you exposed. `state list` is not a list of every file on the machine. It is the inventory this configuration tracks.
+Expected state address: `module.rg.azurerm_resource_group.lab`.
 
-8. Run plan again without changing the code.
+If you have no Azure account, write `plan skipped — no Azure login` in the notes. The test result is your evidence for this Day.
+
+9. Add Bicep. Put this in `infra/bicep/rg.bicep`. `targetScope = 'subscription'` is required because a resource group is a subscription-scope resource.
+
+```bicep
+targetScope = 'subscription'
+
+@description('Name of the ShopSphere lab resource group')
+param name string
+
+@description('Azure region, for example eastus')
+param location string
+
+resource rg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
+  name: name
+  location: location
+  tags: {
+    project: 'shopsphere'
+    purpose: 'lab'
+    day: '08'
+  }
+}
+
+output resourceGroupName string = rg.name
+```
+
+Build the file when the Bicep CLI exists:
 
 ```bash
-terraform plan
+az bicep build --file infra/bicep/rg.bicep
 ```
 
-Terraform should show no changes. Desired state, state, and the file on disk now match. An empty plan is the signal that apply succeeded.
+Expected: `infra/bicep/rg.json` exists. That file is the ARM template. You may commit it or gitignore it. Prefer gitignore and keep the `.bicep` source as the desired state.
+
+If Azure login works, preview. Do not create a second group if Terraform already created `rg-shopsphere-dev`.
+
+```bash
+az deployment sub what-if \
+  --location eastus \
+  --template-file infra/bicep/rg.bicep \
+  --parameters name=rg-shopsphere-bicep-dev location=eastus
+```
+
+Expected: a what-if report that would create `rg-shopsphere-bicep-dev`. `what-if` does not create it. Skip `az deployment sub create` unless you have time to delete that group in Clean up.
+
+If `az` is missing, keep the `.bicep` file and record `az bicep build not executed`.
+
+10. Write a short comparison in the notes. Terraform talks to Azure through the `azurerm` provider. Bicep compiles to ARM and Azure Resource Manager applies it. Both describe desired state. The review step is `plan` or `what-if`. The change step is `apply` or `create`.
 
 ---
 
 ## Verify
 
-Read the notes out loud as if you are in an interview. You should name `init`, `fmt`, `validate`, `plan`, `apply`, `state list`, and `show` without opening extra docs.
+Read the notes out loud as if you are in an interview. Name `init`, `fmt`, `validate`, `terraform test`, `plan`, `apply`, and `destroy` without opening this file.
 
 Check these points:
 
-- The working directory is `/tmp/day-08-iac-lab`, not the course repo.
-- `terraform init` created `.terraform/` and `.terraform.lock.hcl`. It did not create the managed file.
-- `hello.txt` exists only after `terraform apply`.
-- `terraform state list` shows `local_file.lab`.
-- A second `terraform plan` after apply showed no changes.
+- The working directory is your ShopSphere repo, not `/tmp` and not DevOps-Prep.
+- `infra/azure/modules/rg/main.tf` contains `azurerm_resource_group`. It does not contain `local_file` as the primary resource.
+- `terraform init` created `.terraform.lock.hcl` and selected `azurerm` 5.9.0.
+- `terraform validate` printed `The configuration is valid`.
+- `terraform test` printed `1 passed, 0 failed`.
+- `infra/bicep/rg.bicep` uses `targetScope = 'subscription'`.
+- If you applied in Azure, `terraform state list` shows `module.rg.azurerm_resource_group.lab`.
+- If you skipped Azure, the notes say so. They do not claim a resource group exists.
 
 If any step is missing, run that command again and add the evidence before you continue.
 
@@ -145,67 +321,111 @@ If any step is missing, run that command again and add the evidence before you c
 
 ## Break and fix
 
-Do this on purpose. Change the file **outside** Terraform. Do not edit `main.tf` yet.
+Do both failures. They are common in reviews.
 
-```bash
-echo "changed by hand" > hello.txt
-cat hello.txt
+### Failure 1 — provider block without `features`
+
+The `azurerm` provider requires a `features` block. Remove it on purpose.
+
+```hcl
+provider "azurerm" {
+  resource_provider_registrations = "none"
+}
 ```
 
-The file on disk no longer matches the configuration. That is drift. Run:
+Run:
 
 ```bash
-terraform plan
+cd infra/azure/environments/dev
+terraform validate
 ```
 
-Terraform should propose a change that puts `hello.txt` back to `managed by terraform`. Record the action in the notes. The local provider identifies the file from its content, so the plan often shows `+` create rather than `~` update. Either way, Terraform intends to write the file from code again.
+Expected: validate fails. The message names `features`. This is a configuration error, not a cloud outage. Diagnose with `terraform validate`, not with the Azure portal.
 
-Restore the intended state. Choose one path:
+Restore `features {}`. Run `terraform validate` again. Expected: `Success! The configuration is valid.`
 
-- Apply the plan so Terraform writes the file from code again:
+### Failure 2 — test assert does not match the module
+
+Change the assert so it looks for the wrong name:
+
+```hcl
+condition     = module.rg.name == "rg-shopsphere-prod"
+```
+
+Run:
 
 ```bash
-terraform apply
+terraform test
 ```
 
-- Or change `main.tf` so `content` matches the file, then `terraform plan` and `terraform apply`.
+Expected: `plan_creates_rg` fails. The error_message you wrote should appear. The module is not wrong. The test is. This is the same habit as a pipeline that fails on a bad check, not on a bad plan.
 
-If you apply without changing the code, `cat hello.txt` should again show `managed by terraform`. Run `terraform plan` once more. You should see no remaining changes.
+Put the condition back to `rg-shopsphere-dev`. Run `terraform test` again. Expected: `1 passed, 0 failed`.
 
-IaC does not stop a manual edit. `plan` detects the difference. `apply` restores the file, or you update the code when the manual edit was the intended change.
+If you applied the group in Azure, you may also create drift. Change a tag in the portal. Run `terraform plan`. The plan should want to put the tag back. Do not apply that restore until you decide the code is the source of truth. Then apply, or change the code if the portal edit was intended.
+
+---
+
+## Stretch
+
+Do one of these if you have time. They are senior extras, not required for the Day check.
+
+- Add a second `run` block in `rg.tftest.hcl` that sets `variables { name = "rg-shopsphere-uat" }` and asserts that output.
+- Install `tflint` and run `tflint --init && tflint` in `environments/dev`. Day 36 makes this a required gate.
+- Pin `azurerm` with `= 5.9.0` in the module as well as the root, then run `terraform init -upgrade` and read the lock file diff.
 
 ---
 
 ## Clean up
 
-Destroy the managed file from the same directory:
+If you did **not** apply in Azure, there is no cloud resource to delete. Keep the Terraform and Bicep files. They are the capstone stage.
+
+If you applied `rg-shopsphere-dev`:
 
 ```bash
-terraform destroy
+cd infra/azure/environments/dev
+terraform destroy -input=false
+az group show --name rg-shopsphere-dev
 ```
 
-Read the destroy plan before you confirm. Terraform should delete `local_file.lab` because it is in state. Type `yes` to confirm. Then check:
+Expected destroy plan: `module.rg.azurerm_resource_group.lab` will be destroyed. Type `yes`. Expected `az group show`: `ResourceGroupNotFound`.
+
+If you created `rg-shopsphere-bicep-dev`:
 
 ```bash
-ls -la /tmp/day-08-iac-lab
-terraform state list
+az group delete --name rg-shopsphere-bicep-dev --yes --no-wait
 ```
 
-`hello.txt` should be gone. `terraform state list` should print nothing. Do not make `-target` your cleanup method. Operate on the whole configuration.
+Do not use `-target` as cleanup. Destroy the whole configuration.
 
-You created no cloud resources. You may delete the temp directory when you are done:
+Delete `infra/bicep/rg.json` if you do not want generated ARM in Git:
 
 ```bash
-cd /
-rm -rf /tmp/day-08-iac-lab
+rm -f infra/bicep/rg.json
 ```
 
-Keep `day-08-iac-lab.md` in your notes. Do not copy `terraform.tfstate` into Git or chat. State can contain sensitive values in a real project.
-
-If you opened an AWS or Azure console out of habit, close it. Create nothing. There is no resource group, VPC, or S3 bucket to delete today.
+Commit the `.tf`, `.tftest.hcl`, `.bicep`, lock file, and notes to ShopSphere. Do not commit `terraform.tfstate` if a local state file appeared. Day 10 moves state off the laptop.
 
 ---
 
 ## Interview story
 
-I treat IaC as desired state, not as a script of create commands. I run `terraform init` to prepare the directory, then `fmt` and `validate` before I look at a plan. `terraform plan` shows the change. `terraform apply` makes it. `terraform state list` and `terraform show` tell me what this project tracks, not what exists in the whole cloud. If someone edits the resource by hand, the next plan shows drift. I restore from code with apply, or I change the code when that edit was intended. When the lab ends, I run `terraform destroy` so Terraform removes what it manages.
+**Situation:** I needed a repeatable way to create the first ShopSphere platform object, an Azure resource group, without clicking in the portal. **Task:** Put the group in a Terraform module, prove the change without spending money, and show the Azure-native Bicep path the JDs also name. **Action:** I wrote `azurerm_resource_group` in `modules/rg`, called it from `environments/dev` with provider 5.9.0, and ran `terraform test` with `mock_provider` so CI can check the name without Azure credentials. I compiled `rg.bicep` and used `what-if` when a subscription was present. When I applied for real, I destroyed the group in the same session. **Result:** I can walk `init`, `fmt`, `validate`, `test`, `plan`, `apply`, and `destroy`, and I can say why a passing unit test is not the same as a reviewed plan against production.
+
+---
+
+## Self-score checklist
+
+Score 1 only when you have evidence in `docs/day-08-iac-lab.md` or in Git.
+
+- [ ] I can explain desired state versus a create script in two sentences.
+- [ ] `modules/rg` contains `azurerm_resource_group`, not a `local_file` stand-in as the primary resource.
+- [ ] `terraform validate` succeeded in `environments/dev`.
+- [ ] `terraform test` printed `1 passed, 0 failed`.
+- [ ] I broke `features {}` and I used `terraform validate` to diagnose it.
+- [ ] I broke the test name and I used `terraform test` to diagnose it.
+- [ ] `infra/bicep/rg.bicep` exists with `targetScope = 'subscription'`.
+- [ ] I either destroyed every Azure group this lab created, or I never applied.
+- [ ] The files live in my ShopSphere repo, not only under `/tmp`.
+
+Count the checked boxes. 8 or 9 is done. Below 8, rerun the missing step.
