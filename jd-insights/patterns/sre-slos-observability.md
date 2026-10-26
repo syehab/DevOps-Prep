@@ -10,7 +10,8 @@ SRE titles (and most Lead roles) want you to define what "healthy" means with nu
 - Alerts that page on user pain, not on every CPU blip
 - Dashboards: metrics, logs, traces in one story
 - Incident response: detect, mitigate, communicate, write the RCA
-- Error budgets: use the data to decide features vs reliability work
+- Error budgets: the number is 100% minus the SLO. The policy is the written agreement for what happens when the budget burns out
+- Operational Readiness Review (ORR): a pre-launch checklist that proves the team can SEE problems, ACT on them, and SURVIVE them. Postmortem findings become new checklist items
 - Safe releases: progressive delivery with health gates and automatic rollback (Day-34 below covers this)
 - Synthetic checks (scripted probes that act like a user) and runbooks for known failures
 - AI services too: same SLOs and on-call, plus one extra signal, is the model's output still good? Watch quality next to latency and errors. Track token usage and model cost as metrics, not as a surprise bill
@@ -32,6 +33,8 @@ Error budget = 100% minus SLO
         ↓
 Budget burning fast? → page a human
 Budget healthy?      → ship features
+Budget gone?         → pause risky releases, shift time to reliability
+                       (resume when the budget recovers)
 ```
 
 Incident loop:
@@ -42,6 +45,21 @@ Detect → Assess impact → Mitigate (stop the pain)
 ```
 
 Mitigate before root cause. Roll back first, understand later.
+
+An ORR asks one question before launch: can this team run the service tonight? The review is honest only when each item has an owner and a proof, not a slide that says "we will monitor it." SEE, ACT, and SURVIVE are the three proofs. After an incident, the miss becomes a new checklist item, so the next launch starts from a harder bar.
+
+```text
+SEE     → SLO-based alerts + dashboards
+ACT     → a runbook per alert + a named on-call owner
+SURVIVE → capacity headroom · graceful degradation
+          · a tested rollback · a load test
+              ↑
+Postmortem findings become new checklist items
+```
+
+SEE is already on this card: alert on user pain and keep one dashboard story. ACT means every page has a runbook and a named human, not a shared inbox. SURVIVE is the launch bar on Day-34 and Day-41: spare capacity, graceful degradation, a rollback you have already run, and a load test that proved the limit.
+
+The error-budget number is the easy part. The policy is the written agreement the team follows when the budget is gone: pause risky releases, shift engineering time to reliability work, and resume feature work only when the budget recovers. In an interview, tell one story where that data changed a release decision. "We paused the launch because the budget was gone" is the story they want.
 
 ## The edge is the first hop
 
@@ -90,6 +108,8 @@ System signals tell you whether the service works. The usual three are latency, 
 
 > **Alert on symptoms users feel (errors, latency), not on causes (CPU). Causes are for dashboards, symptoms are for pages.**
 
+> **An ORR proves you can see, act, and survive before launch. The error-budget policy is the written next step when the budget is gone, not the 100% minus SLO formula.**
+
 ## Study these days first
 
 1. [Day-20/01-concepts.md](../../Day-20/01-concepts.md) - the core lesson, read this first
@@ -110,6 +130,15 @@ Outline:
 3. Alert on fast error-budget burn, not single failures.
 4. Review the SLO with the product team; it is a shared contract.
 
+**Q: Walk an ORR for a new checkout API. Then say what you do when the error budget burns out.**
+
+Outline:
+1. SEE: SLO-based alerts and one dashboard that shows user pain.
+2. ACT: a runbook per alert and a named on-call owner.
+3. SURVIVE: capacity headroom, graceful degradation, a tested rollback, a load test.
+4. Policy: pause risky releases, shift time to reliability work, resume when the budget recovers.
+5. Story: name one time reliability data changed a release decision.
+
 ## Honest gap note
 
 Sezzle-style JDs name Prometheus or Datadog daily use, sometimes Golang. If your base is Azure Monitor, map the concepts (metrics, queries, alert rules are the same shape) and say which tools you have used hands-on. Concepts transfer, invented tool years do not.
@@ -117,3 +146,4 @@ Sezzle-style JDs name Prometheus or Datadog daily use, sometimes Golang. If your
 ## Source tags
 
 Sezzle SRE · EPAM Senior SRE · EPAM Senior SRE (Grafana + EKS) · Fundraise Up DevOps · EPAM Senior AI DevOps/SRE · Turkey / Central Asia Senior SRE (edge, CDN, Zero Trust) · 2026-10-13 market (observability as code, token cost) · 2026-10-26 market (cardinality, health vs business)
+Sezzle SRE · EPAM Senior SRE · EPAM Senior SRE (Grafana + EKS) · Fundraise Up DevOps · EPAM Senior AI DevOps/SRE · Turkey / Central Asia Senior SRE (edge, CDN, Zero Trust) · 2026-10-13 market (observability as code, token cost) · 2026-10-23 market (ORR, error budget policy)
