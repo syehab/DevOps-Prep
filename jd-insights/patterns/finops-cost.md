@@ -14,27 +14,30 @@ Lead cloud JDs (Azure and AWS) add "cost-effective" next to "secure and scalable
 - Scarce compute: GPU capacity is often not on the shelf. A capacity reservation (AWS On-Demand Capacity Reservations, EC2 Capacity Blocks for ML) holds the machines. A savings plan only buys a discount. Those are different controls
 - Service quotas: request increases before the release, not during it. Quota is platform capacity. Capacity planning is part of the release plan
 - AI / LLM workloads: treat tokens per request, cost per request and per tenant, plus latency and error rate of model calls, as first-class metrics. Set a spend budget and alert on it like an error budget
+- Cost as routine work, not a quarterly surprise: required tags, right-sizing, a billing export you can query, a monthly review, and a plan for commitments (reservations or savings plans)
 
 ## Mental model
 
 ```text
-See it        → tags + cost views
+See it        → tags + cost views + billing export
    ↓             (who spends what, on what)
 Explain it    → map spend to teams and environments
    ↓
 Reduce it     → right-size · schedule off-hours
    ↓             reserve steady load · delete orphans
-Keep it down  → budgets + alerts + policy
-                 (require tags, block oversized SKUs)
+Keep it down  → monthly review + budgets + policy
+                 (require tags, block oversized SKUs,
+                  plan the next commitment)
 ```
 
 Easy wins to name in interviews:
 
 - Dev and test shut down at night and weekends
 - Orphaned disks, IPs, and old snapshots deleted
-- Steady workloads on reservations or savings plans
+- Steady workloads on reservations or savings plans (plan the buy in the monthly review)
 - Autoscale instead of sized-for-peak
 - Scarce SKUs (GPUs): reserve capacity and raise quotas before go-live, not during the incident
+- Export the bill (Azure Cost Management export, AWS Cost and Usage Report) so engineering can query it, not only look at a portal chart
 
 | Concept | Azure | AWS |
 |:--|:--|:--|
@@ -62,9 +65,11 @@ Set a spend budget. Alert when burn is fast, the same way an error budget pages 
 
 **Exit check:** Name four first-class metrics for a model call, and say what you do when spend burns the budget.
 
+Cost work has a calendar. Once a month, open the export, check tags, right-size what is idle, and decide the next commitment. A savings plan you never review is a hope, the same way an untested backup is a hope. Day-39 already teaches attribution and unit cost. The interview wants the habit, not a certificate.
+
 ## Remember
 
-> **Cost is a feature of the architecture. If you cannot say who spends what, you cannot reduce it.**
+> **Cost is a feature of the architecture. If you cannot say who spends what, you cannot reduce it. Review the export every month.**
 
 ## Study these days first
 
@@ -85,7 +90,7 @@ Outline:
 1. Open cost views, break down by subscription, service, and tag.
 2. Find the delta: new resource, scaled-up SKU, data egress, forgotten environment.
 3. Quick wins first (shut down, delete, downsize), then structural fixes.
-4. Prevent repeat: budget alerts, required tags, policy limits on SKUs.
+4. Prevent repeat: budget alerts, required tags, policy limits on SKUs, and a monthly review of the billing export plus the next commitment.
 
 **Q: An LLM feature just shipped. What do you track, and how do you stop a surprise bill?**
 
@@ -100,4 +105,4 @@ You do not need a FinOps certificate for these roles. Showing the loop above, pl
 
 ## Source tags
 
-EPAM Lead Azure Cloud ("cost-effective Azure solutions") · EPAM Lead Platform · EPAM Lead AWS DevOps (cost optimisation and billing) · 2026-10-13 market (GPU capacity reservations, quota lead time) · 2026-10-26 market (AI token cost)
+EPAM Lead Azure Cloud ("cost-effective Azure solutions") · EPAM Lead Platform · EPAM Lead AWS DevOps (cost optimisation and billing) · 2026-10-13 market (GPU capacity reservations, quota lead time) · 2026-10-26 market (AI token cost) · 2026-10-27 market (cost as monthly routine)
