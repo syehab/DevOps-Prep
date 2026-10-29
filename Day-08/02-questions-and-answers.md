@@ -1066,6 +1066,21 @@ The Bicep preview is `az deployment group what-if`. It plays the same operationa
 
 ---
 
+## 47a. Exit Check — Pester and PSRule on Bicep
+
+What do Pester and PSRule do for a Bicep template, and what is this course's analogue?
+
+<details>
+<summary>Answer</summary>
+
+Pester runs unit-style tests on the module. PSRule checks the template against Azure Policy-shaped rules before deploy. Look-up the cmdlets. Do not memorise flags.
+
+This course uses `terraform test` plus a policy scan for the same idea: prove the template before apply. `what-if` still previews the live change. Tests and preview are different steps.
+
+</details>
+
+---
+
 ## 48. Exit Check — Why Terraform and Bicep stay separate in this course
 
 15. Why are Terraform and Bicep separate in this course?
