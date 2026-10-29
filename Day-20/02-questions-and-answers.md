@@ -429,7 +429,7 @@ What control should change?
 
 Incident: Orders API returned 500s. Impact: users could not complete orders for 12 minutes. Timeline: deploy, errors, alert, rollback, recovery. Technical root cause: incompatible database query. Contributing factor: tests missed the production schema. Corrective: fix query and redeploy. Preventive: schema-compatibility tests.
 
-Do not write “developer made a mistake.” Ask why tests passed, why it reached production, and what control must change. RCA explains why the system allowed the failure to reach users.
+Do not write “developer made a mistake.” Ask why tests passed, why it reached production, and what control must change. RCA explains why the system allowed the failure to reach users. That is a blameless RCA.
 
 </details>
 
@@ -482,7 +482,7 @@ Your design should answer:
 <details>
 <summary>Answer</summary>
 
-Collect golden signals plus Kubernetes CPU, memory, restarts, HPA, database latency, and business counters such as orders created. Structure logs with `trace_id`. Propagate OpenTelemetry context. Store metrics in Azure Monitor or Prometheus, logs in Log Analytics, traces in Application Insights.
+Collect golden signals plus Kubernetes CPU, memory, restarts, HPA, database latency, and business counters such as orders created. Structure logs with `trace_id`. Propagate OpenTelemetry context. Store metrics in Azure Monitor or Prometheus, logs in Log Analytics, traces in Application Insights. If the org also runs Datadog, export the same OpenTelemetry signals there. Do not double-instrument.
 
 Page on sustained error rate and SLO burn. Keep CPU informational. Identify a bad deploy by release markers plus error start time. Identify network by timeouts and failed DNS. Identify database saturation by DB latency and pool metrics. Trace one slow request by Trace ID. Drop secrets from logs. Cap retention to control cost.
 
