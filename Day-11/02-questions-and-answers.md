@@ -652,4 +652,6 @@ A landing zone is the ready foundation: identity, governance, networking, and gu
 
 A factory stamps that foundation many times. One Terraform module describes the stack. A pipeline applies it for each team or customer. IAM stays least-privilege for that stack. A check after apply proves the pieces exist and can reach each other. Nobody provisions in the console.
 
+Azure shops often stamp the same shape in Bicep (Azure Landing Zones). Tests are Pester and PSRule there, and `terraform test` here. Management groups, Azure Policy, and RBAC stay the authority: Policy is what is allowed, RBAC is who may act.
+
 </details>
