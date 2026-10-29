@@ -170,6 +170,12 @@ Creates replacement
 Actual: 3 Pods
 ```
 
+JDs that host one SaaS instance per customer reuse this same loop. A Custom Resource Definition (CRD) is a new API kind you add to the cluster, for example `Tenant`. An operator is a controller that watches that kind and reconciles it, the same way a Deployment controller watches replicas. Create, upgrade, and delete become desired state on that object, and zero-downtime upgrades still use rolling updates, probes, and PodDisruptionBudgets per instance.
+
+> **Remember:** An operator is the desired-state loop applied to your own API. A CRD is that API.
+
+**Look-up:** Operator SDK. Do not invent a SaaS operator lab.
+
 8. What does the kubelet do?
 
 The kubelet is the main Kubernetes agent running on each worker node. It receives Pod specifications assigned to that node and works with the container runtime to create and manage the containers. It also reports information about the node and workloads back to the control plane. The kubelet does not make cluster-wide scheduling decisions; that is the Scheduler's job.
