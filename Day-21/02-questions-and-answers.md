@@ -1100,6 +1100,21 @@ Do not start with SKU names. Start with what the business feels.
 
 ---
 
+## 68. Interview — Lead a team of four through a release
+
+How did you lead a DevOps team of about four through a production release?
+
+<details>
+<summary>Answer</summary>
+
+Pick a real release or on-call week, not a title. Name who cut the release, who was primary on-call, and who wrote the runbook. Name what you kept: the approval, the escalation, and the RCA you wrote after.
+
+A Lead still ships. The difference is you own how the team ships, not every click. Do not claim a manager title you did not hold.
+
+</details>
+
+---
+
 ## Part 22 — Final Practical Challenge
 
 Build a simplified version of ShopSphere.
