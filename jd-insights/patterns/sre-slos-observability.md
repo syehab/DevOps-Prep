@@ -18,6 +18,8 @@ SRE titles (and most Lead roles) want you to define what "healthy" means with nu
 - Observability as code: dashboards and alert rules live in Terraform (provider) or Crossplane, reviewed in a PR. Keep metric-label cardinality low. Unbounded labels (user_id, request_id) explode series count, cost, and query time. Bring multi-account telemetry into one view
 - Edge and Zero Trust as an SRE skill: prove the first hop (CDN, WAF, DNS, TLS) before you debug the cluster. Zero Trust verifies each request by identity, not by VPN location. Product names are Look-up
 - System health and business health: latency, errors, and saturation say whether the service works. Orders, sign-ups, and payments per minute say whether users get value. Both need dashboards and alerts, and they have different owners
+- OpenTelemetry for traces, metrics, and logs on AKS and Azure Container Apps. Instrument once. Export to Azure Monitor, Datadog, or both. Do not double-instrument the same signal
+- Alert-noise reduction as a practice: pages that need a human stay, the rest go to dashboards or get deleted. On-call is a named primary, a handoff, and a page you can run at 3 AM. Write a blameless RCA (fix the system that allowed the mistake)
 
 ## Mental model
 
@@ -104,6 +106,24 @@ System signals tell you whether the service works. The usual three are latency, 
 
 **Exit check:** Pods are healthy and p95 is fine, but payments per minute dropped to zero. Is that an incident, and who do you page?
 
+## One instrument, two backends
+
+```text
+App on AKS or Azure Container Apps
+        ↓
+OpenTelemetry (traces · metrics · logs)
+        ↓
+Azure Monitor    and/or    Datadog
+```
+
+Instrument once with OpenTelemetry. Export to the backend the org already runs. JDs now name Datadog next to Azure Monitor, not instead of it. On AKS you often run a Collector. On Azure Container Apps the platform holds environment logs and metrics. Your app still emits OpenTelemetry. Do not scrape the same counter twice.
+
+A page that does not need a human is noise. Cut it. On-call is a named primary and a handoff. Write a blameless RCA: fix the system that allowed the mistake. Day-20 already has the structure.
+
+> **Remember:** OpenTelemetry is the language. Azure Monitor and Datadog are two listeners. Speak once. Noise and blame both hide the truth.
+
+**Look-up:** Collector exporters and Container Apps diagnostics. Do not invent a Datadog lab.
+
 ## Remember
 
 > **Alert on symptoms users feel (errors, latency), not on causes (CPU). Causes are for dashboards, symptoms are for pages.**
@@ -119,6 +139,8 @@ System signals tell you whether the service works. The usual three are latency, 
 5. [Day-35/01-concepts.md](../../Day-35/01-concepts.md) - hands-on project, including high-cardinality cost
 6. [Day-34/01-concepts.md](../../Day-34/01-concepts.md) - safe deployments, canary with health signals, rollback
 7. [Day-41/01-concepts.md](../../Day-41/01-concepts.md) - full incident simulation
+8. [Day-17/01-concepts.md](../../Day-17/01-concepts.md) - AKS vs EKS, including the monitoring map
+9. [Day-23/01-concepts.md](../../Day-23/01-concepts.md) - Azure Container Apps; same three signals, platform logs you do not scrape yourself
 
 ## Common interview question
 
@@ -145,5 +167,4 @@ Sezzle-style JDs name Prometheus or Datadog daily use, sometimes Golang. If your
 
 ## Source tags
 
-Sezzle SRE · EPAM Senior SRE · EPAM Senior SRE (Grafana + EKS) · Fundraise Up DevOps · EPAM Senior AI DevOps/SRE · Turkey / Central Asia Senior SRE (edge, CDN, Zero Trust) · 2026-10-13 market (observability as code, token cost) · 2026-10-26 market (cardinality, health vs business)
-Sezzle SRE · EPAM Senior SRE · EPAM Senior SRE (Grafana + EKS) · Fundraise Up DevOps · EPAM Senior AI DevOps/SRE · Turkey / Central Asia Senior SRE (edge, CDN, Zero Trust) · 2026-10-13 market (observability as code, token cost) · 2026-10-23 market (ORR, error budget policy)
+Sezzle SRE · EPAM Senior SRE · EPAM Senior SRE (Grafana + EKS) · Fundraise Up DevOps · EPAM Senior AI DevOps/SRE · Turkey / Central Asia Senior SRE (edge, CDN, Zero Trust) · 2026-10-13 market (observability as code, token cost) · 2026-10-23 market (ORR, error budget policy) · 2026-10-26 market (cardinality, health vs business) · 2026-10-29 market (OpenTelemetry on AKS/ACA, Datadog + Azure Monitor, alert noise, blameless RCA)

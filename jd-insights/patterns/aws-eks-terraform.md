@@ -17,6 +17,7 @@ AWS senior roles ask for the same loop as Azure ones (Terraform plus a managed K
 - Data and messaging operations: RDS (PostgreSQL), ElastiCache (Redis), MSK (Kafka). JDs ask backups, replication, failover, and DR with RTO and RPO. Multi-region is a plus. Service knobs are Look-up
 - Change data capture (CDC): Debezium (or equivalent) reads the database change log and publishes row changes as events on Kafka / Amazon MSK. The application writes to the database once. Downstream services consume events. They do not need a second write from the app (a dual-write that drifts)
 - Some product roles want a Terraform module per tenant, applied only by a pipeline, with a check after apply
+- Hosted SaaS on EKS: each customer instance is a lifecycle (create, upgrade, delete). An in-cluster operator with a CRD is the Kubernetes version of that factory. Zero-downtime upgrades still use rolling updates and PodDisruptionBudgets. See the Kubernetes production card
 
 ## Mental model
 
@@ -77,4 +78,4 @@ If your daily cloud is Azure, say that, then prove the mapping: "I run AKS in pr
 
 ## Source tags
 
-EPAM Senior AWS DevOps · Sezzle SRE · EPAM Lead AWS DevOps · Turkey product co Senior Platform (AWS) · Turkey / Central Asia Senior DevOps (MSK, RDS, ElastiCache DR) · Turkey / Central Asia Platform (module per tenant) · 2026-10-13 market (CDC: Debezium to Kafka / MSK)
+EPAM Senior AWS DevOps · Sezzle SRE · EPAM Lead AWS DevOps · Turkey product co Senior Platform (AWS) · Turkey / Central Asia Senior DevOps (MSK, RDS, ElastiCache DR) · Turkey / Central Asia Platform (module per tenant) · 2026-10-13 market (CDC: Debezium to Kafka / MSK) · 2026-10-29 market (SaaS instance lifecycle on EKS, operators / CRDs)
