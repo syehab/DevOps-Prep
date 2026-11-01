@@ -10,7 +10,7 @@ Nearly every Senior or Lead DevOps JD expects you to run Kubernetes day 2: deplo
 - Debugging: pods crashing, DNS failing, traffic not arriving
 - Safe deployments: rolling updates, probes, resource limits
 - Upgrades, scaling, and node lifecycle
-- Securing workloads: identities, secrets, network policies
+- Securing workloads: identities, secrets, network policies. Containers do not run as root (`USER` in the image, `runAsNonRoot` on the pod)
 - AKS day 2 extras: add-ons (ingress, cert-manager, external-dns, monitoring, policy) and onboarding new namespaces or tenants
 - Node autoscaling: Cluster Autoscaler scales the node groups you already defined. Karpenter provisions the right node just in time and does not need a pre-sized group for every shape. Product knobs are Look-up. Know the difference.
 - Bare-metal and self-managed basics: CRI starts containers, CNI gives each Pod an IP. Know what AKS and EKS hide (control plane, etcd, default networking, control-plane upgrades)
@@ -78,6 +78,7 @@ The NVIDIA device plugin is the agent that tells Kubernetes a node has GPUs. Wit
 > **Remember:** Taint the GPU pool. Only GPU work lands there. An idle GPU still costs money.
 
 **Look-up:** NVIDIA device plugin flags and MIG. Do not invent a lab.
+The pod itself has a security bar. The image sets a non-root `USER`. The pod spec sets `runAsNonRoot`. A container that runs as root turns one application bug into a host-level incident. Day-13 shows `USER 10001`. Day-19 calls a non-root user part of a safer Dockerfile.
 
 ## Remember
 
@@ -91,6 +92,7 @@ The NVIDIA device plugin is the agent that tells Kubernetes a node has GPUs. Wit
 4. [Day-17/01-concepts.md](../../Day-17/01-concepts.md) - managed clusters, GPU pools, taints
 5. [Day-37/01-concepts.md](../../Day-37/01-concepts.md) - a real migration
 6. [Day-34/01-concepts.md](../../Day-34/01-concepts.md) - safe deployments
+7. [Day-19/01-concepts.md](../../Day-19/01-concepts.md) - non-root image, scan, and digest
 
 ## Common interview question
 
@@ -118,3 +120,4 @@ JDs name many add-ons (service mesh, specific CNIs, cluster autoscalers). You do
 ## Source tags
 
 EPAM Azure Lead · EPAM Senior Azure DevOps · EPAM AWS DevOps · EPAM Lead Cloud (AKS add-ons) · EPAM Senior Azure Cloud (KZ, AKS ops) · Sezzle SRE · Fundraise Up DevOps · 2026-10-13 market (Karpenter vs Cluster Autoscaler) · 2026-10-28 market (CRI / CNI, what AKS/EKS hide, GPU hosting)
+EPAM Azure Lead · EPAM Senior Azure DevOps · EPAM AWS DevOps · EPAM Lead Cloud (AKS add-ons) · EPAM Senior Azure Cloud (KZ, AKS ops) · Sezzle SRE · Fundraise Up DevOps · 2026-10-13 market (Karpenter vs Cluster Autoscaler) · 2026-10-27 market (non-root containers)
