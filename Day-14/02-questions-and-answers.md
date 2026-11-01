@@ -641,7 +641,22 @@ It does not start the container. The kubelet on the chosen node does that.
 
 Controllers watch the cluster and drive actual state toward desired state. A Deployment controller keeps the replica count through ReplicaSets.
 
-That loop is why Kubernetes can replace a deleted or failed Pod.
+That loop is why Kubernetes can replace a deleted or failed Pod. An operator is the same loop on a kind you define (a CRD), for example a `Tenant` instance.
+
+</details>
+
+---
+
+## 19a. Interview Recall — What is an operator and a CRD?
+
+What is a Kubernetes operator, and what is a CRD?
+
+<details>
+<summary>Answer</summary>
+
+A CRD is a new API kind you add to the cluster, such as `Tenant`. An operator is a controller that watches that kind and reconciles it, the same loop a Deployment uses for Pods.
+
+Hosted SaaS instances use this to create, upgrade, and delete each customer stack without a human `kubectl`. Zero-downtime upgrades still use rolling updates and PodDisruptionBudgets per instance. Operator SDK knobs are Look-up.
 
 </details>
 
