@@ -28,7 +28,7 @@ Resource                      → The actual VM, VNet, database
 | Grouping for governance | Management groups | Organizations / OUs |
 | Guardrails | Azure Policy | SCPs |
 
-> **JD note:** Lead cloud roles grade exactly this design thinking. See the [landing zone pattern card](jd-insights/patterns/landing-zone-multi-account.md).
+> **JD note:** Lead cloud roles grade exactly this design thinking. See the [landing zone pattern card](../jd-insights/patterns/landing-zone-multi-account.md).
 
 ## What you will learn
 
@@ -153,6 +153,10 @@ A practical enterprise design starts with the identity and governance layer, the
 > **Remember:** This ready-to-use foundation is what JDs call a **landing zone**. Think of it as a paved parking lot: each workload parks in its own numbered spot, and the lights, gates, and cameras are already there.
 
 The landing zone becomes a factory when many teams or customers need the same foundation. One Terraform module describes the stack (network, IAM, compute, and data stores), and a pipeline applies that module for each team or customer. Nobody provisions in the console. IAM stays least-privilege for that stack, and a check after apply proves the pieces exist and can reach each other.
+
+Azure shops often ship that same foundation as Bicep modules, which Microsoft calls Azure Landing Zones. This course still uses Terraform for the lab, because the shape is the same: one module, a pipeline, least-privilege identity, then a check that it worked.
+
+The tests change names. Pester and PSRule prove a Bicep template before deploy. This course uses `terraform test` plus a policy scan. Day 8 names those Bicep tests. Management groups, Azure Policy, and RBAC stay the design authority either way: Policy is what is allowed, and RBAC is who may act.
 
 Some product JDs call each customer stack a tenant. That is a product tenant, not the Entra ID tenant you met earlier in this lesson. Day 16 calls the self-service version of this a paved road. Day 36 shows the plan, apply, and validate pipeline.
 
