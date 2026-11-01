@@ -18,7 +18,11 @@ Do not start by choosing Azure services. Start with the application, business re
 
 **Remember:** Senior-level DevOps is not knowing the most services. It is making sound engineering decisions and being able to explain them.
 
-> **JD note:** What separates Lead from Senior in real JDs is scope, not tools. See the [Lead vs Senior pattern card](jd-insights/patterns/lead-vs-senior-signals.md).
+> **JD note:** What separates Lead from Senior in real JDs is scope, not tools. See the [Lead vs Senior pattern card](../jd-insights/patterns/lead-vs-senior-signals.md).
+
+Lead JDs now also name a small DevOps team, about four people, and they still want you on the keyboard. You assign who cuts the release and who is primary on-call, and you keep the escalation and the story after. Interviewers grade one STAR example of that split. They do not grade a manager title you did not hold.
+
+> **Remember:** Delegate the deploy and the pager. Keep the outcome. That is leading a team of four.
 
 ---
 
