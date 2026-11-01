@@ -352,9 +352,11 @@ The pipeline should create a **repeatable path** from code to running software. 
 
 Newer senior JDs expect you to use AI assistants inside this exact loop. On the writing side they draft pipeline YAML, scripts and IaC. On the operating side they summarise logs and draft incident timelines. Notice that the loop itself does not change when AI joins it. AI shortens the writing, while the checking stays where it always was: review, tests and an approval gate before production.
 
-> **Remember:** Treat AI output like a fast junior engineer: great first drafts, zero accountability. Review stays human, gates stay in the pipeline.
+A newer ask is to build the agent that cuts toil, not only to paste prompts into chat. Ship that agent as a versioned bundle. Automated evals are the tests (did it stay in policy?). The pipeline and a human still gate production. Using Copilot to draft YAML is useful. It is not that platform.
 
-More on this theme in the [agentic DevOps pattern card](jd-insights/patterns/agentic-devops.md).
+> **Remember:** Treat AI output like a fast junior engineer: great first drafts, zero accountability. Review stays human, gates stay in the pipeline. Evals are the tests when you build the agent.
+
+More on this theme in the [agentic DevOps pattern card](../jd-insights/patterns/agentic-devops.md).
 
 ---
 

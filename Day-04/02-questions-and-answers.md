@@ -251,3 +251,18 @@ Rollback if needed
 Rollback is much easier when you version artifacts and can deploy a previous version again. Record the commit SHA on every deployment so you can identify an earlier known-good version, such as moving back from `8f3a91c` to the last good artifact.
 
 </details>
+
+---
+
+## 11. How is building an agent different from using a chat assistant?
+
+7. A JD asks you to build agentic tooling that cuts on-call toil, with evaluations and guardrails. How is that different from using Copilot to draft pipeline YAML?
+
+<details>
+<summary>Answer</summary>
+
+Using Copilot drafts YAML inside the loop you already run. Building the agent means you ship a versioned bundle that drafts triage, a runbook, or a ticket. Automated evals are the tests (did it stay in policy?). The pipeline and a human still gate production.
+
+Chat is not that platform. The delivery loop does not change. Evals are tests. Guardrails are the gates you already own.
+
+</details>
