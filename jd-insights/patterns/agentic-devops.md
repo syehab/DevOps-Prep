@@ -13,6 +13,7 @@ Newer JDs (Sezzle, EPAM GenAI-flavoured roles) expect you to use AI tools in Dev
 - Keep guardrails: AI suggests, pipelines and humans still gate production
 - Comfort experimenting with new AI tooling as it appears
 - Senior roles that build an Enterprise Agent Development Platform now require agent-specific CI/CD: register each version, scan for prompt-injection and PII leakage, then promote the same bundle
+- Building agentic tooling that cuts toil (triage, runbook steps, ticket drafts), not only using a chat assistant. Evals prove the agent stayed in policy. Guardrails are still the pipeline and the human gate
 
 ## Mental model
 
@@ -68,6 +69,12 @@ Employers also ask for agent-specific scans in GitHub Actions (matrix builds): p
 
 > **Remember:** Ship the agent as a versioned bundle. Register it. Eval gates promote it. A tested rollback path brings the last good bundle back.
 
+## Build the toil-reduction agent, do not only chat
+
+Some JDs now ask you to build the agent that cuts toil (triage, runbook, ticket draft), not only to paste prompts into Copilot. Evaluations are tests for the agent (did it stay in policy?). Guardrails are the same gates you already run. Using a chat window is not that platform. Day-4 is the delivery loop. Day-19 is the human-owned gate.
+
+> **Remember:** Building the agent is still shipping software. Evals are the tests. Guardrails are the gates. Chat is not a platform.
+
 ## Platform teams now also run AI traffic (emerging, seen in a few JDs)
 
 A newer ask, so treat it as an early signal, not a core requirement:
@@ -107,6 +114,14 @@ Outline:
 3. Promote the same bundle. Roll back the last good bundle.
 4. Honest: name what you have not run (AgentCore, LangGraph packaging). Transfer the discipline. Do not invent the product.
 
+**Q: How would you build an agent that cuts on-call toil?**
+
+Outline:
+1. Name one loop (triage, runbook draft, ticket text). Not "AI for everything."
+2. Ship it as a versioned bundle with evals (did it stay in policy?).
+3. Guardrail: the agent suggests, a human or the pipeline still acts in production.
+4. Honest: say if you have used chat assistants only. Transfer the loop. Do not invent a platform.
+
 ## Honest gap note
 
 This is the easiest area to over-claim and get caught. Do not invent product names or "built an AI platform" stories. Generic, honest wording (AI-assisted checks, delivery loops, runbooks) matches what these JDs actually ask and survives follow-up questions.
@@ -117,4 +132,4 @@ Emerging note: some Azure cloud JDs now name Azure AI or RAG next to the usual c
 
 ## Source tags
 
-Sezzle SRE (AI tooling expected) · EPAM Azure AI/GenAI DevOps themes · EPAM Lead Azure (AI gateway) · EPAM Senior Azure (GenAI/RAG on AKS) · EPAM Lead Cloud (Copilot standard) · EPAM Azure Cloud (KZ, Azure AI / RAG named) · EPAM Senior AI DevOps/SRE (LLM + RAG in production) · Turkey / Central Asia Senior DevOps (daily AI assistants) · Turkey / Central Asia Principal / AI Solution (LLM evaluation, emerging) · 2026-10-13 market (agent as a versioned bundle) · EPAM Senior DevOps (Agent CI/CD & Registry, 2026-10-14)
+Sezzle SRE (AI tooling expected) · EPAM Azure AI/GenAI DevOps themes · EPAM Lead Azure (AI gateway) · EPAM Senior Azure (GenAI/RAG on AKS) · EPAM Lead Cloud (Copilot standard) · EPAM Azure Cloud (KZ, Azure AI / RAG named) · EPAM Senior AI DevOps/SRE (LLM + RAG in production) · Turkey / Central Asia Senior DevOps (daily AI assistants) · Turkey / Central Asia Principal / AI Solution (LLM evaluation, emerging) · 2026-10-13 market (agent as a versioned bundle) · EPAM Senior DevOps (Agent CI/CD & Registry, 2026-10-14) · 2026-10-29 market (build toil-reduction agents with evals and guardrails)
