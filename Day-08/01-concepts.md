@@ -568,6 +568,12 @@ Bicep:
 build/validate → what-if → deployment
 ```
 
+Azure Landing Zone pipelines that ship Bicep often add two named tests before deploy. Pester runs unit-style tests on the module (does this parameter produce the resource we expect?). PSRule checks the compiled template against Azure Policy-shaped rules (public IP, missing tag, open store). Look-up the cmdlets when a JD names them. Do not memorise the flags.
+
+This course's analogue is `terraform test` plus a policy scan on the plan. The idea is the same: prove the template before apply. Day 11 is where that landing zone sits in the hierarchy.
+
+> **Remember:** `what-if` previews the change. Pester and PSRule test the Bicep the way `terraform test` tests Terraform. Look the names up. Do not invent a Pester lab.
+
 ---
 
 ## 16 · Terraform vs Bicep: Keep the Mental Model Simple · 6 min
