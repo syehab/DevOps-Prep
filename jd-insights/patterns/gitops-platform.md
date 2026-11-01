@@ -14,6 +14,8 @@ Platform and Lead roles want Git to be the source of truth for deployments (GitO
 - Multi-tenancy: granular RBAC plus a repeatable way to onboard a new tenant or namespace
 - Golden paths you can trust: generated infrastructure is tested end to end and watched for drift
 - Promotion flow: the same artifact moves dev → test → prod via Git changes
+- Policy-as-code on the IaC: OPA, Conftest, or Checkov fail the plan when a resource breaks a rule (public bucket, missing tag, open SSH). Look-up the tool the JD names
+- Treat the platform as a product: backlog, paved-road SLOs, and DORA numbers. Teams consume the path. They do not file a ticket for each step
 
 ## Mental model
 
@@ -37,7 +39,9 @@ CI loop: code → image           (builds things)
 CD loop: Git state → cluster    (applies things)
 ```
 
-The platform idea is the same loop, offered as a product: teams get a template, a pipeline, and a deploy path that already works.
+The platform idea is the same loop, offered as a product: teams get a template, a pipeline, and a deploy path that already works. A product has a backlog, owners, and a quality bar. You measure that product with the DORA numbers below. Teams consume the path. They do not file a ticket for each step.
+
+Policy-as-code is how the product enforces its own rules before apply. Day-36 already draws Terraform to policy evaluation to pass or fail to plan. Name OPA, Conftest, or Checkov when a JD does. The idea is one gate, not three tools.
 
 The developer portal is the map of that product:
 
@@ -72,6 +76,7 @@ A good paved road pushes the first two up and the last two down. [Day-34/01-conc
 2. [Day-05/01-concepts.md](../../Day-05/01-concepts.md) - branches and environments
 3. [Day-33/01-concepts.md](../../Day-33/01-concepts.md) - artifact promotion
 4. [Day-19/01-concepts.md](../../Day-19/01-concepts.md) - securing the chain
+5. [Day-36/01-concepts.md](../../Day-36/01-concepts.md) - policy evaluation before plan (Part 14)
 
 ## Common interview question
 
@@ -90,4 +95,4 @@ Backstage appears in EPAM platform JDs, and newer ones also name Crossplane, Pul
 
 ## Source tags
 
-EPAM Lead Platform / Unified Automation (Backstage) · EPAM Lead Cloud (IDP) · EPAM Senior DevOps Azure · RedCloud Platform · EPAM Senior/Lead Platform Engineer · Turkey banking platform (Terraform account vending) · 2026-10-13 market (catalog links dashboards, Argo CD, owners, IaC docs)
+EPAM Lead Platform / Unified Automation (Backstage) · EPAM Lead Cloud (IDP) · EPAM Senior DevOps Azure · RedCloud Platform · EPAM Senior/Lead Platform Engineer · Turkey banking platform (Terraform account vending) · 2026-10-13 market (catalog links dashboards, Argo CD, owners, IaC docs) · 2026-10-27 market (policy-as-code, platform as product)

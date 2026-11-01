@@ -11,6 +11,7 @@ Most Azure senior roles want one person who can describe infrastructure as code 
 - Azure DevOps pipelines: build, plan, approve, apply
 - Remote state, locking, and drift control
 - Secure defaults: identity, Key Vault, private networking baked into modules
+- Policy-as-code on the plan: OPA, Conftest, or Checkov fail a public IP, a missing tag, or an open store before a human approves apply. Look-up the tool the JD names
 - Migration work: move many existing on-prem apps (one JD counts 20+ Java and .NET systems) onto Azure; re-platforming means the same app on a new runtime, not a rewrite
 
 ## Mental model
@@ -22,6 +23,8 @@ Pull request + review
         ↓
 Pipeline: terraform plan
         ↓
+Policy check (OPA / Conftest / Checkov)
+        ↓
 Human approves the plan
         ↓
 Pipeline: terraform apply
@@ -32,6 +35,8 @@ Same module → dev → test → prod
 
 The JD words differ (platform engineering, cloud automation, IaC engine). The loop above is what they all mean.
 
+The policy check is a test on the plan. The same review that catches a bad variable also catches a public bucket. OPA, Conftest, and Checkov are Look-up names. Pick the one the JD uses and keep the gate in the pipeline. Day-36 already draws this evaluation step. The Day-25 and Day-36 labs run Checkov.
+
 | Concept | Azure | AWS |
 |:--|:--|:--|
 | Native IaC | Bicep | CloudFormation |
@@ -41,7 +46,7 @@ The JD words differ (platform engineering, cloud automation, IaC engine). The lo
 
 ## Remember
 
-> **Employers are not buying Terraform syntax. They are buying a safe change process: plan, review, approve, apply, repeat in every environment.**
+> **Employers are not buying Terraform syntax. They are buying a safe change process: plan, policy check, review, approve, apply, repeat in every environment.**
 
 ## Study these days first
 
@@ -52,6 +57,7 @@ The JD words differ (platform engineering, cloud automation, IaC engine). The lo
 5. [Day-22/01-concepts.md](../../Day-22/01-concepts.md) - the Azure platform picture
 6. [Day-25/01-concepts.md](../../Day-25/01-concepts.md) - putting it together
 7. [Day-37/01-concepts.md](../../Day-37/01-concepts.md) - incremental migration with a rollback boundary (Parts 26 and 36)
+8. [Day-36/01-concepts.md](../../Day-36/01-concepts.md) - policy evaluation before plan (Checkov is in the Day-25 and Day-36 labs)
 
 Interview-ready deep dives: [Day-08 v2](../../Day-08-IaC-Terraform-Bicep-Interview-Ready-Clean-v2.md), [Day-09 v2](../../Day-09-IaC-Modules-Environments-Interview-Ready-Clean-v2.md), [Day-10 v2](../../Day-10-Terraform-State-Enterprise-Interview-Ready-Clean-v2.md).
 
@@ -61,7 +67,7 @@ Interview-ready deep dives: [Day-08 v2](../../Day-08-IaC-Terraform-Bicep-Intervi
 
 Outline:
 1. One module, separate state and variable files per environment.
-2. Pipeline runs plan, a human reviews the diff, then apply.
+2. Pipeline runs plan, a policy check (OPA, Conftest, or Checkov) fails unsafe defaults, a human reviews the diff, then apply.
 3. Prod gets extra gates: approvals, locked state, no manual portal changes.
 4. Drift is detected by re-running plan, not by guessing.
 
@@ -71,5 +77,4 @@ JDs sometimes name OpenTofu or Ansible. If you use Terraform daily, say so, and 
 
 ## Source tags
 
-EPAM Azure Lead (TR, KZ) · EPAM Senior Azure DevOps · EPAM Senior Azure DevOps (KZ, migration) · EPAM Senior Azure Engineer (KZ) · EPAM Lead Azure Cloud
-EPAM Azure Lead (TR, KZ) · EPAM Senior Azure DevOps · EPAM Lead Azure Cloud · EPAM Senior Azure Cloud (KZ) · EPAM Lead DevOps (KZ)
+EPAM Azure Lead (TR, KZ) · EPAM Senior Azure DevOps · EPAM Senior Azure DevOps (KZ, migration) · EPAM Senior Azure Engineer (KZ) · EPAM Lead Azure Cloud · EPAM Senior Azure Cloud (KZ) · EPAM Lead DevOps (KZ) · 2026-10-27 market (policy-as-code on IaC)
