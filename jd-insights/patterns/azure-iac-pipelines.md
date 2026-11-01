@@ -11,7 +11,9 @@ Most Azure senior roles want one person who can describe infrastructure as code 
 - Azure DevOps pipelines: build, plan, approve, apply
 - Remote state, locking, and drift control
 - Secure defaults: identity, Key Vault, private networking baked into modules
+- Policy-as-code on the plan: OPA, Conftest, or Checkov fail a public IP, a missing tag, or an open store before a human approves apply. Look-up the tool the JD names
 - Migration work: move many existing on-prem apps (one JD counts 20+ Java and .NET systems) onto Azure; re-platforming means the same app on a new runtime, not a rewrite
+- Azure serverless operations: deploy Functions and Logic Apps with Bicep, watch them with Application Insights and Azure Monitor, and give them a managed identity so they do not store secrets
 
 ## Mental model
 
@@ -21,6 +23,8 @@ Engineer writes module code
 Pull request + review
         ↓
 Pipeline: terraform plan
+        ↓
+Policy check (OPA / Conftest / Checkov)
         ↓
 Human approves the plan
         ↓
@@ -32,6 +36,8 @@ Same module → dev → test → prod
 
 The JD words differ (platform engineering, cloud automation, IaC engine). The loop above is what they all mean.
 
+The policy check is a test on the plan. The same review that catches a bad variable also catches a public bucket. OPA, Conftest, and Checkov are Look-up names. Pick the one the JD uses and keep the gate in the pipeline. Day-36 already draws this evaluation step. The Day-25 and Day-36 labs run Checkov.
+
 | Concept | Azure | AWS |
 |:--|:--|:--|
 | Native IaC | Bicep | CloudFormation |
@@ -39,9 +45,29 @@ The JD words differ (platform engineering, cloud automation, IaC engine). The lo
 | Pipeline service | Azure DevOps Pipelines | CodePipeline / GitHub Actions |
 | State backend | Azure Storage + lock | S3 + DynamoDB lock |
 
+## Serverless on Azure still needs IaC
+
+```text
+Bicep describes Function / Logic App
+        ↓
+Pipeline: what-if → approve → deploy
+        ↓
+Managed identity calls Key Vault / Storage / APIs
+        ↓
+Application Insights + Azure Monitor show failures and latency
+```
+
+Functions and Logic Apps are event-driven compute. Azure runs the servers. You still describe the resources in Bicep (or Terraform). You ship them through the same plan-review-approve-apply loop. You watch them with native Azure tools. Application Insights traces requests. Azure Monitor holds metrics, logs, and alerts.
+
+A managed identity is the identity Azure assigns to the Function or Logic App. The app then calls Key Vault or Storage without a password in config. Day-23 teaches Functions as event-driven compute, not a small always-on app. Day-08 and Day-09 teach Bicep. Day-18 teaches managed identity. Day-20 teaches Application Insights and Azure Monitor. Logic Apps is not a Day lesson. Treat it as a workflow that runs when an event arrives. Deploy it as Azure resources, with the same IaC, identity, and monitoring rules.
+
+> **Remember:** Serverless does not mean no operations. You still deploy with Bicep, watch with Azure Monitor, and use a managed identity.
+
+**Look-up:** Logic Apps connectors, Function hosting plans, and Application Insights sampling. Do not invent a Logic Apps lab.
+
 ## Remember
 
-> **Employers are not buying Terraform syntax. They are buying a safe change process: plan, review, approve, apply, repeat in every environment.**
+> **Employers are not buying Terraform syntax. They are buying a safe change process: plan, policy check, review, approve, apply, repeat in every environment.**
 
 ## Study these days first
 
@@ -52,6 +78,10 @@ The JD words differ (platform engineering, cloud automation, IaC engine). The lo
 5. [Day-22/01-concepts.md](../../Day-22/01-concepts.md) - the Azure platform picture
 6. [Day-25/01-concepts.md](../../Day-25/01-concepts.md) - putting it together
 7. [Day-37/01-concepts.md](../../Day-37/01-concepts.md) - incremental migration with a rollback boundary (Parts 26 and 36)
+8. [Day-23/01-concepts.md](../../Day-23/01-concepts.md) - Functions as event-driven compute
+9. [Day-18/01-concepts.md](../../Day-18/01-concepts.md) - managed identity
+10. [Day-20/01-concepts.md](../../Day-20/01-concepts.md) - Application Insights and Azure Monitor
+8. [Day-36/01-concepts.md](../../Day-36/01-concepts.md) - policy evaluation before plan (Checkov is in the Day-25 and Day-36 labs)
 
 Interview-ready deep dives: [Day-08 v2](../../Day-08-IaC-Terraform-Bicep-Interview-Ready-Clean-v2.md), [Day-09 v2](../../Day-09-IaC-Modules-Environments-Interview-Ready-Clean-v2.md), [Day-10 v2](../../Day-10-Terraform-State-Enterprise-Interview-Ready-Clean-v2.md).
 
@@ -61,15 +91,25 @@ Interview-ready deep dives: [Day-08 v2](../../Day-08-IaC-Terraform-Bicep-Intervi
 
 Outline:
 1. One module, separate state and variable files per environment.
-2. Pipeline runs plan, a human reviews the diff, then apply.
+2. Pipeline runs plan, a policy check (OPA, Conftest, or Checkov) fails unsafe defaults, a human reviews the diff, then apply.
 3. Prod gets extra gates: approvals, locked state, no manual portal changes.
 4. Drift is detected by re-running plan, not by guessing.
+
+**Q: How do you operate an Azure Function in production?**
+
+Outline:
+1. Describe it in Bicep. Pipeline runs what-if, a human approves, then deploy.
+2. Attach a managed identity. Grant it the narrow Azure RBAC it needs. No secrets in app settings if Key Vault can hold them.
+3. Send traces to Application Insights. Alert from Azure Monitor on failures and latency users feel.
+4. Honest: Logic Apps is the same IaC and identity story. Say if you have not built a Logic App. Do not invent connectors.
 
 ## Honest gap note
 
 JDs sometimes name OpenTofu or Ansible. If you use Terraform daily, say so, and say you are happy to work in OpenTofu-compatible workflows (the language is the same). Do not claim daily Ansible depth you do not have; explain configuration as code concepts instead.
 
+Logic Apps has no Day lesson. Transfer Functions, Bicep, managed identity, and Azure Monitor. Name the gap if the interviewer asks for Logic Apps depth.
+
 ## Source tags
 
-EPAM Azure Lead (TR, KZ) · EPAM Senior Azure DevOps · EPAM Senior Azure DevOps (KZ, migration) · EPAM Senior Azure Engineer (KZ) · EPAM Lead Azure Cloud
-EPAM Azure Lead (TR, KZ) · EPAM Senior Azure DevOps · EPAM Lead Azure Cloud · EPAM Senior Azure Cloud (KZ) · EPAM Lead DevOps (KZ)
+EPAM Azure Lead (TR, KZ) · EPAM Senior Azure DevOps · EPAM Senior Azure DevOps (KZ, migration) · EPAM Senior Azure Engineer (KZ) · EPAM Lead Azure Cloud · EPAM Senior Azure Cloud (KZ) · EPAM Lead DevOps (KZ) · 2026-10-28 market (Functions / Logic Apps with Bicep, App Insights, managed identity)
+EPAM Azure Lead (TR, KZ) · EPAM Senior Azure DevOps · EPAM Senior Azure DevOps (KZ, migration) · EPAM Senior Azure Engineer (KZ) · EPAM Lead Azure Cloud · EPAM Senior Azure Cloud (KZ) · EPAM Lead DevOps (KZ) · 2026-10-27 market (policy-as-code on IaC)
