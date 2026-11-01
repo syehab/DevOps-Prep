@@ -8,7 +8,7 @@ This Day uses three files. Read them in this order.
 
 **Goal:** Learn the three telemetry signals (metrics, logs, traces), define what "healthy" means with numbers (SLIs and SLOs), and run a production incident calmly: mitigate first, explain later.
 
-> **JD note:** This is the core lesson behind every SRE-titled JD. See the [SRE pattern card](jd-insights/patterns/sre-slos-observability.md).
+> **JD note:** This is the core lesson behind every SRE-titled JD. See the [SRE pattern card](../jd-insights/patterns/sre-slos-observability.md).
 
 ## Part 1 — Why Observability Exists
 
@@ -258,9 +258,14 @@ Azure ↔ AWS mapping:
 Azure Monitor / Application Insights  ↔ CloudWatch / X-Ray
 Log Analytics                         ↔ CloudWatch Logs
 Managed Prometheus / Grafana          ↔ Managed Prometheus / Grafana
+Datadog (SaaS APM)                    ↔ Datadog (same product)
 ```
 
-The exact service combination depends on the workload.
+The exact service combination depends on the workload. JDs now name Datadog next to Azure Monitor, not instead of it. Instrument the app once with OpenTelemetry. Export traces, metrics, and logs to the backend the org already runs. You may export to both during a migration. Do not run an Azure agent and a Datadog agent that scrape the same counter.
+
+On AKS you often run an OpenTelemetry Collector. On Azure Container Apps the platform holds environment logs and metrics, and your app still emits OpenTelemetry. You do not scrape kube-state metrics there, because you do not operate the Kubernetes API.
+
+> **Remember:** OpenTelemetry is the language. Azure Monitor and Datadog are two listeners. Speak once.
 
 Treat dashboards and alert rules as code, not as clicks in a GUI. Write them in Terraform (the provider talks to Grafana, Azure Monitor, or CloudWatch) or in Crossplane, then review the change in a pull request the same way you review a security group. A panel built only in the GUI creates drift: nobody can see who changed the alert, and you cannot roll it back with Git.
 
@@ -273,6 +278,8 @@ If many subscriptions or accounts emit telemetry, bring it into one view (a cent
 ## Part 8 — Alerting: Detecting Problems Without Creating Noise
 
 An alert should represent a condition that requires human or automated action. If an alert fires constantly for conditions that do not require action, engineers begin ignoring alerts. This is alert fatigue, and it reduces the value of the monitoring system.
+
+The practice has a name in JDs: alert-noise reduction. Keep pages that need a human. Move the rest to dashboards, or delete them. On-call only works when the pager is rare enough that people still trust it.
 
 A useful alert answers:
 
@@ -419,7 +426,9 @@ Avoid writing:
 Root cause: Developer made a mistake.
 ```
 
-That explains who made the change, not why the system permitted a single mistake to cause the incident.
+That explains who made the change, not why the system permitted a single mistake to cause the incident. Interviewers call this a blameless RCA. You still name the technical cause. You do not stop at a person. You change the control that allowed one mistake to reach users.
+
+> **Remember:** Write a blameless RCA. Fix the system that allowed the mistake.
 
 Senior thinking asks:
 
