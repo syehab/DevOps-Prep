@@ -264,6 +264,12 @@ Traffic split / controlled transition
 
 This can support progressive deployment approaches without requiring your team to manage Kubernetes directly.
 
+Observability follows the same split. Azure Container Apps already records environment logs, revision metrics, and platform diagnostics. Your application still emits traces, metrics, and logs, usually through OpenTelemetry, into Azure Monitor or a second backend such as Datadog. You do not scrape kube-state metrics here, because you do not operate the Kubernetes API.
+
+On AKS you own the Collector, the dashboards, and kube-state. On Container Apps you own the app signals and you read the platform signals Azure already stores. Day 20 is the observability lesson. This Day only names where those signals live for Container Apps.
+
+> **Remember:** Same three signals as AKS. The platform holds environment telemetry. Your app still emits OpenTelemetry.
+
 ---
 
 ## Part 7 — Azure Container Apps Scaling and the “Always Running” Question
@@ -856,7 +862,7 @@ kubectl describe pod <pod>
 
 For App Service, inspect application and platform logs using the Azure monitoring/logging facilities configured for the app.
 
-For Container Apps, inspect revision and application logs.
+For Container Apps, inspect revision logs, application logs, and platform diagnostics. Follow the same OpenTelemetry trace your app emits. Do not start with `kubectl`.
 
 The lesson is:
 

@@ -448,7 +448,7 @@ When should you consider Container Apps?
 
 When you want containerized workloads on a managed application platform and you do not need the Kubernetes API.
 
-Revisions, ingress, and scale rules are the control surface.
+Revisions, ingress, and scale rules are the control surface. Telemetry is the same three signals as AKS. The platform holds environment logs and metrics. Your app still emits OpenTelemetry. You do not scrape kube-state.
 
 </details>
 
