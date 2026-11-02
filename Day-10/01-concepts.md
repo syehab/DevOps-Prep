@@ -64,6 +64,29 @@ State locking prevents multiple Terraform operations from modifying the same sta
 
 **Remember:** Remote State enables collaboration; State Locking protects concurrent operations.
 
+A backend stores state and, when it supports it, a lock. Azure Storage and S3 plus a lock are the usual plain backends in this course.
+
+Terraform Cloud (also called HCP Terraform) is a hosted run service. A workspace is one state boundary, like one backend key. It also runs `plan` and `apply`, can start a downstream workspace after a successful apply (a run trigger), and can fail a plan that breaks a policy. A plain backend does not run those steps. Your Azure DevOps pipeline still does.
+
+```text
+Plain backend:     state + lock     (you run plan / apply)
+Terraform Cloud:   state + lock + runs + triggers + policy
+```
+
+Worked example: ShopSphere Dev and Prod each need state. With a plain backend you create two state keys and two pipeline stages. With Terraform Cloud you create two workspaces. Prod can wait on a run trigger from a successful Dev apply, then a policy check, then a human approval. Day 6 already has that approval on an Environment. Day 19 already treats the on-prem agent as a security boundary when the job must see a private network.
+
+Pick Terraform Cloud when you want the run and the policy in the same product. Pick a plain backend when your pipeline already owns those steps. Do not run both against the same state.
+
+> **Remember:** The backend is where state lives. Terraform Cloud is a backend plus a run service. The agent is where the job runs.
+
+**Look-up:** workspace run triggers and policy-check names. Do not invent a Terraform Cloud lab.
+
+**Exit check:** Answer from memory.
+
+1. What does a plain remote backend store?
+2. What extra three jobs can a Terraform Cloud workspace do?
+3. Should Terraform Cloud and your pipeline both apply the same state?
+
 ---
 
 ## Part 3 — Enterprise State Design
