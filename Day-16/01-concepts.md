@@ -555,6 +555,38 @@ The exact capabilities vary by implementation, but this separation gives you the
 
 ---
 
+## Part 9a — Many clusters, one Git
+
+App-of-apps works when you have a few Applications. The lab already applies a root that points at Dev and Prod. When you have many clusters, copying one Application YAML per cluster becomes the new drift.
+
+Hold this picture first:
+
+```text
+Git (one desired state)
+        ↓
+ApplicationSet generator     or     Fleet cluster group
+        ↓
+cluster-a   cluster-b   cluster-c
+```
+
+Argo CD ApplicationSets create Applications from a generator. A list generator names clusters. A cluster generator reads clusters the controller already knows. A git generator reads folders. A matrix generator combines two of those. You write the template once. The generator expands it.
+
+Rancher Fleet does the same job with different names. You point a GitRepo at a cluster group. Fleet ships that bundle to every cluster in the group. Product fields are Look-up. The idea is one: Git is the source. A generator or group expands it. Each cluster reconciles its copy.
+
+Worked example: you have 12 identical shop clusters. You do not commit 12 Application files. You commit one ApplicationSet (or one Fleet GitRepo) whose generator lists the 12 clusters. Promotion is still Day 33. You change which cluster or group gets the same image digest. You do not rebuild.
+
+> **Remember:** ApplicationSets and Fleet expand one Git source onto many clusters. They do not replace Helm. They do not replace promotion of the same artifact.
+
+**Look-up:** generator YAML and Fleet GitRepo fields. Do not invent a 50-cluster lab.
+
+**Exit check:** Answer from memory.
+
+1. What problem does a generator solve that app-of-apps starts to feel?
+2. What stays the same when you promote to cluster-c?
+3. Do ApplicationSets replace Helm?
+
+---
+
 ## Part 10 — Senior/Lead Troubleshooting Drill
 
 1. Helm and GitOps add deployment layers, so troubleshooting must account for them. If a Helm deployment fails, first check that the chart rendered correctly and that Kubernetes accepted the resources. Then check that the Pods started, that Services have endpoints, and that the application is healthy. If GitOps is involved, add another question: **Did the controller actually observe and reconcile the desired state?** This extends the troubleshooting approach from Day 15 rather than replacing it.

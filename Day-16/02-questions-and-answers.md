@@ -744,3 +744,20 @@ A paved road, also called a golden path, is a ready path for a new service. It i
 It offers the two loops as a product. The CI loop builds code into an image. The CD loop applies Git state to the cluster. The platform team owns the path. Application teams consume it.
 
 </details>
+
+---
+
+## 40. Recall — ApplicationSets versus Fleet for many clusters
+
+How do Argo CD ApplicationSets and Rancher Fleet ship one Git source to many clusters, and what stays the same when you promote?
+
+<details>
+<summary>Answer</summary>
+
+App-of-apps works for a few Applications. Many clusters make copied Application YAML the new drift.
+
+An ApplicationSet uses a generator (list, cluster, git, or matrix) to create one Application per cluster. Fleet points a GitRepo at a cluster group and ships that bundle. Git is the source. The generator or group expands it.
+
+Promotion is still the same image digest. You change which cluster or group gets that revision. You do not rebuild. ApplicationSets do not replace Helm.
+
+</details>
