@@ -286,6 +286,35 @@ ECR
 EKS
 ```
 
+The path above assumes the cluster can pull from ACR or ECR. Some customers cannot. Their site is self-hosted, sovereign, or air-gapped: no pull from the public internet.
+
+Hold this picture first:
+
+```text
+Same repo
+   ├── Cloud:  CI → scan → trusted registry → GitOps
+   └── Site:   mirror those images → private registry
+               Helm chart or OCI bundle
+               Docker Compose (small) or Kubernetes (large)
+               upgrade offline; version may lag
+```
+
+Keep one codebase. Change the install path, not the application. Mirror only images you already scanned and tagged by digest (Part 6). Ship the Helm chart, or an OCI bundle of that chart, with those digests. An upgrade is a new bundle on media or a private path. The site never reaches Docker Hub.
+
+Version skew is expected. The customer site often runs last quarter's chart while cloud moved on. Support both until the site upgrades. Do not require the site to reach your CI.
+
+Worked example: ShopSphere 1.4.2 is in ACR. A bank site cannot pull ACR. You copy `shopsphere@sha256:…` and the chart into their registry. They install with Docker Compose on a single host, or with Helm if they run Kubernetes. Next quarter you send 1.5.0 the same way. You do not tell them to `docker pull` from the internet.
+
+> **Remember:** One codebase. Mirror what you already shipped. Offline means the site never pulls from the public internet.
+
+**Look-up:** Helm OCI charts and air-gap bundle layout. Do not invent a sovereign-cloud product.
+
+**Exit check:** Answer from memory.
+
+1. What do you copy to the site registry, a moving tag or a digest?
+2. Why is version skew normal?
+3. Does the site pipeline need to reach your CI?
+
 ---
 
 ## Part 8 — Pipeline Identity and Federated Authentication

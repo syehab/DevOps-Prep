@@ -642,3 +642,20 @@ Trace Source → Identity → Permission → Dependency → Build → Scan → A
 Never solve a security failure by broadly granting permissions until the pipeline works.
 
 </details>
+
+---
+
+## 27. Recall — One codebase to an air-gapped site
+
+How do you ship the same ShopSphere image to a customer site that cannot pull from the public internet?
+
+<details>
+<summary>Answer</summary>
+
+Keep one codebase. Cloud still scans and pushes to the trusted registry by digest.
+
+Mirror those same digests, plus the Helm chart or an OCI bundle, into the site's private registry. The site installs with Docker Compose or Kubernetes. An upgrade is a new bundle on a private path. The site never reaches Docker Hub or your CI.
+
+Version skew is normal. Support the older site chart until it upgrades. Do not copy a moving tag and call it a release.
+
+</details>
