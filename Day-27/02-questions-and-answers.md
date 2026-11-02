@@ -912,6 +912,23 @@ A dual-write (the app writes RDS and Kafka) drifts when one write fails. The log
 
 ---
 
+## 41c. RDS to an operator-run database: what is not a Deployment
+
+A JD asks you to move ShopSphere off RDS onto a PostgreSQL operator on EKS. Why is a Deployment the wrong object, and what is the cutover plan?
+
+<details>
+<summary>Answer</summary>
+
+A Deployment replaces Pods and throws the filesystem away. A production database needs a durable volume, a replica, backups, and point-in-time recovery (PITR). An operator reconciles those from a Custom Resource.
+
+Replicate from RDS until lag is safe. Prove a restore on a copy first. Cut writes in a window. Point the app at the new endpoint. Keep RDS until rollback is retired.
+
+An untested backup is a hope. Day 39 measures RTO and RPO. Do not invent the operator's install flags.
+
+</details>
+
+---
+
 ## 42. How deployment differs across EC2, ECS, EKS, and Lambda
 
 How does deployment differ across EC2, ECS, EKS and Lambda?
