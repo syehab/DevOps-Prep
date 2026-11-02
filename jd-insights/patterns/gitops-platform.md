@@ -16,6 +16,8 @@ Platform and Lead roles want Git to be the source of truth for deployments (GitO
 - Promotion flow: the same artifact moves dev → test → prod via Git changes
 - Policy-as-code on the IaC: OPA, Conftest, or Checkov fail the plan when a resource breaks a rule (public bucket, missing tag, open SSH). Look-up the tool the JD names
 - Treat the platform as a product: backlog, paved-road SLOs, and DORA numbers. Teams consume the path. They do not file a ticket for each step
+- Multi-cluster GitOps: one Git source, many clusters. Argo CD ApplicationSets use generators (list, cluster, git, matrix) to create one Application per cluster. Rancher Fleet ships a GitRepo bundle to cluster groups. Promotion still moves the same artifact. The generator or group is what changes
+- One codebase to cloud and to a customer site (self-hosted, sovereign, or air-gapped): Docker Compose for small sites, Kubernetes plus Helm or an OCI bundle for larger ones. Mirror images into a private registry. Upgrade offline. Expect the customer version to lag the cloud version
 
 ## Mental model
 
@@ -55,6 +57,45 @@ Catalog entry (one service)
 
 The portal does not replace GitOps. It points at the paved road so a team can find it.
 
+## Many clusters, one Git
+
+```text
+Git (desired state)
+        ↓
+ApplicationSet generator     or     Fleet cluster group
+        ↓
+cluster-a  cluster-b  cluster-c
+```
+
+App-of-apps (Day-16) is one root Application that points at more Applications. That works for a few clusters. When the cluster count grows, you do not copy YAML for each one.
+
+Argo CD ApplicationSets create those Applications from a generator. A list generator names clusters. A cluster generator reads registered clusters. A git generator reads folders. A matrix generator combines two of those. Rancher Fleet takes a GitRepo and a cluster group and ships the same bundle. Product knobs are Look-up. The idea is one: Git is the source, a generator or group expands it, each cluster reconciles its copy.
+
+Promotion is still Day-33: the same image digest. You change which cluster or group gets that revision. You do not rebuild.
+
+> **Remember:** ApplicationSets and Fleet expand one Git source onto many clusters. They do not replace Helm, and they do not replace promotion of the same artifact.
+
+**Look-up:** ApplicationSet generator YAML and Fleet GitRepo fields. Do not invent a 50-cluster lab.
+
+## One codebase, two install sites
+
+```text
+Same repo
+   ├── Cloud:  pipeline → registry → GitOps
+   └── Site:   mirror images → private registry
+               Helm chart or OCI bundle
+               Docker Compose (small) or Kubernetes (large)
+               offline upgrade, version may lag
+```
+
+Some products ship to the team's cloud and to a customer network that cannot pull from the public internet. Keep one codebase. Change the install path, not the application. Mirror the approved images and the chart (or an OCI bundle) into the site registry. An upgrade is a new bundle on media or a private path, not a live pull from Docker Hub.
+
+Version skew is normal. The customer site often runs an older chart while cloud moved on. Support both until the site upgrades. Do not require the site to reach your CI.
+
+> **Remember:** One codebase. Mirror what you already shipped. Offline means the site never pulls from the public internet.
+
+**Look-up:** Helm OCI charts and air-gap bundle layout. Do not invent a sovereign-cloud product.
+
 ## How a platform proves it works (DORA metrics)
 
 Platform JDs now ask you to measure the paved road, not just build it. The four DORA metrics:
@@ -75,7 +116,7 @@ A good paved road pushes the first two up and the last two down. [Day-34/01-conc
 1. [Day-16/01-concepts.md](../../Day-16/01-concepts.md) - Helm and GitOps core
 2. [Day-05/01-concepts.md](../../Day-05/01-concepts.md) - branches and environments
 3. [Day-33/01-concepts.md](../../Day-33/01-concepts.md) - artifact promotion
-4. [Day-19/01-concepts.md](../../Day-19/01-concepts.md) - securing the chain
+4. [Day-19/01-concepts.md](../../Day-19/01-concepts.md) - securing the chain, registry, and the air-gap mirror
 5. [Day-36/01-concepts.md](../../Day-36/01-concepts.md) - policy evaluation before plan (Part 14)
 
 ## Common interview question
@@ -89,10 +130,24 @@ Outline:
 4. Access: CI needs no cluster credentials; the controller pulls.
 5. Trade-off to admit: more moving parts, and secrets need their own path.
 
+**Q: How do you GitOps 30 clusters without copying an Application for each one?**
+
+Outline:
+1. One Git source. An ApplicationSet generator (or a Fleet cluster group) creates the per-cluster Application.
+2. Promote the same digest. Change which cluster or group gets that revision.
+3. Honest: name app-of-apps if that is what you have run. Transfer the expand-from-Git idea. Do not invent generator YAML.
+
+**Q: How do you ship the same product to cloud and to an air-gapped customer site?**
+
+Outline:
+1. One codebase. Cloud uses the normal registry and GitOps path.
+2. Site: mirror images and the Helm or OCI bundle into a private registry. Upgrade offline.
+3. Expect version skew. Support the older site chart until it upgrades.
+
 ## Honest gap note
 
 Backstage appears in EPAM platform JDs, and newer ones also name Crossplane, Pulumi, Humanitec, and OpsLevel. If you have not run these, do not claim plugins or ownership. Explain the ideas (Crossplane provisions cloud resources from inside the cluster, Pulumi is IaC in a real programming language, Humanitec and OpsLevel are IDP products like Backstage) and show your GitOps and Helm experience, which is the engine under any IDP.
 
 ## Source tags
 
-EPAM Lead Platform / Unified Automation (Backstage) · EPAM Lead Cloud (IDP) · EPAM Senior DevOps Azure · RedCloud Platform · EPAM Senior/Lead Platform Engineer · Turkey banking platform (Terraform account vending) · 2026-10-13 market (catalog links dashboards, Argo CD, owners, IaC docs) · 2026-10-27 market (policy-as-code, platform as product)
+EPAM Lead Platform / Unified Automation (Backstage) · EPAM Lead Cloud (IDP) · EPAM Senior DevOps Azure · RedCloud Platform · EPAM Senior/Lead Platform Engineer · Turkey banking platform (Terraform account vending) · 2026-10-13 market (catalog links dashboards, Argo CD, owners, IaC docs) · 2026-10-27 market (policy-as-code, platform as product) · 2026-11-02 market (ApplicationSets vs Fleet, air-gapped / sovereign shipping)

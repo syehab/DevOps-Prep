@@ -15,6 +15,8 @@ Lead cloud roles expect you to design the structure around workloads: how subscr
 - Interview style: design questions, not commands ("how would you structure...")
 - Per-team or per-customer environment factory: one Terraform module stamps compute, data stores, IAM, and VPC. The pipeline applies it. Nobody clicks the console. IAM is least-privilege for that stack. A check after apply proves the pieces exist
 - Azure Landing Zones in Bicep: management groups, Azure Policy, and RBAC as the design authority. Test the templates before deploy. Pester runs unit-style tests. PSRule checks the template against Azure Policy-shaped rules. Look-up the cmdlets. The idea is the same as `terraform test` plus a policy scan
+- Data residency: keep regulated data in the region the contract names. Policy blocks other regions. A resource group does not keep data in one country
+- Audit evidence for ISO 27001 / SOC 2 style reviews: encryption at rest and in transit, a privileged-access review, change records (Git and pipeline), and logs you can show as evidence. The auditor asks "show me", not "we encrypt"
 
 ## Mental model
 
@@ -60,6 +62,28 @@ Azure shops often ship that landing zone as Bicep modules (CAF / Azure Landing Z
 
 > **Remember:** Management groups plus Policy plus RBAC are the authority. Pester and PSRule are how a Bicep landing zone proves it before apply.
 
+## Data stays in region, evidence stays findable
+
+```text
+Policy: allowed regions only
+        ↓
+Data stores live in those regions (not "the resource group is in EU")
+        ↓
+Evidence folder the auditor can open
+  ├── encryption at rest / in transit
+  ├── privileged access review (who still has admin)
+  ├── change records (PR, plan, approve, apply)
+  └── logs (who did what, retained)
+```
+
+A region is a physical place. Data residency means the bytes stay there. Azure Policy or an SCP should fail a store in the wrong region. Day-11 already says a resource group is not a region. This card adds the audit ask: you can show the control and the last review.
+
+ISO 27001 and SOC 2 are evidence frameworks. They do not install a product. Encryption, access reviews, change tickets, and logs are the same four piles most reviews request. Day-18 covers identity. Day-10 and Day-25 cover the change record. Day-20 covers logs.
+
+> **Remember:** Residency is where the bytes live. Evidence is what you can show. "We encrypt" is not evidence.
+
+**Look-up:** the control IDs a given auditor names. Do not invent an ISO lab.
+
 ## Remember
 
 > **A landing zone is a paved parking lot. Workloads park in their own numbered spot; lights, gates, and cameras are already there.**
@@ -87,10 +111,17 @@ Outline:
 5. Name hub-and-spoke for a small estate, Virtual WAN when the mesh would be too many to operate. FinOps levers (tags, budgets, SKU limits) sit on the same policy tree.
 6. Mention the trade-off: more subscriptions means more structure to manage, so automate it.
 
+**Q: An auditor asks how you keep customer data in one region and how you prove it.**
+
+Outline:
+1. Policy allows only that region. The store is created there. A resource group name is not residency.
+2. Evidence: encryption at rest and in transit, last privileged-access review, Git and pipeline change records, retained logs.
+3. ISO 27001 / SOC 2 ask for that evidence. They do not install a product. Day-11 is the region lesson.
+
 ## Honest gap note
 
 Few people have built a full landing zone alone. It is honest to say you worked inside one and extended it, then show you understand the design by walking the diagram above. Design reasoning is what the interview grades.
 
 ## Source tags
 
-EPAM Lead Azure Cloud · EPAM Lead Platform · EPAM Senior Azure DevOps (migration) · EPAM Senior Azure Cloud (KZ) · Turkey / Central Asia Platform (per-tenant environment factory) · Turkey banking platform (account vending) · 2026-10-23 market (Azure design authority) · 2026-10-29 market (Bicep landing zones, Pester, PSRule, Policy, RBAC, management groups)
+EPAM Lead Azure Cloud · EPAM Lead Platform · EPAM Senior Azure DevOps (migration) · EPAM Senior Azure Cloud (KZ) · Turkey / Central Asia Platform (per-tenant environment factory) · Turkey banking platform (account vending) · 2026-10-23 market (Azure design authority) · 2026-10-29 market (Bicep landing zones, Pester, PSRule, Policy, RBAC, management groups) · 2026-11-02 market (data residency, ISO 27001 / SOC 2 evidence)

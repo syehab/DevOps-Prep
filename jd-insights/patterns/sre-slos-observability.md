@@ -20,15 +20,7 @@ SRE titles (and most Lead roles) want you to define what "healthy" means with nu
 - System health and business health: latency, errors, and saturation say whether the service works. Orders, sign-ups, and payments per minute say whether users get value. Both need dashboards and alerts, and they have different owners
 - OpenTelemetry for traces, metrics, and logs on AKS and Azure Container Apps. Instrument once. Export to Azure Monitor, Datadog, or both. Do not double-instrument the same signal
 - Alert-noise reduction as a practice: pages that need a human stay, the rest go to dashboards or get deleted. On-call is a named primary, a handoff, and a page you can run at 3 AM. Write a blameless RCA (fix the system that allowed the mistake)
-- SLIs, SLOs, and alerts that page on user pain, not CPU
-- Dashboards: metrics, logs, traces in one story. Observability as code in Git. Bounded labels only
-- Incident response: detect, mitigate, communicate, RCA. Then actions with owners, tracked to done
-- Error-budget policy: the written next step when the budget is gone (pause risky releases)
-- ORR before launch: SEE, ACT, SURVIVE. Postmortem findings become new checklist items
-- Safe releases (Day-34), including more than one production region and follow-the-sun on-call
-- Synthetic checks and runbooks. AI services get the same SLOs, plus model quality and token cost
-- Edge baseline: CDN or WAF in front, origin only through the CDN, Zero Trust by identity
-- System health and business health both need dashboards and owners
+- Three different jobs around AKS: Microsoft Sentinel is a SIEM (security detections on logs). Dynatrace (or any APM) watches user experience. Istio is a service mesh (mTLS between Pods, traffic shifting for a canary). Do not treat them as one product
 
 ## Mental model
 
@@ -119,6 +111,22 @@ A page that does not need a human is noise. Cut it. On-call is a named primary a
 
 **Look-up:** Collector exporters and Container Apps diagnostics. Do not invent a Datadog lab.
 
+## SIEM, APM, and mesh are three jobs
+
+```text
+Istio (mesh)         → mTLS between Pods, shift a slice of traffic
+Dynatrace / APM      → is the user slow or failing?
+Sentinel (SIEM)      → did someone do something they should not?
+```
+
+JDs around AKS now name these three in one sentence. They do not replace each other. The mesh encrypts east-west traffic and can send 5 percent of requests to a canary (Day-34 already teaches the canary, Istio is one way to shift). The APM (Dynatrace, Datadog, Application Insights) answers whether users feel pain. The SIEM (Microsoft Sentinel) reads security logs and raises detections. Instrument the app once. Send traces to the APM. Send security events to the SIEM. Do not install three agents that scrape the same counter.
+
+> **Remember:** Mesh moves and encrypts traffic. APM watches users. SIEM watches abuse. Name the job, then the product.
+
+**Look-up:** Sentinel analytics rules, Dynatrace OneAgent, Istio VirtualService. Do not invent a mesh lab.
+
+**Exit check:** A canary is failing and a privileged role was just granted. Which tool pages the SRE, and which tool pages security?
+
 ## Remember
 
 > **Alert on symptoms users feel (errors, latency), not on causes (CPU). Causes are for dashboards, symptoms are for pages.**
@@ -154,5 +162,4 @@ Sezzle-style JDs name Prometheus or Datadog daily use, sometimes Golang. If your
 
 ## Source tags
 
-Sezzle SRE · EPAM Senior SRE · EPAM Senior SRE (Grafana + EKS) · Fundraise Up DevOps · EPAM Senior AI DevOps/SRE · Turkey / Central Asia Senior SRE (edge, CDN, Zero Trust) · 2026-10-13 market (observability as code, token cost) · 2026-10-23 market (ORR, error budget policy) · 2026-10-26 market (cardinality, health vs business) · 2026-10-29 market (OpenTelemetry on AKS/ACA, Datadog + Azure Monitor, alert noise, blameless RCA)
-Sezzle SRE · EPAM Senior SRE · EPAM Senior SRE (Grafana + EKS) · Fundraise Up DevOps · EPAM Senior AI DevOps/SRE · Turkey / Central Asia Senior SRE (edge, CDN, Zero Trust) · 2026-10-13 market (observability as code, token cost) · 2026-10-23 market (ORR, error budget policy) · 2026-10-26 market (cardinality, health vs business) · 2026-10-27 market (incident-to-done, follow-the-sun, origin lock)
+Sezzle SRE · EPAM Senior SRE · EPAM Senior SRE (Grafana + EKS) · Fundraise Up DevOps · EPAM Senior AI DevOps/SRE · Turkey / Central Asia Senior SRE (edge, CDN, Zero Trust) · 2026-10-13 market (observability as code, token cost) · 2026-10-23 market (ORR, error budget policy) · 2026-10-26 market (cardinality, health vs business) · 2026-10-27 market (incident-to-done, follow-the-sun, origin lock) · 2026-10-29 market (OpenTelemetry on AKS/ACA, Datadog + Azure Monitor, alert noise, blameless RCA) · 2026-11-02 market (Sentinel SIEM vs Dynatrace APM vs Istio mesh)

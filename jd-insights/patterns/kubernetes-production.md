@@ -12,8 +12,9 @@ Nearly every Senior or Lead DevOps JD expects you to run Kubernetes day 2: deplo
 - Upgrades, scaling, and node lifecycle
 - Securing workloads: identities, secrets, network policies. Containers do not run as root (`USER` in the image, `runAsNonRoot` on the pod)
 - AKS day 2 extras: add-ons (ingress, cert-manager, external-dns, monitoring, policy) and onboarding new namespaces or tenants
-- Node autoscaling: Cluster Autoscaler scales the node groups you already defined. Karpenter provisions the right node just in time and does not need a pre-sized group for every shape. Product knobs are Look-up. Know the difference.
+- Node autoscaling: Cluster Autoscaler scales the node groups you already defined. Karpenter provisions the right node just in time, can mix On-Demand and Spot, and later consolidates idle or half-empty nodes. Choose Cluster Autoscaler when groups are already stable. Choose Karpenter when Pods need many shapes or you want faster scale and less waste. Neither replaces HPA. Product knobs stay Look-up.
 - Hosted SaaS instances: a Kubernetes operator watches a Custom Resource (CRD) per customer instance, then creates, upgrades, and deletes that stack. Zero-downtime upgrades still use rolling updates, probes, and PodDisruptionBudgets
+- Stateful databases on the cluster: an operator (not a Deployment) runs the engine, replication, backups, and point-in-time recovery (PITR). A managed database (RDS) to an operator-run database is a data migration: replicate, cut over, keep a rollback, and prove a restore. An ephemeral container is still not a production database
 - Bare-metal and self-managed basics: CRI starts containers, CNI gives each Pod an IP. Know what AKS and EKS hide (control plane, etcd, default networking, control-plane upgrades)
 - GPU and ML hosting: a tainted GPU node pool, the NVIDIA device plugin, and a scheduler that only places Pods that request a GPU. Idle GPUs still cost money
 
@@ -99,15 +100,36 @@ The in-cluster operator is the sibling of the Terraform module-per-tenant factor
 
 **Look-up:** Operator SDK. Crossplane is already on the GitOps card. Do not invent a SaaS operator lab.
 
+## Stateful databases: an operator, not a Deployment
+
+```text
+Managed DB (RDS)
+        ↓  replicate + verify
+Operator CR on EKS (engine, replica, backup, PITR)
+        ↓  cut over writes
+App uses the new endpoint
+        ↓  keep the old DB until rollback is retired
+```
+
+A Deployment replaces Pods and throws the filesystem away. A production database needs a PersistentVolume, a replica, backups you have restored, and a point in time you can return to. An operator watches a Custom Resource for that database and reconciles those pieces. That is the same loop as a Tenant CR, applied to data.
+
+Moving off a managed database is a data migration, not a YAML swap. Replicate until lag is safe. Cut writes in a window. Keep the old endpoint as rollback. Prove PITR on a copy before you trust the new backups. Day-27 places RDS and says an ephemeral container is not a database. Day-39 measures RTO and RPO. This card adds the operator as the in-cluster control plane.
+
+> **Remember:** An operator-run database is still a database. Replicate, cut over, keep a rollback, and prove a restore. A Pod with a disk is not a plan.
+
+**Look-up:** the operator the JD names. Do not invent a CloudNativePG lab.
+
 ## Study these days first
 
 1. [Day-13/01-concepts.md](../../Day-13/01-concepts.md) - containers first
-2. [Day-14/01-concepts.md](../../Day-14/01-concepts.md) - the core model
+2. [Day-14/01-concepts.md](../../Day-14/01-concepts.md) - the core model and operators
 3. [Day-15/01-concepts.md](../../Day-15/01-concepts.md) - debugging the path
 4. [Day-17/01-concepts.md](../../Day-17/01-concepts.md) - managed clusters, GPU pools, taints
-5. [Day-37/01-concepts.md](../../Day-37/01-concepts.md) - a real migration
-6. [Day-34/01-concepts.md](../../Day-34/01-concepts.md) - safe deployments
-7. [Day-19/01-concepts.md](../../Day-19/01-concepts.md) - non-root image, scan, and digest
+5. [Day-27/01-concepts.md](../../Day-27/01-concepts.md) - RDS versus an operator-run database
+6. [Day-37/01-concepts.md](../../Day-37/01-concepts.md) - Karpenter versus Cluster Autoscaler
+7. [Day-34/01-concepts.md](../../Day-34/01-concepts.md) - safe deployments
+8. [Day-39/01-concepts.md](../../Day-39/01-concepts.md) - PITR, restore drills, RTO and RPO
+9. [Day-19/01-concepts.md](../../Day-19/01-concepts.md) - non-root image, scan, and digest
 
 ## Common interview question
 
@@ -128,13 +150,6 @@ Outline:
 3. Wave the upgrade (canary tenants first). Roll back the last good instance spec.
 4. Honest: say if you have not written an operator. Transfer the reconcile loop from Day-14. Do not invent Operator SDK flags.
 
-## Honest gap note
-
-JDs name many add-ons (service mesh, specific CNIs, cluster autoscalers). You do not need daily experience with each. Know the core path and failure drill cold, then say honestly which add-ons you have used and which you would learn on the job. The course does not run a SaaS operator. Transfer Day-14's reconcile loop. Look up Operator SDK when a JD names it.
-
-## Source tags
-
-EPAM Azure Lead · EPAM Senior Azure DevOps · EPAM AWS DevOps · EPAM Lead Cloud (AKS add-ons) · EPAM Senior Azure Cloud (KZ, AKS ops) · Sezzle SRE · Fundraise Up DevOps · 2026-10-13 market (Karpenter vs Cluster Autoscaler) · 2026-10-29 market (operators, CRDs, SaaS instance lifecycle, zero-downtime upgrades)
 **Q: What does AKS hide, and how would you place a GPU training job?**
 
 Outline:
@@ -143,11 +158,26 @@ Outline:
 3. GPU: a tainted pool, NVIDIA device plugin, Pod requests a GPU and tolerates the taint. Idle GPUs still bill.
 4. Honest: say if you have not run the device plugin. Transfer Day-17 scheduling. Do not invent MIG settings.
 
+**Q: When do you pick Karpenter instead of Cluster Autoscaler?**
+
+Outline:
+1. Cluster Autoscaler grows a group you already defined. It will not invent a missing instance type.
+2. Karpenter creates a node that fits the Pending Pod, can use Spot, and consolidates waste later.
+3. Pick Cluster Autoscaler for stable, few shapes. Pick Karpenter for mixed shapes, faster scale, or consolidation.
+4. HPA still adds Pods. These tools add nodes. Day-37 already records that split.
+
+**Q: How would you move a managed PostgreSQL (RDS) onto an operator on EKS?**
+
+Outline:
+1. The operator reconciles a database CR: disk, replica, backup, PITR. That is not a Deployment.
+2. Replicate from the managed database. Watch lag. Cut writes in a window. Point the app at the new endpoint.
+3. Keep the old database until rollback is retired. Prove a restore to a point in time on a copy first.
+4. Honest: say if you have not run that operator. Transfer Day-27 (state outside the container) and Day-39 (restore drills).
+
 ## Honest gap note
 
-JDs name many add-ons (service mesh, specific CNIs, cluster autoscalers). You do not need daily experience with each. Know the core path and failure drill cold, then say honestly which add-ons you have used and which you would learn on the job. The course does not run a bare-metal control plane or the NVIDIA device plugin. Transfer Day-17. Look up the CNI, the plugin, and MIG when a JD names them.
+JDs name many add-ons (service mesh, specific CNIs, cluster autoscalers, database operators). You do not need daily experience with each. Know the core path and failure drill cold, then say honestly which add-ons you have used and which you would learn on the job. The course does not run a SaaS operator, a database operator, a bare-metal control plane, or the NVIDIA device plugin. Transfer Day-14, Day-17, Day-27, and Day-39. Look up the operator, CNI, plugin, and MIG when a JD names them.
 
 ## Source tags
 
-EPAM Azure Lead · EPAM Senior Azure DevOps · EPAM AWS DevOps · EPAM Lead Cloud (AKS add-ons) · EPAM Senior Azure Cloud (KZ, AKS ops) · Sezzle SRE · Fundraise Up DevOps · 2026-10-13 market (Karpenter vs Cluster Autoscaler) · 2026-10-28 market (CRI / CNI, what AKS/EKS hide, GPU hosting)
-EPAM Azure Lead · EPAM Senior Azure DevOps · EPAM AWS DevOps · EPAM Lead Cloud (AKS add-ons) · EPAM Senior Azure Cloud (KZ, AKS ops) · Sezzle SRE · Fundraise Up DevOps · 2026-10-13 market (Karpenter vs Cluster Autoscaler) · 2026-10-27 market (non-root containers)
+EPAM Azure Lead · EPAM Senior Azure DevOps · EPAM AWS DevOps · EPAM Lead Cloud (AKS add-ons) · EPAM Senior Azure Cloud (KZ, AKS ops) · Sezzle SRE · Fundraise Up DevOps · 2026-10-13 market (Karpenter vs Cluster Autoscaler) · 2026-10-27 market (non-root containers) · 2026-10-28 market (CRI / CNI, what AKS/EKS hide, GPU hosting) · 2026-10-29 market (operators, CRDs, SaaS instance lifecycle) · 2026-11-02 market (stateful DB operators, PITR cutover, Karpenter consolidation / Spot)
