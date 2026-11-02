@@ -155,6 +155,27 @@ Evaluate latency to users in India first. Then check data residency rules for th
 
 Also compare cost. Do not pick a region only because it is geographically close. Choose from business and technical requirements.
 
+If the workload has a residency rule, name the region the contract requires and say how policy will fail a store anywhere else. A resource group name is not residency.
+
+</details>
+
+---
+
+## 9a. Data residency and audit evidence
+
+**Practice**
+
+A customer requires data to stay in one region. An auditor asks you to prove encryption, access review, change control, and logging. What do you show, and what does not count?
+
+<details>
+<summary>Answer</summary>
+
+Policy allows only that region. The database, backup, and logs are created there. A resource group name is not residency.
+
+Evidence: encryption at rest and in transit, the last privileged-access review, Git and pipeline change records, and retained logs. ISO 27001 and SOC 2 ask for that evidence. They do not install a tool.
+
+"We encrypt" without a record is not evidence.
+
 </details>
 
 ---

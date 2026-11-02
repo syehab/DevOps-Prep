@@ -96,6 +96,27 @@ No. A resource group is a logical management container, while a region is a phys
 
 A region is a geographic area containing cloud infrastructure operated by the provider. Choosing a region affects latency, data residency, service availability, disaster-recovery design, and sometimes cost. A production architecture should therefore choose regions based on business and technical requirements rather than simply choosing the geographically closest location.
 
+A region is a physical place. Data residency means the bytes stay in the region the contract names. Policy (Azure Policy or an AWS SCP) should fail a store in any other region. A resource group name that says "eu" does not keep data in Europe. The database, the backup, and the log store must actually live there.
+
+Auditors for ISO 27001 or SOC 2 do not install a product. They ask you to show evidence:
+
+```text
+Encryption at rest and in transit
+Privileged-access review (who still has admin, last review date)
+Change records (PR, plan, approve, apply)
+Logs you can still read (who did what)
+```
+
+Worked example: a customer in Germany requires data in Germany. You allow only that region's identifier. You encrypt the store. Each quarter you export who has Owner or AdministratorAccess and you record that you reviewed it. Every production change is a pull request with a plan. Logs go to a central workspace you cannot casually delete. That folder is the evidence. "We encrypt" is not.
+
+> **Remember:** Residency is where the bytes live. Evidence is what you can open. Policy enforces the first. Git, reviews, and logs are the second.
+
+**Exit check:** Answer from memory.
+
+1. Why does a resource group fail as a residency control?
+2. Name the four evidence piles an auditor usually asks for.
+3. Who blocks a store in the wrong region: the application team or policy?
+
 10. What is an Availability Zone?
 
 Availability Zones are physically separate locations within a cloud region. They reduce the impact of a failure in one location. Deploy supported workloads across multiple zones to improve availability: a failure in one zone does not necessarily take down the entire workload. Zones do not replace regional disaster recovery: a region-wide failure requires a multi-region strategy.
