@@ -21,6 +21,7 @@ AWS senior roles ask for the same loop as Azure ones (Terraform plus a managed K
 - Change data capture (CDC): Debezium (or equivalent) reads the database change log and publishes row changes as events on Kafka / Amazon MSK. The application writes to the database once. Downstream services consume events. They do not need a second write from the app (a dual-write that drifts)
 - Some product roles want a Terraform module per tenant, applied only by a pipeline, with a check after apply
 - Hosted SaaS on EKS: each customer instance is a lifecycle (create, upgrade, delete). An in-cluster operator with a CRD is the Kubernetes version of that factory. Zero-downtime upgrades still use rolling updates and PodDisruptionBudgets. See the Kubernetes production card
+- Some JDs now ask you to move a managed database (RDS) onto an operator-run database on EKS. That is a data cutover: replicate, switch writes, keep rollback, and prove PITR. It is not "install Postgres in a Deployment." See the Kubernetes card for the operator loop. Day-27 and Day-39 stay the data and restore lessons
 
 ## Mental model
 
@@ -102,5 +103,4 @@ If your daily cloud is Azure, say that, then prove the mapping: "I run AKS in pr
 
 ## Source tags
 
-EPAM Senior AWS DevOps · Sezzle SRE · EPAM Lead AWS DevOps · Turkey product co Senior Platform (AWS) · Turkey / Central Asia Senior DevOps (MSK, RDS, ElastiCache DR) · Turkey / Central Asia Platform (module per tenant) · 2026-10-13 market (CDC: Debezium to Kafka / MSK) · 2026-10-29 market (SaaS instance lifecycle on EKS, operators / CRDs)
-EPAM Senior AWS DevOps · Sezzle SRE · EPAM Lead AWS DevOps · Turkey product co Senior Platform (AWS) · Turkey / Central Asia Senior DevOps (MSK, RDS, ElastiCache DR) · Turkey / Central Asia Platform (module per tenant) · 2026-10-13 market (CDC: Debezium to Kafka / MSK) · 2026-10-27 market (PostgreSQL SRE, restore drills, Session Manager)
+EPAM Senior AWS DevOps · Sezzle SRE · EPAM Lead AWS DevOps · Turkey product co Senior Platform (AWS) · Turkey / Central Asia Senior DevOps (MSK, RDS, ElastiCache DR) · Turkey / Central Asia Platform (module per tenant) · 2026-10-13 market (CDC: Debezium to Kafka / MSK) · 2026-10-27 market (PostgreSQL SRE, restore drills, Session Manager) · 2026-10-29 market (SaaS instance lifecycle on EKS, operators / CRDs) · 2026-11-02 market (RDS to operator-run DB on EKS, PITR cutover)

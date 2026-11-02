@@ -14,6 +14,7 @@ Newer JDs (Sezzle, EPAM GenAI-flavoured roles) expect you to use AI tools in Dev
 - Comfort experimenting with new AI tooling as it appears
 - Senior roles that build an Enterprise Agent Development Platform now require agent-specific CI/CD: register each version, scan for prompt-injection and PII leakage, then promote the same bundle
 - Building agentic tooling that cuts toil (triage, runbook steps, ticket drafts), not only using a chat assistant. Evals prove the agent stayed in policy. Guardrails are still the pipeline and the human gate
+- Agents that can touch production infrastructure stay read-only by default. Changes go through a pull request and a human approval. Credentials are least-privilege. Every action has an audit trail. Blast radius is capped. Secrets never enter the prompt
 
 ## Mental model
 
@@ -75,6 +76,30 @@ Some JDs now ask you to build the agent that cuts toil (triage, runbook, ticket 
 
 > **Remember:** Building the agent is still shipping software. Evals are the tests. Guardrails are the gates. Chat is not a platform.
 
+## Agents that act on infrastructure
+
+Some JDs now ask for an agent that can read (and later change) production infrastructure, not only draft YAML. The loop stays the same. The blast radius does not.
+
+```text
+Read-only credentials by default
+        ↓
+Agent proposes a change (a PR, not kubectl)
+        ↓
+Human reviews and approves
+        ↓
+Pipeline applies with a least-privilege identity
+        ↓
+Audit trail: who asked, what ran, what changed
+```
+
+Give the agent a read-only role until a human raises the gate. The agent never holds a standing Contributor or `*:*` key. Cap what it may touch (one subscription, one namespace, no delete). Do not paste secrets, state files, or tokens into the prompt. The model vendor must not see production credentials.
+
+This is Day-4's "fast junior" rule plus Day-19's identity rule. The agent is another identity in the pipeline, not a break-glass admin.
+
+> **Remember:** Read first. Change through a PR. A human still approves. No secrets in the prompt.
+
+**Exit check:** The agent wants to resize a production node pool. What does it submit, who applies it, and which credential does the agent itself hold?
+
 ## Platform teams now also run AI traffic (emerging, seen in a few JDs)
 
 A newer ask, so treat it as an early signal, not a core requirement:
@@ -122,6 +147,14 @@ Outline:
 3. Guardrail: the agent suggests, a human or the pipeline still acts in production.
 4. Honest: say if you have used chat assistants only. Transfer the loop. Do not invent a platform.
 
+**Q: An agent will act on production infrastructure. What guardrails do you set first?**
+
+Outline:
+1. Read-only by default. Changes are a pull request, not a live apply.
+2. A human approves. The apply identity is least-privilege and is not the agent's chat credential.
+3. Audit every action. Cap blast radius (scope and no delete).
+4. Never put secrets in the prompt. Say if you have not run this. Transfer Day-4 and Day-19.
+
 ## Honest gap note
 
 This is the easiest area to over-claim and get caught. Do not invent product names or "built an AI platform" stories. Generic, honest wording (AI-assisted checks, delivery loops, runbooks) matches what these JDs actually ask and survives follow-up questions.
@@ -132,4 +165,4 @@ Emerging note: some Azure cloud JDs now name Azure AI or RAG next to the usual c
 
 ## Source tags
 
-Sezzle SRE (AI tooling expected) · EPAM Azure AI/GenAI DevOps themes · EPAM Lead Azure (AI gateway) · EPAM Senior Azure (GenAI/RAG on AKS) · EPAM Lead Cloud (Copilot standard) · EPAM Azure Cloud (KZ, Azure AI / RAG named) · EPAM Senior AI DevOps/SRE (LLM + RAG in production) · Turkey / Central Asia Senior DevOps (daily AI assistants) · Turkey / Central Asia Principal / AI Solution (LLM evaluation, emerging) · 2026-10-13 market (agent as a versioned bundle) · EPAM Senior DevOps (Agent CI/CD & Registry, 2026-10-14) · 2026-10-29 market (build toil-reduction agents with evals and guardrails)
+Sezzle SRE (AI tooling expected) · EPAM Azure AI/GenAI DevOps themes · EPAM Lead Azure (AI gateway) · EPAM Senior Azure (GenAI/RAG on AKS) · EPAM Lead Cloud (Copilot standard) · EPAM Azure Cloud (KZ, Azure AI / RAG named) · EPAM Senior AI DevOps/SRE (LLM + RAG in production) · Turkey / Central Asia Senior DevOps (daily AI assistants) · Turkey / Central Asia Principal / AI Solution (LLM evaluation, emerging) · 2026-10-13 market (agent as a versioned bundle) · EPAM Senior DevOps (Agent CI/CD & Registry, 2026-10-14) · 2026-10-29 market (build toil-reduction agents with evals and guardrails) · 2026-11-02 market (prod-infra agent guardrails: read-only, PR, approval, no secrets in prompts)
