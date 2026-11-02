@@ -267,6 +267,28 @@ On AKS you often run an OpenTelemetry Collector. On Azure Container Apps the pla
 
 > **Remember:** OpenTelemetry is the language. Azure Monitor and Datadog are two listeners. Speak once.
 
+JDs around AKS now also name three products that do three jobs. Do not flatten them into "monitoring."
+
+```text
+Istio (service mesh)   → mTLS between Pods, shift a slice of traffic
+Dynatrace (APM)        → is the user slow or failing?
+Microsoft Sentinel     → did someone do something they should not?
+```
+
+The mesh sits on the request path. It encrypts east-west traffic (mTLS) and can send five percent of requests to a canary. Day 34 already teaches the canary. Istio is one way to shift that traffic. The APM (Dynatrace, Datadog, or Application Insights) answers whether users feel pain. The SIEM (Microsoft Sentinel) reads security logs and raises detections. Instrument the app once with OpenTelemetry. Send traces to the APM. Send security events to the SIEM. Do not install three agents that scrape the same HTTP counter.
+
+Worked example: a canary on AKS returns 500s, and someone just granted a privileged role. The APM pages the SRE (users fail). Sentinel pages security (a role change). Istio is how you shifted five percent of traffic. It is not the pager.
+
+> **Remember:** Mesh moves and encrypts traffic. APM watches users. SIEM watches abuse. Name the job, then the product.
+
+**Look-up:** Sentinel analytics rules, Dynatrace OneAgent, Istio VirtualService. Do not invent a mesh lab.
+
+**Exit check:** Answer from memory.
+
+1. Which tool pages the SRE when checkout is slow?
+2. Which tool pages security when a privileged role appears?
+3. What does Istio do that neither of those tools does?
+
 Treat dashboards and alert rules as code, not as clicks in a GUI. Write them in Terraform (the provider talks to Grafana, Azure Monitor, or CloudWatch) or in Crossplane, then review the change in a pull request the same way you review a security group. A panel built only in the GUI creates drift: nobody can see who changed the alert, and you cannot roll it back with Git.
 
 Keep metric-label cardinality low. A label with an unbounded value such as `user_id` or `request_id` creates a new time series for every distinct value. That explodes storage cost and makes queries slow or fail. Put those IDs in logs and traces, not on metric labels. Day 35 drills this with ShopSphere.
