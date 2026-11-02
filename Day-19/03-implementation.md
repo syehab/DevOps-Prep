@@ -215,6 +215,7 @@ Expected: `FAILED`. Restore the file (`git checkout -- app/main.py`) and re-hash
 
 - `cosign sign` an image digest on GHCR if you have a throwaway repo.
 - Kyverno `verifyImages` with the Cosign public key.
+- Write `docs/airgap-mirror.md`: copy the scanned digest and the chart into a private registry, upgrade offline, expect version skew. Do not invent a sovereign-cloud product or pull from Docker Hub in that note.
 
 ---
 
