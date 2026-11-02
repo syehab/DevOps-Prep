@@ -170,6 +170,7 @@ Add `env.value` with a fake `AKIA...` in the ServiceAccount notes. Delete it. Th
 
 - Add `aws_iam_role` + `AmazonEKSClusterPolicy` / `AmazonEKSWorkerNodePolicy` documents.
 - Write the AKS twin from Day 17 next to this module.
+- Write `docs/rds-to-operator-cutover.md`: prove PITR on a copy, replicate until lag is safe, cut writes, keep RDS until rollback is retired. Do not install a database operator today.
 
 ---
 

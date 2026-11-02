@@ -821,6 +821,42 @@ The application writes to RDS once. Downstream services consume the events. They
 
 Do not put a production database inside an ephemeral container simply because the application itself is containerized.
 
+The sentence above stays true. An ephemeral container has no durable disk. When Kubernetes replaces the Pod, the data dies.
+
+Some Senior JDs now ask you to run PostgreSQL on EKS with an operator, instead of RDS. That is not the same as "Postgres in a Deployment." An operator watches a Custom Resource for the database. It creates a StatefulSet (or the equivalent), a PersistentVolume, a replica, backups, and a point-in-time recovery (PITR) path. The Pod can die. The volume and the backup must not.
+
+```text
+RDS (managed)
+   ↓  stream / replica until lag is safe
+Operator CR on EKS
+   ├── durable volume
+   ├── replica
+   ├── backup + PITR
+   └── new endpoint
+   ↓  cut writes in a window
+App uses the new endpoint
+   ↓  keep RDS until rollback is retired
+```
+
+Work a small example first. ShopSphere today talks to RDS. You want the same engine on EKS.
+
+1. The operator creates an empty database with backups on. You restore a copy and prove PITR before you trust it.
+2. You replicate from RDS until lag stays inside the RPO from Day 39.
+3. You stop writes, wait for the last records, switch the application endpoint, then watch.
+4. You keep RDS running until you have measured a rollback (point the app back) and a restore drill.
+
+If the operator has no proven backup, stay on RDS. A PVC is not a restore plan.
+
+> **Remember:** An operator-run database is still a database. Replicate, cut over, keep a rollback, and prove a restore. A Deployment is not that plan.
+
+**Look-up:** the operator a JD names. Do not invent install flags. Do not run a billed database operator in this course.
+
+**Exit check:** Answer from memory.
+
+1. Why is a Deployment the wrong object for a production database?
+2. What four steps sit between RDS and the new endpoint?
+3. When do you delete the old RDS instance?
+
 ---
 
 ## Part 19 — Deployment Strategies Across AWS Compute
