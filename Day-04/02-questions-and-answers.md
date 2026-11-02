@@ -266,3 +266,20 @@ Using Copilot drafts YAML inside the loop you already run. Building the agent me
 Chat is not that platform. The delivery loop does not change. Evals are tests. Guardrails are the gates you already own.
 
 </details>
+
+---
+
+## 12. Guardrails when an agent can touch production infrastructure
+
+A JD asks for an agent that can act on production infrastructure. What stays read-only, how does a change land, and what never goes into the prompt?
+
+<details>
+<summary>Answer</summary>
+
+The agent holds a read-only credential. It opens a pull request. It does not apply.
+
+A human reviews and approves. The pipeline applies with a least-privilege identity. Every action has an audit trail. Cap blast radius (one subscription or namespace, no delete).
+
+Never put secrets, state files, or tokens into the prompt. The model vendor must not see production credentials.
+
+</details>
