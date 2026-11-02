@@ -137,6 +137,7 @@ Add `terraform apply` to `ci.yml`. Delete it. Day 25 is the infra pipeline. A te
 
 - Add `ruff check app` if you already use ruff.
 - Push the workflow and open the Actions tab.
+- Write four lines: an infra-acting agent is read-only, it opens a PR, a human approves, secrets never enter the prompt. Do not give the lab pipeline a production cloud identity.
 
 ---
 

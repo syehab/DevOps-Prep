@@ -354,7 +354,29 @@ Newer senior JDs expect you to use AI assistants inside this exact loop. On the 
 
 A newer ask is to build the agent that cuts toil, not only to paste prompts into chat. Ship that agent as a versioned bundle. Automated evals are the tests (did it stay in policy?). The pipeline and a human still gate production. Using Copilot to draft YAML is useful. It is not that platform.
 
-> **Remember:** Treat AI output like a fast junior engineer: great first drafts, zero accountability. Review stays human, gates stay in the pipeline. Evals are the tests when you build the agent.
+Some JDs now ask for an agent that can read production infrastructure, not only draft YAML. Treat that agent as another identity in this loop, not as a break-glass admin.
+
+```text
+Read-only credentials by default
+        ↓
+Agent opens a pull request (it does not apply)
+        ↓
+A human reviews and approves
+        ↓
+The pipeline applies with a least-privilege identity
+        ↓
+Audit trail: who asked, what ran, what changed
+```
+
+Keep the agent read-only until a human raises the gate. Cap what it may touch (one subscription, one namespace, no delete). Never put secrets, state files, or tokens into the prompt. The model vendor must not see production credentials.
+
+> **Remember:** Treat AI output like a fast junior engineer: great first drafts, zero accountability. Review stays human, gates stay in the pipeline. Evals are the tests when you build the agent. An infra-acting agent stays read-only until a PR is approved.
+
+**Exit check:** Answer from memory.
+
+1. What credential does the agent itself hold?
+2. How does a production change leave the agent?
+3. Why do secrets stay out of the prompt?
 
 More on this theme in the [agentic DevOps pattern card](../jd-insights/patterns/agentic-devops.md).
 
