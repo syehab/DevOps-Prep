@@ -191,6 +191,7 @@ Write an alert `node_cpu > 80`. Then delete it. Record: that is a cause. The bur
 
 - Port-forward Grafana (`kubectl -n monitoring port-forward svc/kps-grafana 3000:80`) and screenshot the empty dashboard. Day 35 puts JSON in Git.
 - Add the 6h/3d windows from the SRE workbook.
+- Write three sentences: Istio shifts and encrypts traffic, Dynatrace (or any APM) pages user pain, Sentinel pages abuse. Do not install those products in this lab.
 
 ---
 

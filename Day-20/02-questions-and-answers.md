@@ -770,3 +770,18 @@ They become reviewable, versioned, and reversible. A pull request shows who chan
 Keep metric-label cardinality low. `user_id` as a label explodes series count and cost. Put IDs in logs and traces. Token usage and model cost are metrics too, next to latency and errors.
 
 </details>
+
+---
+
+## 27. Recall — Sentinel, Dynatrace, and Istio are three jobs
+
+A JD names Microsoft Sentinel, Dynatrace, and Istio around AKS. What job does each one do, and how do they fit together?
+
+<details>
+<summary>Answer</summary>
+
+Istio is a service mesh. It encrypts Pod-to-Pod traffic with mTLS and can shift a slice of requests to a canary. Dynatrace (or any APM) watches whether users are slow or failing. Microsoft Sentinel is a SIEM. It raises detections from security logs.
+
+Instrument once with OpenTelemetry. Send traces to the APM. Send security events to the SIEM. Do not scrape the same HTTP counter three times. Day 34 already taught the canary. Istio is one way to shift that traffic. It is not the pager.
+
+</details>
