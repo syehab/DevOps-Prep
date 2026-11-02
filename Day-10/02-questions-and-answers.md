@@ -161,6 +161,25 @@ Remote state gives engineers and CI/CD one shared location. Combine it with acce
 
 ---
 
+## 7a. Terraform Cloud versus a plain remote backend
+
+**Practice**
+
+A JD names Terraform Cloud workspaces next to Azure Storage state. What does a plain remote backend store, and what extra jobs can a Terraform Cloud workspace do?
+
+<details>
+<summary>Answer</summary>
+
+A plain remote backend stores state and the lock. You still run plan and apply in Azure DevOps or GitHub Actions.
+
+A Terraform Cloud workspace is one state boundary. It also runs plan and apply, can trigger a downstream workspace, and can fail a plan that breaks a policy.
+
+Pick Terraform Cloud when you want the run and the policy in the same product. Pick a plain backend when the pipeline already owns those steps. Do not let both apply the same state.
+
+</details>
+
+---
+
 ## 8. What a backend configuration must answer
 
 **Practice**

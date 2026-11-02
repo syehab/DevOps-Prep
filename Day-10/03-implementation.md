@@ -346,6 +346,7 @@ This is the same decision you make when someone changes a tag in the Azure porta
 - Run `terraform state pull` after a remote migrate and show that the JSON contains the resource address. Do not paste secrets from state into chat.
 - Add `backend "azurerm"` to Prod with `key = "prod/terraform.tfstate"`. Same container. Different key. That is one state file per environment.
 - Read `terraform force-unlock -help`. Write one sentence about when `-force` is justified.
+- Write three sentences: this lab uses a plain backend (state plus lock). Terraform Cloud would also run plan, triggers, and policy. Do not point both at the same state. Do not create a Terraform Cloud org today.
 
 ---
 
