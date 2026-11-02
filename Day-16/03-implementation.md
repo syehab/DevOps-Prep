@@ -236,6 +236,7 @@ Usual causes: wrong `repoURL`, missing repo Secret, path typo. Fix Git. Do not `
 
 - `argocd login --core` and `argocd app sync shopsphere-dev`
 - Add `targetRevision: HEAD` versus a Git tag. Prefer a tag in Prod.
+- Write four sentences in `docs/day-16-gitops-lab.md`: app-of-apps for Dev and Prod, ApplicationSet (or Fleet) when the cluster count grows, same digest on promote, no new generator YAML in this lab.
 
 ---
 
