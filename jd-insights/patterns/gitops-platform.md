@@ -18,6 +18,7 @@ Platform and Lead roles want Git to be the source of truth for deployments (GitO
 - Treat the platform as a product: backlog, paved-road SLOs, and DORA numbers. Teams consume the path. They do not file a ticket for each step
 - Multi-cluster GitOps: one Git source, many clusters. Argo CD ApplicationSets use generators (list, cluster, git, matrix) to create one Application per cluster. Rancher Fleet ships a GitRepo bundle to cluster groups. Promotion still moves the same artifact. The generator or group is what changes
 - One codebase to cloud and to a customer site (self-hosted, sovereign, or air-gapped): Docker Compose for small sites, Kubernetes plus Helm or an OCI bundle for larger ones. Mirror images into a private registry. Upgrade offline. Expect the customer version to lag the cloud version
+- Self-hosted factory names: GitLab (source and CI), Artifactory or Nexus (packages), Harbor (container registry). Same jobs as GitHub, a package feed, and ACR or ECR. You operate them. See the [self-managed card](self-managed-servers.md)
 
 ## Mental model
 
@@ -150,4 +151,4 @@ Backstage appears in EPAM platform JDs, and newer ones also name Crossplane, Pul
 
 ## Source tags
 
-EPAM Lead Platform / Unified Automation (Backstage) · EPAM Lead Cloud (IDP) · EPAM Senior DevOps Azure · RedCloud Platform · EPAM Senior/Lead Platform Engineer · Turkey banking platform (Terraform account vending) · 2026-10-13 market (catalog links dashboards, Argo CD, owners, IaC docs) · 2026-10-27 market (policy-as-code, platform as product) · 2026-11-02 market (ApplicationSets vs Fleet, air-gapped / sovereign shipping)
+EPAM Lead Platform / Unified Automation (Backstage) · EPAM Lead Cloud (IDP) · EPAM Senior DevOps Azure · RedCloud Platform · EPAM Senior/Lead Platform Engineer · Turkey banking platform (Terraform account vending) · 2026-10-13 market (catalog links dashboards, Argo CD, owners, IaC docs) · 2026-10-27 market (policy-as-code, platform as product) · 2026-11-02 market (ApplicationSets vs Fleet, air-gapped / sovereign shipping) · 2026-11-03 market (self-hosted GitLab / Artifactory / Nexus / Harbor)

@@ -16,6 +16,7 @@ AWS senior roles ask for the same loop as Azure ones (Terraform plus a managed K
 - Lead roles add advisor work: explain and defend a design choice (accounts, IAM, network, security, cost) and its trade-offs to a client, not just build it
 - Data and messaging operations: RDS (PostgreSQL), ElastiCache (Redis), MSK (Kafka). JDs ask backups, replication, failover, and DR with RTO and RPO. Multi-region is a plus. Service knobs are Look-up
 - PostgreSQL reliability for SREs: read a query plan (`EXPLAIN`), watch `pg_stat_*` views, change large tables without a long exclusive lock, and stream row changes with CDC
+- MySQL administration inside a DevOps role: the same loop (replication, backups, recovery, tuning). The engine name changes. Status views have different names. Backups still count only after a restore drill
 - Backups count only after a restore drill on a schedule. An untested backup is a hope
 - Close public SSH. Use AWS Systems Manager Session Manager (or Azure Bastion). The instance stays private
 - Change data capture (CDC): Debezium (or equivalent) reads the database change log and publishes row changes as events on Kafka / Amazon MSK. The application writes to the database once. Downstream services consume events. They do not need a second write from the app (a dual-write that drifts)
@@ -64,6 +65,8 @@ Row changes    → CDC from the write-ahead log (Debezium → Kafka / MSK)
 
 `EXPLAIN` shows how the engine will run the query (seq scan, index, join). `pg_stat_statements` shows which statements burn time. `pg_stat_activity` shows what is running now, including blocked sessions. Look-up the exact view columns when a JD names them.
 
+The same loop shows up for MySQL. Some DevOps contracts name MySQL administration: replication, backups, recovery, and tuning. The engine name changes. `EXPLAIN` still reads the plan. The status views have different names (Look-up `performance_schema` when a JD says MySQL). Day-27 already lists MySQL next to PostgreSQL on RDS. Backups still count only after a restore drill.
+
 A rewrite of a large table under an exclusive lock is an outage. Use the same expand-and-contract shape Day-34 teaches for schema: add the new form, backfill in small batches, switch reads, drop the old form later. CDC stays the "write once, consume events" rule already on this card.
 
 Access follows the same private path. Do not open SSH on a public IP. Session Manager opens a shell through the AWS API, so the instance needs no inbound SSH. Azure Bastion is the usual Azure control that keeps the VM off a public SSH port. Day-29 already names Parameter Store. Session Manager is the shell, not the secret store.
@@ -95,7 +98,7 @@ Outline:
 2. Pipeline: build image, scan, push to ECR.
 3. Deploy with Helm or GitOps, service and ingress for traffic.
 4. Add metrics, logs, and an alert before calling it done.
-5. If the service has a database: prove a restore drill, keep the instance off public SSH, and say how you would read a slow query plan.
+5. If the service has a database (PostgreSQL or MySQL): prove a restore drill, keep the instance off public SSH, and say how you would read a slow query plan.
 
 ## Honest gap note
 
@@ -103,4 +106,4 @@ If your daily cloud is Azure, say that, then prove the mapping: "I run AKS in pr
 
 ## Source tags
 
-EPAM Senior AWS DevOps · Sezzle SRE · EPAM Lead AWS DevOps · Turkey product co Senior Platform (AWS) · Turkey / Central Asia Senior DevOps (MSK, RDS, ElastiCache DR) · Turkey / Central Asia Platform (module per tenant) · 2026-10-13 market (CDC: Debezium to Kafka / MSK) · 2026-10-27 market (PostgreSQL SRE, restore drills, Session Manager) · 2026-10-29 market (SaaS instance lifecycle on EKS, operators / CRDs) · 2026-11-02 market (RDS to operator-run DB on EKS, PITR cutover)
+EPAM Senior AWS DevOps · Sezzle SRE · EPAM Lead AWS DevOps · Turkey product co Senior Platform (AWS) · Turkey / Central Asia Senior DevOps (MSK, RDS, ElastiCache DR) · Turkey / Central Asia Platform (module per tenant) · 2026-10-13 market (CDC: Debezium to Kafka / MSK) · 2026-10-27 market (PostgreSQL SRE, restore drills, Session Manager) · 2026-10-29 market (SaaS instance lifecycle on EKS, operators / CRDs) · 2026-11-02 market (RDS to operator-run DB on EKS, PITR cutover) · 2026-11-03 market (MySQL admin inside DevOps)
