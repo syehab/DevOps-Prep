@@ -40,15 +40,17 @@ Deploy to EKS (Helm or GitOps)
 Observe → fix → repeat
 ```
 
-If you know AKS, you already know most of EKS. Translate the names:
+If you know AKS, you already know most of EKS. Translate the names. A third cloud uses the same shape:
 
-| Concept | Azure | AWS |
-|:--|:--|:--|
-| Managed Kubernetes | AKS | EKS |
-| Network | VNet | VPC |
-| Identity for pods | Workload Identity | IRSA / Pod Identity |
-| Image registry | ACR | ECR |
-| Monitoring | Azure Monitor | CloudWatch |
+| Concept | Azure | AWS | GCP |
+|:--|:--|:--|:--|
+| Managed Kubernetes | AKS | EKS | GKE |
+| Network | VNet | VPC | VPC |
+| Identity for pods | Workload Identity | IRSA / Pod Identity | Workload Identity |
+| Image registry | ACR | ECR | Artifact Registry |
+| Monitoring | Azure Monitor | CloudWatch | Cloud Monitoring |
+
+Anthos is Google's multi-cluster and hybrid layer. Look it up when a JD names it. Do not invent a GKE lab. Day-17 is the name map.
 
 RPO is how much recent data you can afford to lose. RTO is how quickly the service must return. Think of a shop fire: RPO is how many days of receipts you can lose. RTO is how many hours until the shop opens again. Backups, replicas, and failover exist to meet those two numbers. They are not the same control. A backup counts only when you restore it on a schedule and write down the measured RTO and RPO. Day 27 places the stores. Day 39 teaches the recovery numbers.
 
@@ -106,4 +108,5 @@ If your daily cloud is Azure, say that, then prove the mapping: "I run AKS in pr
 
 ## Source tags
 
+EPAM Senior AWS DevOps · Sezzle SRE · EPAM Lead AWS DevOps · Turkey product co Senior Platform (AWS) · Turkey / Central Asia Senior DevOps (MSK, RDS, ElastiCache DR) · Turkey / Central Asia Platform (module per tenant) · 2026-10-13 market (CDC: Debezium to Kafka / MSK) · 2026-10-27 market (PostgreSQL SRE, restore drills, Session Manager) · 2026-10-29 market (SaaS instance lifecycle on EKS, operators / CRDs) · 2026-11-02 market (RDS to operator-run DB on EKS, PITR cutover) · 2026-11-04 market (map Azure / AWS names to GKE / Anthos)
 EPAM Senior AWS DevOps · Sezzle SRE · EPAM Lead AWS DevOps · Turkey product co Senior Platform (AWS) · Turkey / Central Asia Senior DevOps (MSK, RDS, ElastiCache DR) · Turkey / Central Asia Platform (module per tenant) · 2026-10-13 market (CDC: Debezium to Kafka / MSK) · 2026-10-27 market (PostgreSQL SRE, restore drills, Session Manager) · 2026-10-29 market (SaaS instance lifecycle on EKS, operators / CRDs) · 2026-11-02 market (RDS to operator-run DB on EKS, PITR cutover) · 2026-11-03 market (MySQL admin inside DevOps)

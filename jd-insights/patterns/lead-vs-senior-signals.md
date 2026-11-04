@@ -10,7 +10,7 @@ Senior signals:
 
 - Deep hands-on: Terraform, Kubernetes, pipelines, debugging under pressure
 - Own a system end to end and keep it reliable
-- Explain decisions clearly in English (B2+ appears in JDs)
+- Explain decisions clearly in English (B2+ appears in JDs). Some consulting houses now ask C1 together with Linux depth and Python automation
 
 Lead signals (added on top):
 
@@ -83,4 +83,4 @@ Some Lead JDs ask for only about one year of leadership. Frame real experience (
 
 ## Source tags
 
-EPAM Lead DevOps / Lead Azure Cloud / Lead Platform · EPAM Lead DevOps (KZ, module ownership + review bar + paved road) · RedCloud Head of Platform (stretch) · 2026-10-29 market (small-team lead, release management, delegation, on-call ownership)
+EPAM Lead DevOps / Lead Azure Cloud / Lead Platform · EPAM Lead DevOps (KZ, module ownership + review bar + paved road) · RedCloud Head of Platform (stretch) · 2026-10-29 market (small-team lead, release management, delegation, on-call ownership) · 2026-11-04 market (C1 English with Linux and Python)

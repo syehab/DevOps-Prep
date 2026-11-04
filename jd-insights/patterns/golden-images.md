@@ -12,6 +12,7 @@ Two 2026 EPAM Kazakhstan JDs want an "image factory": pipelines that build harde
 - Image scanning before the image is published
 - Configuration as code: Ansible for VM post-provisioning and the golden-image handoff
 - Publishing VM images to a Shared Image Gallery (Azure Compute Gallery) as a nice-to-have
+- Container image lifecycle in a registry (ACR, also ECR): build, scan, tag, then a retention policy so untagged and unused tags do not live forever
 
 ## Mental model
 
@@ -34,6 +35,8 @@ Patch needed? Rebuild and replace. Never SSH in to fix one machine.
 ```
 
 The same loop you already know from containers (build, scan, push, deploy) applied to VM images too. One pipeline is the factory; everything downstream just consumes its output.
+
+The registry side of that loop has a keep-and-delete policy. You build, you scan, you tag (semver plus git SHA), and you set retention. Untagged manifests and old feature tags can expire. Production digests stay until you retire that release. Day-19 already treats the registry as a trusted distribution point. This card names the lifecycle, not only the lock.
 
 ## Remember
 
@@ -63,4 +66,4 @@ Do not claim hands-on time with a specific image-build tool or scanner you have 
 
 ## Source tags
 
-EPAM Senior DevOps (Unified Automation) · EPAM Lead Cloud (KZ)
+EPAM Senior DevOps (Unified Automation) · EPAM Lead Cloud (KZ) · 2026-11-04 market (ACR image lifecycle: build, scan, tag, retention)

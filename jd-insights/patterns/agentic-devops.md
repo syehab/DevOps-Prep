@@ -15,6 +15,7 @@ Newer JDs (Sezzle, EPAM GenAI-flavoured roles) expect you to use AI tools in Dev
 - Senior roles that build an Enterprise Agent Development Platform now require agent-specific CI/CD: register each version, scan for prompt-injection and PII leakage, then promote the same bundle
 - Building agentic tooling that cuts toil (triage, runbook steps, ticket drafts), not only using a chat assistant. Evals prove the agent stayed in policy. Guardrails are still the pipeline and the human gate
 - Agents that can touch production infrastructure stay read-only by default. Changes go through a pull request and a human approval. Credentials are least-privilege. Every action has an audit trail. Blast radius is capped. Secrets never enter the prompt
+- Daily use of named AI agents is now a direct ask, not a nice-to-have. Some JDs also want the platform that runs those agents: the same guardrails, plus spend and quota caps so a loop cannot burn the bill
 
 ## Mental model
 
@@ -100,6 +101,26 @@ This is Day-4's "fast junior" rule plus Day-19's identity rule. The agent is ano
 
 **Exit check:** The agent wants to resize a production node pool. What does it submit, who applies it, and which credential does the agent itself hold?
 
+## The platform that runs the agents
+
+Some JDs now ask you to run the infrastructure the agents live on, not only to use a chat window.
+
+```text
+Agent runtime (sandboxed)
+        ↓
+Guardrails: read-only default, PR, human approval
+        ↓
+Cost controls: token quota, spend budget, per-tenant cap
+        ↓
+Audit: who asked, what ran, what it cost
+```
+
+Guardrails stay the Day-4 rule. Cost controls stay the Day-20 and Day-39 rule: token spend is a metric with a budget. A platform with no spend cap surprises you the same way an unwatched GPU pool does.
+
+> **Remember:** If you run the agents, you own the gates and the bill.
+
+**Exit check:** An agent loop starts calling a large model in a tight retry. What two controls stop the bill, and who still approves a production change?
+
 ## Platform teams now also run AI traffic (emerging, seen in a few JDs)
 
 A newer ask, so treat it as an early signal, not a core requirement:
@@ -165,4 +186,4 @@ Emerging note: some Azure cloud JDs now name Azure AI or RAG next to the usual c
 
 ## Source tags
 
-Sezzle SRE (AI tooling expected) · EPAM Azure AI/GenAI DevOps themes · EPAM Lead Azure (AI gateway) · EPAM Senior Azure (GenAI/RAG on AKS) · EPAM Lead Cloud (Copilot standard) · EPAM Azure Cloud (KZ, Azure AI / RAG named) · EPAM Senior AI DevOps/SRE (LLM + RAG in production) · Turkey / Central Asia Senior DevOps (daily AI assistants) · Turkey / Central Asia Principal / AI Solution (LLM evaluation, emerging) · 2026-10-13 market (agent as a versioned bundle) · EPAM Senior DevOps (Agent CI/CD & Registry, 2026-10-14) · 2026-10-29 market (build toil-reduction agents with evals and guardrails) · 2026-11-02 market (prod-infra agent guardrails: read-only, PR, approval, no secrets in prompts)
+Sezzle SRE (AI tooling expected) · EPAM Azure AI/GenAI DevOps themes · EPAM Lead Azure (AI gateway) · EPAM Senior Azure (GenAI/RAG on AKS) · EPAM Lead Cloud (Copilot standard) · EPAM Azure Cloud (KZ, Azure AI / RAG named) · EPAM Senior AI DevOps/SRE (LLM + RAG in production) · Turkey / Central Asia Senior DevOps (daily AI assistants) · Turkey / Central Asia Principal / AI Solution (LLM evaluation, emerging) · 2026-10-13 market (agent as a versioned bundle) · EPAM Senior DevOps (Agent CI/CD & Registry, 2026-10-14) · 2026-10-29 market (build toil-reduction agents with evals and guardrails) · 2026-11-02 market (prod-infra agent guardrails: read-only, PR, approval, no secrets in prompts) · 2026-11-04 market (daily AI agents, platform that runs agents with guardrails and cost caps)

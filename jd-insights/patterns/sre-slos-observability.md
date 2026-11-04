@@ -20,6 +20,8 @@ SRE titles (and most Lead roles) want you to define what "healthy" means with nu
 - System health and business health: latency, errors, and saturation say whether the service works. Orders, sign-ups, and payments per minute say whether users get value. Both need dashboards and alerts, and they have different owners
 - OpenTelemetry for traces, metrics, and logs on AKS and Azure Container Apps. Instrument once. Export to Azure Monitor, Datadog, or both. Do not double-instrument the same signal
 - Alert-noise reduction as a practice: pages that need a human stay, the rest go to dashboards or get deleted. On-call is a named primary, a handoff, and a page you can run at 3 AM. Write a blameless RCA (fix the system that allowed the mistake)
+- SLO and error-budget roadmaps: start with one user-facing SLI, set an SLO, write the budget policy, then add more SLIs. Maturity is a sequence, not a slide
+- Alert quality and de-duplication across Prometheus, Grafana, Datadog, and PagerDuty. One user symptom should page once. The same burn in four tools is still one incident
 - Three different jobs around AKS: Microsoft Sentinel is a SIEM (security detections on logs). Dynatrace (or any APM) watches user experience. Istio is a service mesh (mTLS between Pods, traffic shifting for a canary). Do not treat them as one product
 
 ## Mental model
@@ -60,6 +62,12 @@ Postmortem findings become new checklist items
 The error-budget policy is the written next step when the budget is gone: pause risky releases, shift time to reliability work, and resume feature work only when the budget recovers. In an interview, tell one story where that data changed a release decision.
 
 Follow-the-sun on-call means the next region takes the pager when this one sleeps. Ship the same artifact to every production region. The handoff is a ritual with a runbook, not a chat at 3 AM. Day-34 covers the release. Day-39 covers the second region.
+
+A roadmap is the order you grow this, not a second policy. Pick one SLI users feel. Set an SLO. Write what happens when the budget burns. Only then add more SLIs. A slide with twelve SLOs and no policy is not mature.
+
+```text
+One user SLI  →  SLO  →  written budget policy  →  then more SLIs
+```
 
 ## The edge is the first hop
 
@@ -127,6 +135,23 @@ JDs around AKS now name these three in one sentence. They do not replace each ot
 
 **Exit check:** A canary is failing and a privileged role was just granted. Which tool pages the SRE, and which tool pages security?
 
+## One symptom, one page
+
+```text
+Prometheus rule  ─┐
+Grafana alert    ─┤
+Datadog monitor  ─┼─►  PagerDuty  →  one page, one owner
+Azure Monitor    ─┘
+```
+
+JDs now name Prometheus, Grafana, Datadog, and PagerDuty in one breath. That is not four pages for one burn. Deduplicate at the pager: group by service and symptom. Keep the useful signal. Delete the extra page, not the metric. Day-20 already says symptoms page a human and causes stay on dashboards. This card adds the cross-tool rule.
+
+> **Remember:** Four tools can watch one SLO. Only one of them should wake a human.
+
+**Look-up:** PagerDuty event grouping. Do not invent a four-tool lab.
+
+**Exit check:** Checkout 5xx fires in Prometheus and in Datadog. How many pages should PagerDuty send, and what do you group on?
+
 ## Remember
 
 > **Alert on symptoms users feel (errors, latency), not on causes (CPU). Causes are for dashboards, symptoms are for pages.**
@@ -160,6 +185,8 @@ Outline:
 
 Sezzle-style JDs name Prometheus or Datadog daily use, sometimes Golang. If your base is Azure Monitor, map the concepts (metrics, queries, alert rules are the same shape) and say which tools you have used hands-on. Concepts transfer, invented tool years do not.
 
+E-commerce SRE JDs sometimes name Java application-server operations (Tomcat, JBoss, JVM). Transfer the request path and the SLO. Look up heap and GC when a JD names them. Do not invent an app-server lab.
+
 ## Source tags
 
-Sezzle SRE · EPAM Senior SRE · EPAM Senior SRE (Grafana + EKS) · Fundraise Up DevOps · EPAM Senior AI DevOps/SRE · Turkey / Central Asia Senior SRE (edge, CDN, Zero Trust) · 2026-10-13 market (observability as code, token cost) · 2026-10-23 market (ORR, error budget policy) · 2026-10-26 market (cardinality, health vs business) · 2026-10-27 market (incident-to-done, follow-the-sun, origin lock) · 2026-10-29 market (OpenTelemetry on AKS/ACA, Datadog + Azure Monitor, alert noise, blameless RCA) · 2026-11-02 market (Sentinel SIEM vs Dynatrace APM vs Istio mesh)
+Sezzle SRE · EPAM Senior SRE · EPAM Senior SRE (Grafana + EKS) · Fundraise Up DevOps · EPAM Senior AI DevOps/SRE · Turkey / Central Asia Senior SRE (edge, CDN, Zero Trust) · 2026-10-13 market (observability as code, token cost) · 2026-10-23 market (ORR, error budget policy) · 2026-10-26 market (cardinality, health vs business) · 2026-10-27 market (incident-to-done, follow-the-sun, origin lock) · 2026-10-29 market (OpenTelemetry on AKS/ACA, Datadog + Azure Monitor, alert noise, blameless RCA) · 2026-11-02 market (Sentinel SIEM vs Dynatrace APM vs Istio mesh) · 2026-11-04 market (SLO / error-budget roadmaps, alert de-duplication, PagerDuty)

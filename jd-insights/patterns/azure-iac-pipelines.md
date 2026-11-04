@@ -13,6 +13,7 @@ Most Azure senior roles want one person who can describe infrastructure as code 
 - Secure defaults: identity, Key Vault, private networking baked into modules
 - Policy-as-code on the plan: OPA, Conftest, or Checkov fail a public IP, a missing tag, or an open store before a human approves apply. Look-up the tool the JD names
 - Migration work: move many existing on-prem apps (one JD counts 20+ Java and .NET systems) onto Azure; re-platforming means the same app on a new runtime, not a rewrite
+- Multi-cloud migration: on-prem to cloud and cloud to cloud. Terraform is the common layer. The names change (AKS, EKS, GKE). The plan-review-approve-apply loop does not
 - Azure serverless operations: deploy Functions and Logic Apps with Bicep, watch them with Application Insights and Azure Monitor, and give them a managed identity so they do not store secrets
 - Hybrid CI/CD: Azure DevOps self-hosted agents on-prem when the build must see a private network, plus Environments and approvals for production. Terraform Cloud workspaces add remote state, run triggers, and policy checks. A plain remote backend only stores state and the lock. The pipeline still runs plan and apply
 
@@ -84,6 +85,17 @@ Terraform Cloud (or HCP Terraform) is a hosted run service. A workspace is one s
 
 **Look-up:** agent pool registration and Terraform Cloud run-trigger UI. Do not invent a Terraform Cloud lab.
 
+## Terraform is the common layer
+
+```text
+On-prem  ──Terraform──►  Cloud A
+Cloud A  ──Terraform──►  Cloud B
+```
+
+JDs now ask for both moves: datacentre to cloud, and one cloud to another. Keep the same modules and the same plan-review-approve-apply loop. Change the provider and the names (AKS to EKS or GKE, VNet to VPC). Day-37 already teaches waves and a rollback boundary. Day-17 is the name map. Do not rewrite the application only to change the cloud.
+
+> **Remember:** Terraform is the common language. The loop stays. Only the provider names change.
+
 ## Remember
 
 > **Employers are not buying Terraform syntax. They are buying a safe change process: plan, policy check, review, approve, apply, repeat in every environment.**
@@ -131,6 +143,13 @@ Outline:
 3. A plain backend stores state and the lock. Terraform Cloud also runs the plan, can trigger another workspace, and can fail a policy.
 4. Honest: say if you have only used a storage backend. Transfer Day-10. Do not invent run-trigger syntax.
 
+**Q: How do you move the same stack from one cloud to another?**
+
+Outline:
+1. Terraform stays the common layer. Keep the module shape: network, identity, cluster, data.
+2. Change the provider and the names. Do not rewrite the app to change the cloud.
+3. Move in waves with a rollback boundary (Day-37). Map names with Day-17.
+
 ## Honest gap note
 
 JDs sometimes name OpenTofu or Ansible. If you use Terraform daily, say so, and say you are happy to work in OpenTofu-compatible workflows (the language is the same). Do not claim daily Ansible depth you do not have; explain configuration as code concepts instead.
@@ -139,4 +158,4 @@ Logic Apps has no Day lesson. Transfer Functions, Bicep, managed identity, and A
 
 ## Source tags
 
-EPAM Azure Lead (TR, KZ) · EPAM Senior Azure DevOps · EPAM Senior Azure DevOps (KZ, migration) · EPAM Senior Azure Engineer (KZ) · EPAM Lead Azure Cloud · EPAM Senior Azure Cloud (KZ) · EPAM Lead DevOps (KZ) · 2026-10-27 market (policy-as-code on IaC) · 2026-10-28 market (Functions / Logic Apps with Bicep, App Insights, managed identity) · 2026-11-02 market (on-prem ADO agents, Terraform Cloud vs remote backend)
+EPAM Azure Lead (TR, KZ) · EPAM Senior Azure DevOps · EPAM Senior Azure DevOps (KZ, migration) · EPAM Senior Azure Engineer (KZ) · EPAM Lead Azure Cloud · EPAM Senior Azure Cloud (KZ) · EPAM Lead DevOps (KZ) · 2026-10-27 market (policy-as-code on IaC) · 2026-10-28 market (Functions / Logic Apps with Bicep, App Insights, managed identity) · 2026-11-02 market (on-prem ADO agents, Terraform Cloud vs remote backend) · 2026-11-04 market (on-prem and cloud-to-cloud migration, Terraform as the common layer)

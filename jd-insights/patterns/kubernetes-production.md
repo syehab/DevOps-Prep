@@ -15,6 +15,8 @@ Nearly every Senior or Lead DevOps JD expects you to run Kubernetes day 2: deplo
 - Node autoscaling: Cluster Autoscaler scales the node groups you already defined. Karpenter provisions the right node just in time, can mix On-Demand and Spot, and later consolidates idle or half-empty nodes. Choose Cluster Autoscaler when groups are already stable. Choose Karpenter when Pods need many shapes or you want faster scale and less waste. Neither replaces HPA. Product knobs stay Look-up.
 - Hosted SaaS instances: a Kubernetes operator watches a Custom Resource (CRD) per customer instance, then creates, upgrades, and deletes that stack. Zero-downtime upgrades still use rolling updates, probes, and PodDisruptionBudgets
 - Stateful databases on the cluster: an operator (not a Deployment) runs the engine, replication, backups, and point-in-time recovery (PITR). A managed database (RDS) to an operator-run database is a data migration: replicate, cut over, keep a rollback, and prove a restore. An ephemeral container is still not a production database
+- Stateful middleware (Kafka, Redis, RabbitMQ) on or next to the cluster. Same split as databases: a managed service beside the cluster, or an operator on it. A Helm chart with no volume, replica, or restore plan is still not production
+- OKD / OpenShift next to plain Kubernetes in enterprise SRE roles. Routes, Security Context Constraints, and projects are extra names on the same request path. Transfer Day-14 and Day-15. Look up the extra layer when a JD names it
 - Bare-metal and self-managed basics: CRI starts containers, CNI gives each Pod an IP. Know what AKS and EKS hide (control plane, etcd, default networking, control-plane upgrades)
 - GPU and ML hosting: a tainted GPU node pool, the NVIDIA device plugin, and a scheduler that only places Pods that request a GPU. Idle GPUs still cost money
 
@@ -119,13 +121,42 @@ Moving off a managed database is a data migration, not a YAML swap. Replicate un
 
 **Look-up:** the operator the JD names. Do not invent a CloudNativePG lab.
 
+## Middleware: on the cluster or next to it
+
+```text
+Next to the cluster     On the cluster
+managed Kafka / Redis   operator + PVC + restore
+RabbitMQ as a PaaS      same loop as the database CR
+```
+
+JDs now name Kafka, Redis, and RabbitMQ beside Kubernetes, not only RDS. The split is the same one Day-27 already taught for data. A managed service sits next to the cluster (MSK, ElastiCache, a hosted broker). An operator on the cluster still needs a volume, a replica, and a restore you have proven. Do not run a cache or a bus as a Deployment that throws the disk away.
+
+> **Remember:** On or next to is a placement choice. State still lives outside the container.
+
+**Look-up:** the operator or managed name the JD uses. Do not invent a Kafka lab.
+
+## OpenShift is Kubernetes plus a product layer
+
+```text
+Plain Kubernetes     OpenShift / OKD
+Ingress              Route
+Pod security         Security Context Constraints (SCC)
+Namespace            Project (namespace plus quota and policy)
+```
+
+OKD is the community build of OpenShift. The request path you walk in Day-15 does not change. Name the extra layer, then transfer probes, Services, and evidence. Day-17 already asks what a platform hides. OpenShift hides some install work and adds Routes, SCCs, and projects.
+
+> **Remember:** OpenShift changes the names around Kubernetes. It does not change the request path.
+
+**Look-up:** Route versus Ingress, SCC versus Pod Security. Do not invent an OpenShift lab.
+
 ## Study these days first
 
 1. [Day-13/01-concepts.md](../../Day-13/01-concepts.md) - containers first
 2. [Day-14/01-concepts.md](../../Day-14/01-concepts.md) - the core model and operators
 3. [Day-15/01-concepts.md](../../Day-15/01-concepts.md) - debugging the path
-4. [Day-17/01-concepts.md](../../Day-17/01-concepts.md) - managed clusters, GPU pools, taints
-5. [Day-27/01-concepts.md](../../Day-27/01-concepts.md) - RDS versus an operator-run database
+4. [Day-17/01-concepts.md](../../Day-17/01-concepts.md) - managed clusters, name maps, OpenShift layer
+5. [Day-27/01-concepts.md](../../Day-27/01-concepts.md) - RDS, Redis, Kafka, and operator-run state
 6. [Day-37/01-concepts.md](../../Day-37/01-concepts.md) - Karpenter versus Cluster Autoscaler
 7. [Day-34/01-concepts.md](../../Day-34/01-concepts.md) - safe deployments
 8. [Day-39/01-concepts.md](../../Day-39/01-concepts.md) - PITR, restore drills, RTO and RPO
@@ -174,10 +205,24 @@ Outline:
 3. Keep the old database until rollback is retired. Prove a restore to a point in time on a copy first.
 4. Honest: say if you have not run that operator. Transfer Day-27 (state outside the container) and Day-39 (restore drills).
 
+**Q: Kafka is in the JD next to Kubernetes. Do you put it on the cluster?**
+
+Outline:
+1. Same split as a database. Managed next to the cluster, or an operator on it with a volume and a proven restore.
+2. A Helm chart with no disk plan is not production. Day-27 already placed Redis and Kafka as managed names.
+3. Honest: say which side you have run. Do not invent broker flags.
+
+**Q: What extra names does OpenShift add, and what stays the same?**
+
+Outline:
+1. Routes, SCCs, and projects sit on top of Ingress, Pod security, and namespaces.
+2. Walk the same request path with evidence. The platform did not replace Kubernetes.
+3. Honest: say if you have not run OpenShift. Transfer Day-14 and Day-15. Do not invent `oc` flags.
+
 ## Honest gap note
 
-JDs name many add-ons (service mesh, specific CNIs, cluster autoscalers, database operators). You do not need daily experience with each. Know the core path and failure drill cold, then say honestly which add-ons you have used and which you would learn on the job. The course does not run a SaaS operator, a database operator, a bare-metal control plane, or the NVIDIA device plugin. Transfer Day-14, Day-17, Day-27, and Day-39. Look up the operator, CNI, plugin, and MIG when a JD names them.
+JDs name many add-ons (service mesh, specific CNIs, cluster autoscalers, database operators, OpenShift). You do not need daily experience with each. Know the core path and failure drill cold, then say honestly which add-ons you have used and which you would learn on the job. The course does not run a SaaS operator, a database operator, a bare-metal control plane, the NVIDIA device plugin, or OpenShift. Transfer Day-14, Day-15, Day-17, Day-27, and Day-39. Look up the operator, CNI, plugin, MIG, Route, and SCC when a JD names them.
 
 ## Source tags
 
-EPAM Azure Lead · EPAM Senior Azure DevOps · EPAM AWS DevOps · EPAM Lead Cloud (AKS add-ons) · EPAM Senior Azure Cloud (KZ, AKS ops) · Sezzle SRE · Fundraise Up DevOps · 2026-10-13 market (Karpenter vs Cluster Autoscaler) · 2026-10-27 market (non-root containers) · 2026-10-28 market (CRI / CNI, what AKS/EKS hide, GPU hosting) · 2026-10-29 market (operators, CRDs, SaaS instance lifecycle) · 2026-11-02 market (stateful DB operators, PITR cutover, Karpenter consolidation / Spot)
+EPAM Azure Lead · EPAM Senior Azure DevOps · EPAM AWS DevOps · EPAM Lead Cloud (AKS add-ons) · EPAM Senior Azure Cloud (KZ, AKS ops) · Sezzle SRE · Fundraise Up DevOps · 2026-10-13 market (Karpenter vs Cluster Autoscaler) · 2026-10-27 market (non-root containers) · 2026-10-28 market (CRI / CNI, what AKS/EKS hide, GPU hosting) · 2026-10-29 market (operators, CRDs, SaaS instance lifecycle) · 2026-11-02 market (stateful DB operators, PITR cutover, Karpenter consolidation / Spot) · 2026-11-04 market (Kafka / Redis / RabbitMQ on or next to the cluster, OpenShift / OKD vs plain Kubernetes)
