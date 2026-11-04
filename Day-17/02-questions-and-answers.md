@@ -325,6 +325,8 @@ Start with requirements, not product names. Then application architecture, clust
 
 Use Workload Identity on Azure, or IRSA or EKS Pod Identity on AWS, for Key Vault or Secrets Manager. Deploy with CI building one image and GitOps applying Git. Spread replicas across zones. Prove health with metrics, logs, and traces. Every decision needs a reason. Longest architecture is not the goal.
 
+The same walk works for GKE. Change the names (Artifact Registry, VPC, Workload Identity, Cloud Monitoring). Do not relearn Kubernetes.
+
 </details>
 
 ---
@@ -630,5 +632,35 @@ Add nodes, free capacity, or reduce requests. `kubectl describe pod` shows the s
 Investigate public DNS, the cloud load balancer, listeners, Ingress Controller, Ingress rules, and then the Service. Internal ClusterIP success already proved Pods can serve.
 
 This is an external-path problem. Do not restart healthy Pods as the first move.
+
+</details>
+
+---
+
+## 33. Recall — GCP names for AKS, ACR, VNet, Workload Identity, and Azure Monitor
+
+21. A JD names GKE. What are the GCP names for AKS, ACR, VNet, Workload Identity, and Azure Monitor?
+
+<details>
+<summary>Answer</summary>
+
+AKS maps to GKE. ACR maps to Artifact Registry. VNet maps to VPC. Workload Identity keeps that name. Azure Monitor maps to Cloud Monitoring.
+
+Anthos is Google's multi-cluster and hybrid layer. Look it up when a JD names it. The shape stays. Do not invent a GKE lab.
+
+</details>
+
+---
+
+## 34. Recall — OpenShift versus plain Kubernetes
+
+22. What extra names does OpenShift add, and what stays the same when you debug a 503?
+
+<details>
+<summary>Answer</summary>
+
+A Route often replaces Ingress. Security Context Constraints add a policy layer on Pods. A project is a namespace with extra quota and policy. OKD is the community build of OpenShift.
+
+Walk the same request path with evidence (Day 15). The platform did not replace Kubernetes. Say if you have not run OpenShift. Do not invent `oc` flags.
 
 </details>

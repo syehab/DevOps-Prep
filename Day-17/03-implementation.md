@@ -8,7 +8,7 @@ Day 17 teaches AKS and EKS as managed Kubernetes plus cloud integrations. The ol
 
 ## Goal
 
-Add `infra/azure/modules/aks` that creates a one-node AKS cluster with OIDC and Workload Identity enabled. Call it from Dev. Run `terraform test`. Apply only when the estimate stays under USD 5 and a budget exists. Map the same idea to EKS / IRSA in the notes.
+Add `infra/azure/modules/aks` that creates a one-node AKS cluster with OIDC and Workload Identity enabled. Call it from Dev. Run `terraform test`. Apply only when the estimate stays under USD 5 and a budget exists. Map the same idea to EKS / IRSA, and to GKE if a JD names it, in the notes.
 
 Time box: 75 to 90 minutes. Destroy before you walk away.
 
