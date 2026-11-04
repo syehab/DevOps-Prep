@@ -16,6 +16,7 @@ Lead cloud JDs (Azure and AWS) add "cost-effective" next to "secure and scalable
 - AI / LLM workloads: treat tokens per request, cost per request and per tenant, plus latency and error rate of model calls, as first-class metrics. Set a spend budget and alert on it like an error budget
 - Cost as routine work, not a quarterly surprise: required tags, right-sizing, a billing export you can query, a monthly review, and a plan for commitments (reservations or savings plans)
 - Cost work includes non-hyperscaler hosting (Vercel, a dedicated or colocation host such as Rackspace). The bill still needs tags, a budget, and a review. The loop does not require Azure or AWS
+- Off-hours as a job, not a slogan: deallocate non-prod VMs, sweep orphaned disks, IPs, NICs, and snapshots, and retry when the run fails. A silent failed cleanup is not a saving
 
 ## Mental model
 
@@ -24,21 +25,14 @@ See it        → tags + cost views + billing export
    ↓             (who spends what, on what)
 Explain it    → map spend to teams and environments
    ↓
-Reduce it     → right-size · schedule off-hours
-   ↓             reserve steady load · delete orphans
+Reduce it     → right-size · deallocate off-hours
+   ↓             reserve steady load · sweep orphans (retry)
 Keep it down  → monthly review + budgets + policy
                  (require tags, block oversized SKUs,
                   plan the next commitment)
 ```
 
-Easy wins to name in interviews:
-
-- Dev and test shut down at night and weekends
-- Orphaned disks, IPs, and old snapshots deleted
-- Steady workloads on reservations or savings plans (plan the buy in the monthly review)
-- Autoscale instead of sized-for-peak
-- Scarce SKUs (GPUs): reserve capacity and raise quotas before go-live, not during the incident
-- Export the bill (Azure Cost Management export, AWS Cost and Usage Report) so engineering can query it, not only look at a portal chart
+Easy wins to name in interviews: deallocate non-prod, sweep orphans with retries, autoscale, reserve steady load, raise scarce quotas before go-live, and export the bill (Azure Cost Management export, AWS Cost and Usage Report) so engineering can query it.
 
 | Concept | Azure | AWS |
 |:--|:--|:--|
@@ -80,6 +74,29 @@ Some JDs now name Vercel or a dedicated host next to Azure and AWS. That is stil
 > **Remember:** FinOps is the loop, not the logo on the invoice.
 
 Cost work has a calendar. Once a month, open the export, check tags, right-size what is idle, and decide the next commitment. A savings plan you never review is a hope, the same way an untested backup is a hope. Day-39 already teaches attribution and unit cost. The interview wants the habit, not a certificate.
+Cost work has a calendar. Once a month, open the export, check tags, right-size what is idle, and decide the next commitment. Day-39 already teaches attribution and unit cost.
+
+## Off-hours is a job, not a hope
+
+JDs now ask for the automation, not the slogan "schedule off-hours."
+
+```text
+Schedule (nights, weekends, non-prod)
+        ↓
+Deallocate the VMs (stop compute billing)
+        ↓
+Find orphans (disks, IPs, NICs, snapshots with no owner)
+        ↓
+Delete or tag for review
+        ↓
+On failure: retry with backoff, then page
+```
+
+Deallocate (Azure) stops the VM and stops compute charges. The disk can still bill. A stop that leaves the VM allocated is not a saving. Orphans are leftover disks, public IPs, NICs, and snapshots after a destroy that did not finish. Write the job so a failed run retries, then alerts. A silent failed cleanup is how last month's savings never happen. Day-23 treats the VM as something you replace. The runner is Look-up (Azure Automation, a Logic App, or a pipeline on a cron).
+
+> **Remember:** A schedule is not FinOps. A job that deallocates, sweeps orphans, and retries is.
+
+**Exit check:** A nightly job failed and nobody was paged. Are the non-prod VMs still billing, and what do you fix first?
 
 ## Remember
 
@@ -91,8 +108,9 @@ Cost work has a calendar. Once a month, open the export, check tags, right-size 
 2. [Day-11/01-concepts.md](../../Day-11/01-concepts.md) - structure enables attribution
 3. [Day-17/01-concepts.md](../../Day-17/01-concepts.md) - GPU and other special node pools
 4. [Day-22/01-concepts.md](../../Day-22/01-concepts.md) - quota is platform capacity
-5. [Day-30/01-concepts.md](../../Day-30/01-concepts.md) - cost shows up in design reviews
-6. [Day-20/01-concepts.md](../../Day-20/01-concepts.md) - token usage and model cost as metrics
+5. [Day-23/01-concepts.md](../../Day-23/01-concepts.md) - VMs you deallocate and replace
+6. [Day-30/01-concepts.md](../../Day-30/01-concepts.md) - cost shows up in design reviews
+7. [Day-20/01-concepts.md](../../Day-20/01-concepts.md) - token usage and model cost as metrics
 
 Also note: every hands-on Day lesson ends with a cost check and cleanup section. That habit is FinOps in miniature.
 
@@ -120,3 +138,4 @@ You do not need a FinOps certificate for these roles. Showing the loop above, pl
 ## Source tags
 
 EPAM Lead Azure Cloud ("cost-effective Azure solutions") · EPAM Lead Platform · EPAM Lead AWS DevOps (cost optimisation and billing) · 2026-10-13 market (GPU capacity reservations, quota lead time) · 2026-10-26 market (AI token cost) · 2026-10-27 market (cost as monthly routine) · 2026-11-04 market (non-hyperscaler hosting: Vercel, dedicated / colocation)
+EPAM Lead Azure Cloud ("cost-effective Azure solutions") · EPAM Lead Platform · EPAM Lead AWS DevOps (cost optimisation and billing) · 2026-10-13 market (GPU capacity reservations, quota lead time) · 2026-10-26 market (AI token cost) · 2026-10-27 market (cost as monthly routine) · 2026-11-03 market (Azure VM deallocate + orphan cleanup with retries)

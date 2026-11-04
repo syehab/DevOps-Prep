@@ -334,7 +334,7 @@ If the bill rises 20% and orders rise 100%, cost per order fell. Absolute spend 
 <details>
 <summary>Answer</summary>
 
-Right-size nodes from usage data, not one graph. Replace unjustified NAT with VPC endpoints. Cut idle Dev. Shorten debug retention.
+Right-size nodes from usage data, not one graph. Replace unjustified NAT with VPC endpoints. Deallocate idle Dev VMs (disks may still bill). Shorten debug retention.
 
 Do not shrink Prod HA or skip restore tests to hit a budget.
 
@@ -758,6 +758,25 @@ Request quota increases before the date. Reserve scarce SKUs in the release plan
 
 ---
 
+## 35. Off-hours cleanup is a job, not a slogan
+
+Non-prod Azure VMs should be off at night. What do you actually automate, and what happens when the job fails?
+
+<details>
+<summary>Answer</summary>
+
+Deallocate the VMs on a schedule. A stop that leaves them allocated still bills compute. Disks may still bill.
+
+Sweep orphans: disks, public IPs, NICs, and snapshots with no owner. Tag or delete.
+
+On failure: retry, then page. A silent failed job is last month's waste again. A schedule is not FinOps.
+
+Look-up the runner (Azure Automation, a Logic App, or a pipeline cron). Do not invent a cleanup product.
+
+</details>
+
+---
+
 ## Day 39 Completion Criteria
 
 Complete Day 39 when you can demonstrate:
@@ -791,6 +810,7 @@ Complete Day 39 when you can demonstrate:
 [ ] Cost allocation model created
 [ ] Unit economics considered
 [ ] Cost optimization exercise completed
+[ ] Off-hours deallocate + orphan cleanup with retries described
 [ ] Reliability/cost trade-offs documented
 [ ] DR architecture diagram completed
 ```
