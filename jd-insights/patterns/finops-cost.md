@@ -15,6 +15,7 @@ Lead cloud JDs (Azure and AWS) add "cost-effective" next to "secure and scalable
 - Service quotas: request increases before the release, not during it. Quota is platform capacity. Capacity planning is part of the release plan
 - AI / LLM workloads: treat tokens per request, cost per request and per tenant, plus latency and error rate of model calls, as first-class metrics. Set a spend budget and alert on it like an error budget
 - Cost as routine work, not a quarterly surprise: required tags, right-sizing, a billing export you can query, a monthly review, and a plan for commitments (reservations or savings plans)
+- Cost work includes non-hyperscaler hosting (Vercel, a dedicated or colocation host such as Rackspace). The bill still needs tags, a budget, and a review. The loop does not require Azure or AWS
 
 ## Mental model
 
@@ -65,6 +66,19 @@ Set a spend budget. Alert when burn is fast, the same way an error budget pages 
 
 **Exit check:** Name four first-class metrics for a model call, and say what you do when spend burns the budget.
 
+## The loop still works off the big three
+
+```text
+See it     →  the vendor invoice + tags you applied
+Explain it →  which team and which environment
+Reduce it  →  right-size, sleep idle, delete orphans
+Keep it    →  a budget and a monthly review
+```
+
+Some JDs now name Vercel or a dedicated host next to Azure and AWS. That is still a bill. You still need to say who spends what. You still need a budget alert. Day-39 already teaches attribution on a hyperscaler export. Transfer the habit. Look up the vendor's usage export when a JD names it. Do not invent a Vercel lab.
+
+> **Remember:** FinOps is the loop, not the logo on the invoice.
+
 Cost work has a calendar. Once a month, open the export, check tags, right-size what is idle, and decide the next commitment. A savings plan you never review is a hope, the same way an untested backup is a hope. Day-39 already teaches attribution and unit cost. The interview wants the habit, not a certificate.
 
 ## Remember
@@ -105,4 +119,4 @@ You do not need a FinOps certificate for these roles. Showing the loop above, pl
 
 ## Source tags
 
-EPAM Lead Azure Cloud ("cost-effective Azure solutions") · EPAM Lead Platform · EPAM Lead AWS DevOps (cost optimisation and billing) · 2026-10-13 market (GPU capacity reservations, quota lead time) · 2026-10-26 market (AI token cost) · 2026-10-27 market (cost as monthly routine)
+EPAM Lead Azure Cloud ("cost-effective Azure solutions") · EPAM Lead Platform · EPAM Lead AWS DevOps (cost optimisation and billing) · 2026-10-13 market (GPU capacity reservations, quota lead time) · 2026-10-26 market (AI token cost) · 2026-10-27 market (cost as monthly routine) · 2026-11-04 market (non-hyperscaler hosting: Vercel, dedicated / colocation)

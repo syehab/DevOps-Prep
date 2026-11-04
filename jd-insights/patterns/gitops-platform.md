@@ -14,6 +14,7 @@ Platform and Lead roles want Git to be the source of truth for deployments (GitO
 - Multi-tenancy: granular RBAC plus a repeatable way to onboard a new tenant or namespace
 - Golden paths you can trust: generated infrastructure is tested end to end and watched for drift
 - Promotion flow: the same artifact moves dev → test → prod via Git changes
+- Release management with Argo CD plus an artifact repository (Artifactory, ACR, or ECR). The repository stores versions. Git records which version each environment should run. Promotion moves that pointer. It does not rebuild
 - Policy-as-code on the IaC: OPA, Conftest, or Checkov fail the plan when a resource breaks a rule (public bucket, missing tag, open SSH). Look-up the tool the JD names
 - Treat the platform as a product: backlog, paved-road SLOs, and DORA numbers. Teams consume the path. They do not file a ticket for each step
 - Multi-cluster GitOps: one Git source, many clusters. Argo CD ApplicationSets use generators (list, cluster, git, matrix) to create one Application per cluster. Rancher Fleet ships a GitRepo bundle to cluster groups. Promotion still moves the same artifact. The generator or group is what changes
@@ -76,6 +77,24 @@ Promotion is still Day-33: the same image digest. You change which cluster or gr
 > **Remember:** ApplicationSets and Fleet expand one Git source onto many clusters. They do not replace Helm, and they do not replace promotion of the same artifact.
 
 **Look-up:** ApplicationSet generator YAML and Fleet GitRepo fields. Do not invent a 50-cluster lab.
+
+## The artifact repository is the warehouse
+
+```text
+CI builds one artifact
+        ↓
+Push to Artifactory / ACR / ECR  (the warehouse)
+        ↓
+Git records the digest or version per environment
+        ↓
+Argo CD syncs the cluster to that Git state
+```
+
+JDs now name Argo CD and an artifact repository in the same sentence. The repository holds the bytes (image, Helm chart, or package). Git holds the desired version for Dev, test, and prod. Promotion is a Git change that points at a version that already exists. Artifactory can also mark a version as staged or released. That mark does not replace Git as the cluster's source of truth.
+
+> **Remember:** The repository stores the artifact. Git says which artifact should run. Argo CD applies that. Do not rebuild for the next environment.
+
+**Look-up:** Artifactory promotion versus a Git pointer. Do not invent an Artifactory lab.
 
 ## One codebase, two install sites
 
@@ -144,10 +163,17 @@ Outline:
 2. Site: mirror images and the Helm or OCI bundle into a private registry. Upgrade offline.
 3. Expect version skew. Support the older site chart until it upgrades.
 
+**Q: How do Argo CD and an artifact repository share a promotion?**
+
+Outline:
+1. CI builds once and pushes the artifact to Artifactory, ACR, or ECR.
+2. Git records that digest (or version) for the target environment. Argo CD syncs the cluster to Git.
+3. Promotion moves the pointer. It does not rebuild. Artifactory stage marks are extra labels, not a second source of truth.
+
 ## Honest gap note
 
 Backstage appears in EPAM platform JDs, and newer ones also name Crossplane, Pulumi, Humanitec, and OpsLevel. If you have not run these, do not claim plugins or ownership. Explain the ideas (Crossplane provisions cloud resources from inside the cluster, Pulumi is IaC in a real programming language, Humanitec and OpsLevel are IDP products like Backstage) and show your GitOps and Helm experience, which is the engine under any IDP.
 
 ## Source tags
 
-EPAM Lead Platform / Unified Automation (Backstage) · EPAM Lead Cloud (IDP) · EPAM Senior DevOps Azure · RedCloud Platform · EPAM Senior/Lead Platform Engineer · Turkey banking platform (Terraform account vending) · 2026-10-13 market (catalog links dashboards, Argo CD, owners, IaC docs) · 2026-10-27 market (policy-as-code, platform as product) · 2026-11-02 market (ApplicationSets vs Fleet, air-gapped / sovereign shipping)
+EPAM Lead Platform / Unified Automation (Backstage) · EPAM Lead Cloud (IDP) · EPAM Senior DevOps Azure · RedCloud Platform · EPAM Senior/Lead Platform Engineer · Turkey banking platform (Terraform account vending) · 2026-10-13 market (catalog links dashboards, Argo CD, owners, IaC docs) · 2026-10-27 market (policy-as-code, platform as product) · 2026-11-02 market (ApplicationSets vs Fleet, air-gapped / sovereign shipping) · 2026-11-04 market (Argo CD plus Artifactory / ACR / ECR for promotion)
