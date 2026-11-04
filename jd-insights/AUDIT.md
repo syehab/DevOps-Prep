@@ -222,3 +222,32 @@ Mean of the nine thin Days in this pass: **2.4 / 5 → 5 / 5** on the lab file. 
 - Cloud apply of AKS, ACA, PE, and vaults remains **Not executed** in the authoring VMs. `terraform test`, Python, and bash were executed where the Day says so.
 
 > **Remember:** A Senior story is one repo, a reviewed plan, a destroy, and a budget. A folder of `local_file` labs is not.
+
+## JD coverage audit (2026-11-03)
+
+Date: 2026-11-03. Scope: eight market themes from Senior DevOps / SRE / Platform JDs. Cards landed first in the jd-insights PR. This pass reads only the Days those cards map to. STE house style kept. No vacancy IDs. No new tools.
+
+### Theme coverage
+
+| Theme | Card | Days mapped | Status |
+|:--|:--|:--|:--|
+| Data-estate dashboards (Trino / Hadoop / Ozone) | data-platform-sre (new) | 20, 17, 27, 35 | Covered. Day-20 already teaches one picture and user-pain SLIs. Product names stay Look-up. |
+| EDP readiness before ML | data-platform-sre | 20, 16, 17 | Covered. ORR framing lives on the card. Day-20 already has dashboards and launch readiness. Day-16 is GitOps. Day-17 hosts GPU / ML. |
+| Self-managed / bare-metal ownership | self-managed-servers (new) | 2, 17, 23 | Covered. Day-02 owns the Linux box. Day-17 draws managed vs self-managed. Day-23 owns patch and harden. Puppet / LXC stay Look-up. |
+| On-prem MinIO / Redis / Memcached | self-managed-servers | 27 | Covered. Day-27 already places S3 and ElastiCache. MinIO is the S3 you run. |
+| Self-hosted GitLab / Artifactory / Nexus / Harbor | self-managed-servers, gitops-platform | 19 | Covered. Day-19 already teaches the registry and the air-gap mirror. Harbor is a Look-up name. |
+| HIPAA / SOC 2 + tested restore | landing-zone-multi-account | 11, 39 | Covered. Day-11 already has SOC 2 evidence piles. Day-39 already drills restore. HIPAA is a sibling framework name on the card. |
+| Azure VM deallocate + orphan cleanup with retries | finops-cost | 39, 23 | Fixed on Day-39 (Part 25). Day-23 already treats the VM as something you replace. The Day only said "cut idle Dev." The interview asks for deallocate, orphan sweep, and retry. |
+| MySQL admin inside DevOps | aws-eks-terraform | 27, 39 | Covered. Day-27 already names MySQL on RDS. Day-39 already drills restore. Engine views stay Look-up. |
+
+### Already well covered (no Day edit)
+
+Day-02 Linux ownership, Day-11 evidence piles, Day-16 paved road, Day-17 managed vs self-managed, Day-19 registry and air-gap, Day-20 one-picture dashboards, Day-23 VM patch and replace, Day-27 private data stores (S3, ElastiCache, RDS MySQL / PostgreSQL), Day-35 observability project.
+
+### Gap noted (left on the card)
+
+- Trino, Hadoop, Ozone, MLflow, Airflow, MinIO, Harbor, Puppet, and LXC stay Look-up. Do not invent those labs.
+- HIPAA control IDs stay Look-up. Day-11 already teaches the four evidence piles.
+- The off-hours runner (Azure Automation, Logic App, pipeline cron) stays Look-up. Day-39 teaches the job, not a product.
+
+> **Remember:** Fresh themes update the card first. Touch a Day only when the card exposes a missing model or a name the interview will ask out loud.

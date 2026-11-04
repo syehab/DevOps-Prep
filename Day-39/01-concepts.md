@@ -896,6 +896,28 @@ Some compute is scarce. GPU capacity is often not waiting on a shelf when you ne
 
 Put capacity planning in the release plan. Request quota increases before go-live, and reserve scarce SKUs before the date. Do not discover a quota limit during the incident, because quota is platform capacity, not a billing discount. Day 22 already named that distinction for Azure subscriptions.
 
+Non-prod idle is a different waste. Autoscaling helps production follow traffic. It does not turn off a forgotten test VM at 19:00.
+
+```text
+Schedule (nights, weekends, non-prod)
+        ↓
+Deallocate the VMs (stop compute billing)
+        ↓
+Sweep orphans (disks, IPs, NICs, snapshots with no owner)
+        ↓
+On failure: retry, then page
+```
+
+Deallocate (Azure) stops the VM and stops compute charges. The disk can still bill. A stop that leaves the VM allocated is not a saving. Orphans are leftover disks, public IPs, NICs, and snapshots after a destroy that did not finish.
+
+Work a small example first. ShopSphere Dev has six D2 VMs left on over the weekend. You write a job that deallocates them Friday 19:00 and starts them Monday 07:00. The first Friday the job fails on a lock. Nobody is paged. Monday the bill is the same. The missing piece is retry plus an alert.
+
+> **Remember:** A schedule is not FinOps. A job that deallocates, sweeps orphans, and retries is.
+
+**Look-up:** Azure Automation, a Logic App, or a pipeline on a cron. Do not invent a cleanup product.
+
+**Exit check:** A nightly job failed and nobody was paged. Are the non-prod VMs still billing, and what do you fix first?
+
 ---
 
 ## Part 26 — Observability Cost
