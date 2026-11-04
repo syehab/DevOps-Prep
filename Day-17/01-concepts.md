@@ -6,7 +6,7 @@ This Day uses three files. Read them in this order.
 2. [02-questions-and-answers.md](02-questions-and-answers.md) — practice items, each with a model answer
 3. [03-implementation.md](03-implementation.md) — hands-on lab
 
-**Goal:** Understand what changes when Kubernetes moves from a self-managed cluster to a managed cloud service, and learn the Azure/AWS architecture and operational decisions behind AKS and EKS.
+**Goal:** Understand what changes when Kubernetes moves from a self-managed cluster to a managed cloud service, and learn the Azure/AWS architecture and operational decisions behind AKS and EKS. The same ownership line maps to GKE when a JD names it.
 
 **Core idea:** AKS and EKS do not replace Kubernetes; they provide managed Kubernetes control-plane capabilities and integrate Kubernetes with their respective cloud platforms. The important Senior/Lead skill is knowing **what Kubernetes owns, what the cloud provider owns, what your team owns, and where networking, identity, security, scaling and cost decisions sit**.
 
@@ -397,34 +397,48 @@ The exact order and supported upgrade path depend on the managed service and ver
 
 ## Part 9 — AKS vs EKS: Learn the Concept, Then the Cloud Mapping
 
-1. You do not need two separate Kubernetes mental models. The underlying Kubernetes concepts remain the same: Pods, Deployments, Services, Ingress, RBAC, resource requests, scheduling, probes and controllers. What changes is how Azure or AWS provides the surrounding infrastructure and integrations. This is the same learning strategy used throughout the course: **learn the concept once, then map the cloud implementation.**
+1. You do not need two separate Kubernetes mental models. The underlying Kubernetes concepts remain the same: Pods, Deployments, Services, Ingress, RBAC, resource requests, scheduling, probes and controllers. What changes is how Azure, AWS, or GCP provides the surrounding infrastructure and integrations. This is the same learning strategy used throughout the course: **learn the concept once, then map the cloud implementation.**
 
 2. Keep this mapping in your head:
 
-| Kubernetes / Platform Concept | Azure | AWS |
-|---|---|---|
-| Managed Kubernetes | AKS | EKS |
-| Container registry | ACR | ECR |
-| Cloud identity | Microsoft Entra ID / Azure RBAC | IAM |
-| Workload identity | Workload Identity | IRSA / EKS Pod Identity |
-| Virtual network | VNet | VPC |
-| Load balancing | Azure Load Balancer / Application Gateway | ELB family |
-| Monitoring | Azure Monitor | CloudWatch |
-| Secrets / key management | Key Vault | Secrets Manager / KMS |
-| Infrastructure as Code | Bicep / Terraform | Terraform / CloudFormation |
-| Managed database examples | Azure Database services | RDS / other managed DB services |
+| Kubernetes / Platform Concept | Azure | AWS | GCP |
+|---|---|---|---|
+| Managed Kubernetes | AKS | EKS | GKE |
+| Container registry | ACR | ECR | Artifact Registry |
+| Cloud identity | Microsoft Entra ID / Azure RBAC | IAM | Cloud Identity / IAM |
+| Workload identity | Workload Identity | IRSA / EKS Pod Identity | Workload Identity |
+| Virtual network | VNet | VPC | VPC |
+| Load balancing | Azure Load Balancer / Application Gateway | ELB family | Cloud Load Balancing |
+| Monitoring | Azure Monitor | CloudWatch | Cloud Monitoring |
+| Secrets / key management | Key Vault | Secrets Manager / KMS | Secret Manager / Cloud KMS |
+| Infrastructure as Code | Bicep / Terraform | Terraform / CloudFormation | Terraform / Deployment Manager |
+| Managed database examples | Azure Database services | RDS / other managed DB services | Cloud SQL / other managed DB services |
 
-The table is a conceptual map, not a claim that each service has identical behavior or features.
+The table is a conceptual map, not a claim that each service has identical behavior or features. Anthos is Google's multi-cluster and hybrid layer. Look it up when a JD names it. Do not invent a GKE or Anthos lab.
 
-3. For interviews, avoid answering with product names alone. If asked, “How would you secure AKS?” do not simply list Azure services. Explain the layers: identity, Kubernetes RBAC, workload identity, network segmentation, NetworkPolicy, secret management, image security, private connectivity, logging and least privilege. Then map those concepts to Azure services. The same answer structure works for EKS.
+3. For interviews, avoid answering with product names alone. If asked, “How would you secure AKS?” do not simply list Azure services. Explain the layers: identity, Kubernetes RBAC, workload identity, network segmentation, NetworkPolicy, secret management, image security, private connectivity, logging and least privilege. Then map those concepts to Azure services. The same answer structure works for EKS and for GKE.
 
-4. This approach also makes migration easier. AKS and EKS both provide managed Kubernetes but use different identity and networking integrations. Once you understand that, a move between them becomes primarily a platform-integration exercise, not a relearning of Kubernetes itself.
+4. This approach also makes migration easier. AKS, EKS, and GKE all provide managed Kubernetes but use different identity and networking integrations. Once you understand that, a move between them becomes primarily a platform-integration exercise, not a relearning of Kubernetes itself.
+
+OpenShift and OKD are Kubernetes plus a product layer, not a third cloud. A Route often does the job you already know as Ingress. Security Context Constraints (SCC) add a policy layer on Pods. A project is a namespace with extra quota and policy. OKD is the community build of OpenShift.
+
+The request path you walk in Day 15 does not change. Name the extra layer, then transfer probes, Services, and evidence. This Day already asks what a platform hides. OpenShift hides some install work and adds those names.
+
+> **Remember:** Clouds and OpenShift change the names around Kubernetes. They do not change the request path.
+
+**Look-up:** Anthos, Route versus Ingress, SCC versus Pod Security. Do not invent an OpenShift lab.
+
+**Exit check:** Answer from memory.
+
+1. What is the GCP name for AKS, and for ACR?
+2. What extra names does OpenShift add on Ingress, Pod security, and a namespace?
+3. What stays the same when you walk a 503 on OpenShift?
 
 ---
 
 **Core mental model:**
 
-> **AKS/EKS = managed Kubernetes control plane + cloud-integrated compute, networking, identity, security and operations.**
+> **AKS/EKS/GKE = managed Kubernetes control plane + cloud-integrated compute, networking, identity, security and operations.**
 
 **Ownership model to remember:**
 
