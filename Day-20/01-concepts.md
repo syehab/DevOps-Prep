@@ -337,6 +337,27 @@ Better alerting often combines technical symptoms with service-level impact. For
 
 **Remember:** An alert is not the diagnosis. It is the signal that starts the investigation.
 
+Alert quality has a second half: de-duplication across tools. Senior JDs now name Prometheus, Grafana, Datadog, and PagerDuty in one breath. Those products can all see the same checkout failure. That is not four pages for one user symptom.
+
+```text
+Prometheus rule  ─┐
+Grafana alert    ─┤
+Datadog monitor  ─┼─►  PagerDuty  →  one page, one owner
+Azure Monitor    ─┘
+```
+
+Keep the useful signal in each tool. Deduplicate at the pager. Group by service and symptom so one burn wakes one human. Delete the extra page, not the metric. PagerDuty is the usual name for that grouping step. Look up its event grouping when a JD names it. Do not invent a four-tool lab.
+
+Worked example: ShopSphere checkout 5xx fires a PrometheusRule and a Datadog monitor. Both describe the same user symptom. PagerDuty should open one incident. A second page for the same service and the same 5xx is noise, even when the second tool is "correct."
+
+> **Remember:** Four tools can watch one SLO. Only one of them should wake a human.
+
+**Exit check:** Answer from memory.
+
+1. Checkout 5xx fires in Prometheus and in Datadog. How many pages should PagerDuty send?
+2. What do you group on?
+3. Do you delete the Datadog monitor?
+
 ---
 
 ## Part 9 — SLI, SLO and SLA
@@ -373,6 +394,14 @@ Error budget = 100% minus SLO
 Budget burning fast? → page a human
 Budget healthy?      → ship features
 ```
+
+A roadmap is the order you grow this, not a second policy. Pick one SLI users feel. Set an SLO. Write what happens when the budget burns. Only then add more SLIs. A slide with twelve SLOs and no written next step is not mature.
+
+```text
+One user SLI  →  SLO  →  written budget policy  →  then more SLIs
+```
+
+Worked example: ShopSphere starts with checkout success rate. The SLO is 99.9 percent over 30 days. The policy says a fast burn pauses risky releases. Latency and a payments-per-minute SLI come after that policy exists.
 
 ---
 
