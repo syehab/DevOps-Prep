@@ -659,3 +659,18 @@ Mirror those same digests, plus the Helm chart or an OCI bundle, into the site's
 Version skew is normal. Support the older site chart until it upgrades. Do not copy a moving tag and call it a release.
 
 </details>
+
+---
+
+## 28. Recall — Image lifecycle in the registry
+
+What are the four steps of the container image lifecycle in ACR or ECR, and which images may expire?
+
+<details>
+<summary>Answer</summary>
+
+Build, scan, tag, then apply a retention policy. Untagged manifests and old feature tags may expire after a set time.
+
+Do not expire a digest that Production still pins in Git. Retention is a written policy. It is not a hope that someone will clean the registry.
+
+</details>
