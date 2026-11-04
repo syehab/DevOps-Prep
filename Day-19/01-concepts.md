@@ -257,7 +257,9 @@ CI Build
    ↓
 Security Scan
    ↓
-Push to Trusted Registry
+Tag (semver + git SHA) and push
+   ↓
+Retention policy (keep what a release still pins)
    ↓
 Controlled Pull
    ↓
@@ -285,6 +287,20 @@ ECR
      ↓
 EKS
 ```
+
+Retention is the keep-and-delete policy, not a hope that someone will clean the registry later. You build the image, you scan it, you tag it, and you say what may expire. Untagged manifests and old feature tags can go after a set time. Production digests stay until you retire that release. A registry with no retention grows until someone pays for ghosts.
+
+Worked example: ShopSphere 1.4.2 is tagged and pinned by digest in Git. Last month's `pr-1847` tags and their untagged layers can expire. Do not expire the digest Production still pins. Day 33 promotes that digest. This Day decides what the registry is allowed to forget.
+
+> **Remember:** Build, scan, tag, then keep only what a release still points at. Retention is a policy, not a cleanup hope.
+
+**Look-up:** ACR retention policies and ECR lifecycle rules. Do not invent a billed registry lab.
+
+**Exit check:** Answer from memory.
+
+1. Which four steps are the image lifecycle in the registry?
+2. May you expire an untagged `pr-1847` image?
+3. May you expire the digest Production still pins?
 
 The path above assumes the cluster can pull from ACR or ECR. Some customers cannot. Their site is self-hosted, sovereign, or air-gapped: no pull from the public internet.
 
