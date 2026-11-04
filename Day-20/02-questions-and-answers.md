@@ -785,3 +785,33 @@ Istio is a service mesh. It encrypts Pod-to-Pod traffic with mTLS and can shift 
 Instrument once with OpenTelemetry. Send traces to the APM. Send security events to the SIEM. Do not scrape the same HTTP counter three times. Day 34 already taught the canary. Istio is one way to shift that traffic. It is not the pager.
 
 </details>
+
+---
+
+## 28. Recall — One symptom, one page
+
+Checkout 5xx fires in Prometheus and in Datadog. How many pages should PagerDuty send, and what do you group on?
+
+<details>
+<summary>Answer</summary>
+
+One page. Group by service and symptom. Keep both monitors if they help the investigation. Deduplicate at the pager.
+
+A second page for the same 5xx is noise. Do not delete the useful signal. PagerDuty event grouping is Look-up.
+
+</details>
+
+---
+
+## 29. Recall — SLO and error-budget roadmap
+
+What is the first sequence when you grow SLOs, and what is not mature?
+
+<details>
+<summary>Answer</summary>
+
+Pick one user-facing SLI. Set an SLO. Write the error-budget policy (what happens when the budget burns). Only then add more SLIs.
+
+A slide with twelve SLOs and no written next step is not a roadmap.
+
+</details>
