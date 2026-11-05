@@ -370,13 +370,28 @@ Audit trail: who asked, what ran, what changed
 
 Keep the agent read-only until a human raises the gate. Cap what it may touch (one subscription, one namespace, no delete). Never put secrets, state files, or tokens into the prompt. The model vendor must not see production credentials.
 
-> **Remember:** Treat AI output like a fast junior engineer: great first drafts, zero accountability. Review stays human, gates stay in the pipeline. Evals are the tests when you build the agent. An infra-acting agent stays read-only until a PR is approved.
+JDs now also name spec-driven development. Write the spec first: what good looks like, and what the tool may not read, write, or run. Then let the agent implement against that spec. You review the diff the same way you review a junior engineer's PR.
+
+A vague prompt is not a spec. Secrets still stay out of the prompt. Cap what the tool may touch. On-call supervision is the same rule: give a bounded task, check the output, and own the action.
+
+```text
+Write a spec (what good looks like)
+        ↓
+Agent implements against that spec
+        ↓
+Human reviews the diff
+        ↓
+Pipeline still gates production
+```
+
+> **Remember:** Treat AI output like a fast junior engineer: great first drafts, zero accountability. Review stays human, gates stay in the pipeline. Evals are the tests when you build the agent. An infra-acting agent stays read-only until a PR is approved. The spec is the contract. The agent drafts. You merge.
 
 **Exit check:** Answer from memory.
 
 1. What credential does the agent itself hold?
 2. How does a production change leave the agent?
 3. Why do secrets stay out of the prompt?
+4. What do you write before the agent implements a change?
 
 More on this theme in the [agentic DevOps pattern card](../jd-insights/patterns/agentic-devops.md).
 

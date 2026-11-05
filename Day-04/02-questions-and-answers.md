@@ -283,3 +283,20 @@ A human reviews and approves. The pipeline applies with a least-privilege identi
 Never put secrets, state files, or tokens into the prompt. The model vendor must not see production credentials.
 
 </details>
+
+---
+
+## 13. Spec-driven work with an AI agent
+
+A JD asks you to write a spec first, let an agent implement it, then review. What do you write first, what never enters the prompt, and who merges?
+
+<details>
+<summary>Answer</summary>
+
+Write the spec first: what good looks like, and what the tool may not read, write, or run. A vague prompt is not a spec.
+
+The agent implements against that spec. You review the diff. The pipeline still gates production. Secrets, state files, and tokens never enter the prompt.
+
+On-call is the same rule: give a bounded task, check the output, own the action.
+
+</details>
