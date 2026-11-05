@@ -355,6 +355,7 @@ There is no universal number. Stop widening traffic, keep majority on v1, then r
 Answered without looking back.
 
 1. Which two DORA metrics measure speed, which two measure stability, and why do they tend to improve together?
+2. Where does each number come from: the pipeline or incident tools?
 
 <details>
 <summary>Answer</summary>
@@ -362,6 +363,8 @@ Answered without looking back.
 Speed: Deployment Frequency and Lead Time for Changes. Stability: Change Failure Rate and Time to Restore.
 
 Small batches plus automated verification make releases faster and failures rarer. Healthy teams do not buy speed by dropping stability.
+
+Frequency and lead time come from the pipeline (how often it shipped, when the commit became the Production artifact). Change failure rate and time to restore come from incident tools (how many deploys needed a rollback or hotfix, how long until users were OK).
 
 </details>
 
@@ -826,5 +829,26 @@ Explain that sequence. Say what you would do first, and what you would leave for
 Detect → assess impact → contain → diagnose → recover → verify → communicate → RCA. Do not change five things at once.
 
 Ask when it started, which version, which endpoints, how many users, AZ vs dependency. Restore service first. Prove root cause after.
+
+</details>
+
+---
+
+## 31. k6 as a release gate
+
+**Exit Check**
+
+Answered without looking back.
+
+A JD names k6 baselines and thresholds before promotion. What two numbers do you set, when does the job run, and what happens when the candidate misses the line?
+
+<details>
+<summary>Answer</summary>
+
+Set a baseline from current normal (p95, error rate). Set a threshold the new build must not cross.
+
+Run the job in the pipeline before traffic moves. If the threshold breaks, fail the job and stop the release. A report after go-live is not a gate.
+
+k6 is one product name. The control is the same as a health check, applied to the whole release. Script syntax is Look-up.
 
 </details>
