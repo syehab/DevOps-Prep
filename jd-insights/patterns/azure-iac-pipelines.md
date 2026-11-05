@@ -16,6 +16,9 @@ Most Azure senior roles want one person who can describe infrastructure as code 
 - Multi-cloud migration: on-prem to cloud and cloud to cloud. Terraform is the common layer. The names change (AKS, EKS, GKE). The plan-review-approve-apply loop does not
 - Azure serverless operations: deploy Functions and Logic Apps with Bicep, watch them with Application Insights and Azure Monitor, and give them a managed identity so they do not store secrets
 - Hybrid CI/CD: Azure DevOps self-hosted agents on-prem when the build must see a private network, plus Environments and approvals for production. Terraform Cloud workspaces add remote state, run triggers, and policy checks. A plain remote backend only stores state and the lock. The pipeline still runs plan and apply
+- Build speed as engineering: cache what does not change, run independent jobs in parallel, and split a long build into modules. TeamCity appears next to Jenkins and GitHub Actions. The loop stays. The CI product is Look-up
+- Terragrunt (or a similar wrapper) keeps Terraform layouts DRY across many stacks. The module idea is Day-09. The wrapper is Look-up
+- DevSecOps scanners such as SonarQube and Cycode appear in Azure SRE roles. They are SAST / SCA product names. Day-19 already teaches the gate, not the logo
 
 ## Mental model
 
@@ -96,6 +99,24 @@ JDs now ask for both moves: datacentre to cloud, and one cloud to another. Keep 
 
 > **Remember:** Terraform is the common language. The loop stays. Only the provider names change.
 
+## The build is also a system
+
+```text
+Cache what does not change
+        ↓
+Run independent jobs in parallel
+        ↓
+Split a long build into modules
+```
+
+Some roles exist to make the pipeline faster and more reliable, not only to write YAML. Cache package downloads and container layers. Run test jobs that do not share state in parallel. Break a 40-minute monolith into smaller builds that fail on their own. TeamCity, Jenkins, and GitHub Actions are product names for the same job-runner idea. Day-06 already teaches stages, jobs, and one artifact.
+
+Terragrunt sits on top of Terraform so many stacks share one module layout without copy-paste. Day-09 already teaches that reuse. Name Terragrunt when a JD does. Do not invent a Terragrunt lab.
+
+> **Remember:** A slow build is an engineering problem. Cache, run in parallel, and split. The wrapper does not replace the module.
+
+**Look-up:** TeamCity job caches and Terragrunt stack layout. Do not invent those labs.
+
 ## Remember
 
 > **Employers are not buying Terraform syntax. They are buying a safe change process: plan, policy check, review, approve, apply, repeat in every environment.**
@@ -150,6 +171,14 @@ Outline:
 2. Change the provider and the names. Do not rewrite the app to change the cloud.
 3. Move in waves with a rollback boundary (Day-37). Map names with Day-17.
 
+**Q: A 40-minute build is blocking the team. What do you change first?**
+
+Outline:
+1. Cache package downloads and container layers that did not change.
+2. Run independent jobs in parallel. Split the monolith into modules that fail on their own.
+3. TeamCity, Jenkins, and GitHub Actions are the same job-runner idea. Name the one you have used.
+4. Terragrunt is a DRY wrapper. Day-09 already teaches the module. Do not invent Terragrunt syntax.
+
 ## Honest gap note
 
 JDs sometimes name OpenTofu or Ansible. If you use Terraform daily, say so, and say you are happy to work in OpenTofu-compatible workflows (the language is the same). Do not claim daily Ansible depth you do not have; explain configuration as code concepts instead.
@@ -158,4 +187,4 @@ Logic Apps has no Day lesson. Transfer Functions, Bicep, managed identity, and A
 
 ## Source tags
 
-EPAM Azure Lead (TR, KZ) · EPAM Senior Azure DevOps · EPAM Senior Azure DevOps (KZ, migration) · EPAM Senior Azure Engineer (KZ) · EPAM Lead Azure Cloud · EPAM Senior Azure Cloud (KZ) · EPAM Lead DevOps (KZ) · 2026-10-27 market (policy-as-code on IaC) · 2026-10-28 market (Functions / Logic Apps with Bicep, App Insights, managed identity) · 2026-11-02 market (on-prem ADO agents, Terraform Cloud vs remote backend) · 2026-11-04 market (on-prem and cloud-to-cloud migration, Terraform as the common layer)
+EPAM Azure Lead (TR, KZ) · EPAM Senior Azure DevOps · EPAM Senior Azure DevOps (KZ, migration) · EPAM Senior Azure Engineer (KZ) · EPAM Lead Azure Cloud · EPAM Senior Azure Cloud (KZ) · EPAM Lead DevOps (KZ) · 2026-10-27 market (policy-as-code on IaC) · 2026-10-28 market (Functions / Logic Apps with Bicep, App Insights, managed identity) · 2026-11-02 market (on-prem ADO agents, Terraform Cloud vs remote backend) · 2026-11-04 market (on-prem and cloud-to-cloud migration, Terraform as the common layer) · 2026-11-05 market (build-speed engineering, Terragrunt, SonarQube / Cycode)

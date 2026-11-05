@@ -20,6 +20,8 @@ Platform and Lead roles want Git to be the source of truth for deployments (GitO
 - Multi-cluster GitOps: one Git source, many clusters. Argo CD ApplicationSets use generators (list, cluster, git, matrix) to create one Application per cluster. Rancher Fleet ships a GitRepo bundle to cluster groups. Promotion still moves the same artifact. The generator or group is what changes
 - One codebase to cloud and to a customer site (self-hosted, sovereign, or air-gapped): Docker Compose for small sites, Kubernetes plus Helm or an OCI bundle for larger ones. Mirror images into a private registry. Upgrade offline. Expect the customer version to lag the cloud version
 - Self-hosted factory names: GitLab (source and CI), Artifactory or Nexus (packages), Harbor (container registry). Same jobs as GitHub, a package feed, and ACR or ECR. You operate them. See the [self-managed card](self-managed-servers.md)
+- The same factory also builds mobile apps, desktop software, and device firmware. You still sign the artifact, version it, keep it, and roll it out in stages. The artifact type changes. The loop does not
+- Ephemeral preview environments: a pipeline (often GitLab CI) creates a short-lived environment per change, then destroys it. The portal still maps the paved road. The preview is a temporary stop, not a second production
 
 ## Mental model
 
@@ -123,9 +125,33 @@ Platform JDs now ask you to measure the paved road, not just build it. The four 
 - Deployment frequency: how often you ship to production
 - Lead time for changes: how long a commit takes to reach production
 - Change failure rate: what share of deploys cause a problem
-- Mean time to recovery: how fast users are OK again after a bad deploy
+- Time to restore: how fast users are OK again after a bad deploy
 
-A good paved road pushes the first two up and the last two down. [Day-34/01-concepts.md](../../Day-34/01-concepts.md) walks through these four (it calls them release metrics, not DORA).
+A good paved road pushes the first two up and the last two down. [Day-34/01-concepts.md](../../Day-34/01-concepts.md) walks through these four (it also calls them release metrics).
+
+JDs now ask where each number comes from. Deployment frequency and lead time come from the pipeline (how often it shipped, when the commit became a production artifact). Change failure rate and time to restore come from incident tools (how many deploys needed a rollback or hotfix, how long until users were OK). Do not invent a fourth dashboard. Read the tools you already run.
+
+**Exit check:** Name the four metrics. Then say which two you read from the pipeline and which two you read from incidents.
+
+## A preview dies with the change
+
+```text
+Change opens
+        ↓
+Pipeline creates a preview
+        ↓
+Reviewers try the change
+        ↓
+Merge or close → destroy the preview
+```
+
+JDs now ask for preview environments next to the paved road. GitLab CI and in-house Go tooling are common names. On-prem, Windows / Hyper-V, and cloud are just where that preview runs. The preview is not production. It lives for the change, then it goes away. Day-05 already maps a change to an environment. Day-16 is the paved road. Day-33 still promotes the same signed artifact to the real environments.
+
+The factory also signs and stores artifacts that are not web images: a mobile build, a desktop installer, or device firmware. Version it. Keep the bytes. Roll out in stages. Day-06 already says build once and keep the artifact. Day-19 is the sign-and-scan step.
+
+> **Remember:** A preview is temporary. Production still takes the same signed artifact through the usual gates.
+
+**Look-up:** GitLab review apps and Hyper-V lab hosts. Do not invent a preview-platform lab.
 
 ## Remember
 
@@ -135,9 +161,11 @@ A good paved road pushes the first two up and the last two down. [Day-34/01-conc
 
 1. [Day-16/01-concepts.md](../../Day-16/01-concepts.md) - Helm and GitOps core
 2. [Day-05/01-concepts.md](../../Day-05/01-concepts.md) - branches and environments
-3. [Day-33/01-concepts.md](../../Day-33/01-concepts.md) - artifact promotion
-4. [Day-19/01-concepts.md](../../Day-19/01-concepts.md) - securing the chain, registry, and the air-gap mirror
-5. [Day-36/01-concepts.md](../../Day-36/01-concepts.md) - policy evaluation before plan (Part 14)
+3. [Day-06/01-concepts.md](../../Day-06/01-concepts.md) - one artifact, kept and promoted
+4. [Day-33/01-concepts.md](../../Day-33/01-concepts.md) - artifact promotion
+5. [Day-19/01-concepts.md](../../Day-19/01-concepts.md) - securing the chain, registry, and the air-gap mirror
+6. [Day-34/01-concepts.md](../../Day-34/01-concepts.md) - DORA numbers and where they come from
+7. [Day-36/01-concepts.md](../../Day-36/01-concepts.md) - policy evaluation before plan (Part 14)
 
 ## Common interview question
 
@@ -171,11 +199,17 @@ Outline:
 2. Git records that digest (or version) for the target environment. Argo CD syncs the cluster to Git.
 3. Promotion moves the pointer. It does not rebuild. Artifactory stage marks are extra labels, not a second source of truth.
 
+**Q: Where do the four DORA numbers come from, and what is a preview environment?**
+
+Outline:
+1. Frequency and lead time: the pipeline. Failure rate and time to restore: incident tools.
+2. A preview is a short-lived environment for one change. Destroy it on merge or close.
+3. The same factory can sign a mobile, desktop, or firmware artifact. Keep it. Roll out in stages.
+
 ## Honest gap note
 
 Backstage appears in EPAM platform JDs, and newer ones also name Crossplane, Pulumi, Humanitec, and OpsLevel. If you have not run these, do not claim plugins or ownership. Explain the ideas (Crossplane provisions cloud resources from inside the cluster, Pulumi is IaC in a real programming language, Humanitec and OpsLevel are IDP products like Backstage) and show your GitOps and Helm experience, which is the engine under any IDP.
 
 ## Source tags
 
-EPAM Lead Platform / Unified Automation (Backstage) · EPAM Lead Cloud (IDP) · EPAM Senior DevOps Azure · RedCloud Platform · EPAM Senior/Lead Platform Engineer · Turkey banking platform (Terraform account vending) · 2026-10-13 market (catalog links dashboards, Argo CD, owners, IaC docs) · 2026-10-27 market (policy-as-code, platform as product) · 2026-11-02 market (ApplicationSets vs Fleet, air-gapped / sovereign shipping) · 2026-11-04 market (Argo CD plus Artifactory / ACR / ECR for promotion)
-EPAM Lead Platform / Unified Automation (Backstage) · EPAM Lead Cloud (IDP) · EPAM Senior DevOps Azure · RedCloud Platform · EPAM Senior/Lead Platform Engineer · Turkey banking platform (Terraform account vending) · 2026-10-13 market (catalog links dashboards, Argo CD, owners, IaC docs) · 2026-10-27 market (policy-as-code, platform as product) · 2026-11-02 market (ApplicationSets vs Fleet, air-gapped / sovereign shipping) · 2026-11-03 market (self-hosted GitLab / Artifactory / Nexus / Harbor)
+EPAM Lead Platform / Unified Automation (Backstage) · EPAM Lead Cloud (IDP) · EPAM Senior DevOps Azure · RedCloud Platform · EPAM Senior/Lead Platform Engineer · Turkey banking platform (Terraform account vending) · 2026-10-13 market (catalog links dashboards, Argo CD, owners, IaC docs) · 2026-10-27 market (policy-as-code, platform as product) · 2026-11-02 market (ApplicationSets vs Fleet, air-gapped / sovereign shipping) · 2026-11-03 market (self-hosted GitLab / Artifactory / Nexus / Harbor) · 2026-11-04 market (Argo CD plus Artifactory / ACR / ECR for promotion) · 2026-11-05 market (DORA data sources, preview environments, mobile / desktop / firmware artifacts)

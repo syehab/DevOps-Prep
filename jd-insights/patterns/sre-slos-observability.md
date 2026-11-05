@@ -23,6 +23,8 @@ SRE titles (and most Lead roles) want you to define what "healthy" means with nu
 - SLO and error-budget roadmaps: start with one user-facing SLI, set an SLO, write the budget policy, then add more SLIs. Maturity is a sequence, not a slide
 - Alert quality and de-duplication across Prometheus, Grafana, Datadog, and PagerDuty. One user symptom should page once. The same burn in four tools is still one incident
 - Three different jobs around AKS: Microsoft Sentinel is a SIEM (security detections on logs). Dynatrace (or any APM) watches user experience. Istio is a service mesh (mTLS between Pods, traffic shifting for a canary). Do not treat them as one product
+- Load testing as a release gate: k6 (or the tool the JD names) runs a baseline and a threshold before promotion. A failed threshold stops the release. It is not a dashboard you glance at after go-live
+- Open-source tracing (SigNoz) appears next to Grafana and CloudWatch. Same three signals. Different listener
 
 ## Mental model
 
@@ -152,6 +154,27 @@ JDs now name Prometheus, Grafana, Datadog, and PagerDuty in one breath. That is 
 
 **Exit check:** Checkout 5xx fires in Prometheus and in Datadog. How many pages should PagerDuty send, and what do you group on?
 
+## Load test before you promote
+
+```text
+Baseline (what "normal" looks like)
+        ↓
+k6 (or equivalent) against the candidate
+        ↓
+Threshold pass → promote
+Threshold fail → stop the release
+```
+
+JDs now name k6 in the pipeline, not only "we should load test someday." A baseline is the number you already accept (p95, error rate). A threshold is the line the new build must not cross. Fail the job when it crosses. Day-34 already treats health checks as release controls. This is the same idea applied to load before traffic moves.
+
+SigNoz is an open-source backend for traces, metrics, and logs. Grafana and CloudWatch are the names this course already uses. Instrument once (OpenTelemetry). Export to the listener the org runs.
+
+> **Remember:** A load test that cannot fail the pipeline is a report, not a gate.
+
+**Look-up:** k6 threshold syntax and SigNoz exporters. Do not invent a k6 lab.
+
+**Exit check:** What two numbers do you set before k6 runs, and what happens when the candidate misses them?
+
 ## Remember
 
 > **Alert on symptoms users feel (errors, latency), not on causes (CPU). Causes are for dashboards, symptoms are for pages.**
@@ -181,6 +204,14 @@ Outline:
 4. Policy: pause risky releases, shift time to reliability work, resume when the budget recovers.
 5. After the first incident: actions have owners and a done state. The next ORR includes the miss.
 
+**Q: How does a k6 load test become a release gate?**
+
+Outline:
+1. Set a baseline from current p95 and error rate. Set a threshold the new build must not cross.
+2. Run k6 in the pipeline before promotion. Fail the job when the threshold breaks.
+3. A report you read after go-live is not a gate. Day-34 already treats health checks as release controls.
+4. Honest: SigNoz is another listener next to Grafana and CloudWatch. Transfer OpenTelemetry. Do not invent a k6 script.
+
 ## Honest gap note
 
 Sezzle-style JDs name Prometheus or Datadog daily use, sometimes Golang. If your base is Azure Monitor, map the concepts (metrics, queries, alert rules are the same shape) and say which tools you have used hands-on. Concepts transfer, invented tool years do not.
@@ -189,4 +220,4 @@ E-commerce SRE JDs sometimes name Java application-server operations (Tomcat, JB
 
 ## Source tags
 
-Sezzle SRE · EPAM Senior SRE · EPAM Senior SRE (Grafana + EKS) · Fundraise Up DevOps · EPAM Senior AI DevOps/SRE · Turkey / Central Asia Senior SRE (edge, CDN, Zero Trust) · 2026-10-13 market (observability as code, token cost) · 2026-10-23 market (ORR, error budget policy) · 2026-10-26 market (cardinality, health vs business) · 2026-10-27 market (incident-to-done, follow-the-sun, origin lock) · 2026-10-29 market (OpenTelemetry on AKS/ACA, Datadog + Azure Monitor, alert noise, blameless RCA) · 2026-11-02 market (Sentinel SIEM vs Dynatrace APM vs Istio mesh) · 2026-11-04 market (SLO / error-budget roadmaps, alert de-duplication, PagerDuty)
+Sezzle SRE · EPAM Senior SRE · EPAM Senior SRE (Grafana + EKS) · Fundraise Up DevOps · EPAM Senior AI DevOps/SRE · Turkey / Central Asia Senior SRE (edge, CDN, Zero Trust) · 2026-10-13 market (observability as code, token cost) · 2026-10-23 market (ORR, error budget policy) · 2026-10-26 market (cardinality, health vs business) · 2026-10-27 market (incident-to-done, follow-the-sun, origin lock) · 2026-10-29 market (OpenTelemetry on AKS/ACA, Datadog + Azure Monitor, alert noise, blameless RCA) · 2026-11-02 market (Sentinel SIEM vs Dynatrace APM vs Istio mesh) · 2026-11-04 market (SLO / error-budget roadmaps, alert de-duplication, PagerDuty) · 2026-11-05 market (k6 as a release gate, SigNoz next to Grafana / CloudWatch)

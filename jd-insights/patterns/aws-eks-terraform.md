@@ -11,7 +11,8 @@ AWS senior roles ask for the same loop as Azure ones (Terraform plus a managed K
 - Running production workloads on EKS
 - CI/CD that builds images and deploys to the cluster
 - AWS account and network structure (who can reach what)
-- Networking fundamentals: senior platform interviews still ask OSI-layer basics, so keep Day-3 fresh
+- Networking fundamentals: senior platform interviews still ask OSI-layer basics, so keep Day-3 fresh. Trading and broker roles also name L2 / L3, VLANs, overlay networks (SDN, VXLAN), and network automation with Ansible. Those names are Look-up. The request path is still Day-3
+- Payments platforms add a serverless path next to EKS: ECS, Lambda, API Gateway, SQS, EventBridge, KMS. The extra ask is PCI network segmentation and audit evidence. See the [landing-zone card](landing-zone-multi-account.md). Day-27 already teaches those compute names
 - Observability on top of the cluster (often Prometheus, Grafana, or Datadog)
 - Lead roles add advisor work: explain and defend a design choice (accounts, IAM, network, security, cost) and its trade-offs to a client, not just build it
 - Data and messaging operations: RDS (PostgreSQL), ElastiCache (Redis), MSK (Kafka). JDs ask backups, replication, failover, and DR with RTO and RPO. Multi-region is a plus. Service knobs are Look-up
@@ -108,5 +109,4 @@ If your daily cloud is Azure, say that, then prove the mapping: "I run AKS in pr
 
 ## Source tags
 
-EPAM Senior AWS DevOps · Sezzle SRE · EPAM Lead AWS DevOps · Turkey product co Senior Platform (AWS) · Turkey / Central Asia Senior DevOps (MSK, RDS, ElastiCache DR) · Turkey / Central Asia Platform (module per tenant) · 2026-10-13 market (CDC: Debezium to Kafka / MSK) · 2026-10-27 market (PostgreSQL SRE, restore drills, Session Manager) · 2026-10-29 market (SaaS instance lifecycle on EKS, operators / CRDs) · 2026-11-02 market (RDS to operator-run DB on EKS, PITR cutover) · 2026-11-04 market (map Azure / AWS names to GKE / Anthos)
-EPAM Senior AWS DevOps · Sezzle SRE · EPAM Lead AWS DevOps · Turkey product co Senior Platform (AWS) · Turkey / Central Asia Senior DevOps (MSK, RDS, ElastiCache DR) · Turkey / Central Asia Platform (module per tenant) · 2026-10-13 market (CDC: Debezium to Kafka / MSK) · 2026-10-27 market (PostgreSQL SRE, restore drills, Session Manager) · 2026-10-29 market (SaaS instance lifecycle on EKS, operators / CRDs) · 2026-11-02 market (RDS to operator-run DB on EKS, PITR cutover) · 2026-11-03 market (MySQL admin inside DevOps)
+EPAM Senior AWS DevOps · Sezzle SRE · EPAM Lead AWS DevOps · Turkey product co Senior Platform (AWS) · Turkey / Central Asia Senior DevOps (MSK, RDS, ElastiCache DR) · Turkey / Central Asia Platform (module per tenant) · 2026-10-13 market (CDC: Debezium to Kafka / MSK) · 2026-10-27 market (PostgreSQL SRE, restore drills, Session Manager) · 2026-10-29 market (SaaS instance lifecycle on EKS, operators / CRDs) · 2026-11-02 market (RDS to operator-run DB on EKS, PITR cutover) · 2026-11-03 market (MySQL admin inside DevOps) · 2026-11-04 market (map Azure / AWS names to GKE / Anthos) · 2026-11-05 market (payments serverless + PCI pointer, L2 / L3 / VLAN / overlay Look-up)

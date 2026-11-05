@@ -11,6 +11,7 @@ Data and platform JDs now ask you to watch query engines, Hadoop-style stores, d
 - Alert on failed queries, stale data, and job backlog, not only on CPU
 - Assess an enterprise data platform before ML workloads (MLflow or Airflow on Kubernetes via GitOps)
 - The readiness question matches an Operational Readiness Review (ORR): can this platform see, act, and survive an ML job tonight?
+- Azure-first teams now also name GCP, with Snowflake as a plus. Snowflake is another warehouse name. The estate picture does not change
 
 ## Mental model
 
@@ -77,4 +78,4 @@ The course does not run Trino, Hadoop, Ozone, MLflow, or Airflow. Transfer Day-2
 
 ## Source tags
 
-ETG data platform · Veltris Hadoop / EMR · EPAM enterprise data platform · 2026-11-03 market (data-estate dashboards, EDP readiness before ML)
+ETG data platform · Veltris Hadoop / EMR · EPAM enterprise data platform · 2026-11-03 market (data-estate dashboards, EDP readiness before ML) · 2026-11-05 market (Snowflake as a warehouse plus on Azure-first / GCP teams)

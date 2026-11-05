@@ -18,6 +18,7 @@ Lead cloud roles expect you to design the structure around workloads: how subscr
 - Data residency: keep regulated data in the region the contract names. Policy blocks other regions. A resource group does not keep data in one country
 - Audit evidence for ISO 27001 / SOC 2 / HIPAA style reviews: encryption at rest and in transit, a privileged-access review, change records (Git and pipeline), and logs you can show as evidence. The auditor asks "show me", not "we encrypt"
 - Regulated stores (health imaging is one example) also need a restore you have run and timed. An untested backup fails the same review. Day-39 measures RTO and RPO
+- PCI DSS on payments platforms: isolate cardholder data on its own network segment. Serverless AWS stacks (API Gateway, Lambda, SQS, EventBridge, KMS) still need that split. Audit support (Vanta-style) is the same "show me" evidence pile, not a product that makes you compliant
 
 ## Mental model
 
@@ -85,6 +86,24 @@ ISO 27001, SOC 2, and HIPAA are evidence frameworks. They do not install a produ
 
 **Look-up:** the control IDs a given auditor names. Do not invent an ISO lab.
 
+## Card data gets its own segment
+
+```text
+Public edge (API Gateway)
+        ↓
+App compute (Lambda / ECS)   ← no card data store here
+        ↓
+Cardholder segment (isolated)
+        ↓
+KMS keys + audit trail
+```
+
+PCI DSS is another evidence framework, next to ISO 27001, SOC 2, and HIPAA. The extra design rule is network segmentation: systems that touch cardholder data do not share a flat network with everything else. Serverless does not remove that rule. You still split VPCs or subnets, lock security groups, and encrypt with KMS. Vanta (or similar) collects evidence. It does not replace the split. Day-11 and Day-12 already teach isolation and hub-spoke. Day-27 names the AWS compute.
+
+> **Remember:** PCI is isolation plus evidence. A serverless logo does not flatten the network.
+
+**Look-up:** PCI network-segment wording and Vanta collectors. Do not invent a payments lab.
+
 ## Remember
 
 > **A landing zone is a paved parking lot. Workloads park in their own numbered spot; lights, gates, and cameras are already there.**
@@ -100,6 +119,7 @@ ISO 27001, SOC 2, and HIPAA are evidence frameworks. They do not install a produ
 7. [Day-24/01-concepts.md](../../Day-24/01-concepts.md) - hub-and-spoke first, Virtual WAN when the mesh grows
 8. [Day-08/01-concepts.md](../../Day-08/01-concepts.md) - Bicep `what-if`; Pester and PSRule are the usual Bicep test names
 9. [Day-39/01-concepts.md](../../Day-39/01-concepts.md) - restore drills that an auditor can see
+10. [Day-27/01-concepts.md](../../Day-27/01-concepts.md) - ECS, Lambda, API Gateway, SQS, EventBridge, KMS names
 
 ## Common interview question
 
@@ -121,10 +141,18 @@ Outline:
 3. ISO 27001 / SOC 2 / HIPAA ask for that evidence. They do not install a product. Day-11 is the region lesson.
 4. For a regulated store, also show the last restore drill and the measured RTO and RPO (Day-39).
 
+**Q: A payments API on Lambda and API Gateway must meet PCI. What do you split, and what does Vanta actually do?**
+
+Outline:
+1. Isolate cardholder data on its own segment. The public edge and the function are not that store.
+2. Lock security groups. Encrypt with KMS. Keep a change and access trail.
+3. Vanta (or similar) collects evidence. It does not make a flat network compliant.
+4. Honest: say if you have not run a PCI review. Transfer Day-11 isolation and Day-12 hub-spoke. Do not invent control IDs.
+
 ## Honest gap note
 
 Few people have built a full landing zone alone. It is honest to say you worked inside one and extended it, then show you understand the design by walking the diagram above. Design reasoning is what the interview grades.
 
 ## Source tags
 
-EPAM Lead Azure Cloud · EPAM Lead Platform · EPAM Senior Azure DevOps (migration) · EPAM Senior Azure Cloud (KZ) · Turkey / Central Asia Platform (per-tenant environment factory) · Turkey banking platform (account vending) · 2026-10-23 market (Azure design authority) · 2026-10-29 market (Bicep landing zones, Pester, PSRule, Policy, RBAC, management groups) · 2026-11-02 market (data residency, ISO 27001 / SOC 2 evidence) · 2026-11-03 market (HIPAA / SOC 2 stores, tested restores)
+EPAM Lead Azure Cloud · EPAM Lead Platform · EPAM Senior Azure DevOps (migration) · EPAM Senior Azure Cloud (KZ) · Turkey / Central Asia Platform (per-tenant environment factory) · Turkey banking platform (account vending) · 2026-10-23 market (Azure design authority) · 2026-10-29 market (Bicep landing zones, Pester, PSRule, Policy, RBAC, management groups) · 2026-11-02 market (data residency, ISO 27001 / SOC 2 evidence) · 2026-11-03 market (HIPAA / SOC 2 stores, tested restores) · 2026-11-05 market (PCI DSS segmentation on AWS serverless, Vanta-style evidence)

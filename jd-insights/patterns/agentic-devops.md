@@ -16,6 +16,8 @@ Newer JDs (Sezzle, EPAM GenAI-flavoured roles) expect you to use AI tools in Dev
 - Building agentic tooling that cuts toil (triage, runbook steps, ticket drafts), not only using a chat assistant. Evals prove the agent stayed in policy. Guardrails are still the pipeline and the human gate
 - Agents that can touch production infrastructure stay read-only by default. Changes go through a pull request and a human approval. Credentials are least-privilege. Every action has an audit trail. Blast radius is capped. Secrets never enter the prompt
 - Daily use of named AI agents is now a direct ask, not a nice-to-have. Some JDs also want the platform that runs those agents: the same guardrails, plus spend and quota caps so a loop cannot burn the bill
+- Spec-driven development: write the spec first, let an agent implement it, then review the result like any other PR. The spec is the contract. The agent is the fast junior
+- Secure use of AI coding tools in the SDLC: no secrets in the prompt, a human review gate, and a limit on what the tool may read, write, or run. Some on-call JDs also ask you to supervise AI agents (give a task, check the output) as part of the shift
 
 ## Mental model
 
@@ -33,6 +35,26 @@ Improve  → AI drafts the RCA, you verify the facts
 ```
 
 The safety rule is the same as GitOps: every change still goes through review, tests, and an approval gate. AI shortens the writing, not the checking.
+
+## Spec first, then the agent
+
+```text
+Write a spec (what good looks like)
+        ↓
+Agent implements against that spec
+        ↓
+Human reviews the diff
+        ↓
+Pipeline still gates production
+```
+
+JDs now name this loop. The spec is the contract the agent must meet. You do not paste a vague prompt and merge. Review is still a PR. Secrets still stay out of the prompt. Cap what the tool may read, write, or run (no production apply, no standing admin). Day-4 is this loop.
+
+On-call supervision is the same rule at 3 AM: you give the agent a bounded task, you check the output, you own the action.
+
+> **Remember:** The spec is the contract. The agent drafts. You review. The tool has a limit.
+
+**Exit check:** You ask an agent to add a pipeline stage. What do you write first, what never enters the prompt, and who merges?
 
 ## Remember
 
@@ -176,6 +198,14 @@ Outline:
 3. Audit every action. Cap blast radius (scope and no delete).
 4. Never put secrets in the prompt. Say if you have not run this. Transfer Day-4 and Day-19.
 
+**Q: How do you use an agent in a spec-driven change?**
+
+Outline:
+1. Write the spec first (what good looks like, what the tool may not touch).
+2. The agent implements against that spec. You review the diff.
+3. Secrets stay out of the prompt. The pipeline still gates production.
+4. On-call: give a bounded task, check the output, own the action.
+
 ## Honest gap note
 
 This is the easiest area to over-claim and get caught. Do not invent product names or "built an AI platform" stories. Generic, honest wording (AI-assisted checks, delivery loops, runbooks) matches what these JDs actually ask and survives follow-up questions.
@@ -186,4 +216,4 @@ Emerging note: some Azure cloud JDs now name Azure AI or RAG next to the usual c
 
 ## Source tags
 
-Sezzle SRE (AI tooling expected) · EPAM Azure AI/GenAI DevOps themes · EPAM Lead Azure (AI gateway) · EPAM Senior Azure (GenAI/RAG on AKS) · EPAM Lead Cloud (Copilot standard) · EPAM Azure Cloud (KZ, Azure AI / RAG named) · EPAM Senior AI DevOps/SRE (LLM + RAG in production) · Turkey / Central Asia Senior DevOps (daily AI assistants) · Turkey / Central Asia Principal / AI Solution (LLM evaluation, emerging) · 2026-10-13 market (agent as a versioned bundle) · EPAM Senior DevOps (Agent CI/CD & Registry, 2026-10-14) · 2026-10-29 market (build toil-reduction agents with evals and guardrails) · 2026-11-02 market (prod-infra agent guardrails: read-only, PR, approval, no secrets in prompts) · 2026-11-04 market (daily AI agents, platform that runs agents with guardrails and cost caps)
+Sezzle SRE (AI tooling expected) · EPAM Azure AI/GenAI DevOps themes · EPAM Lead Azure (AI gateway) · EPAM Senior Azure (GenAI/RAG on AKS) · EPAM Lead Cloud (Copilot standard) · EPAM Azure Cloud (KZ, Azure AI / RAG named) · EPAM Senior AI DevOps/SRE (LLM + RAG in production) · Turkey / Central Asia Senior DevOps (daily AI assistants) · Turkey / Central Asia Principal / AI Solution (LLM evaluation, emerging) · 2026-10-13 market (agent as a versioned bundle) · EPAM Senior DevOps (Agent CI/CD & Registry, 2026-10-14) · 2026-10-29 market (build toil-reduction agents with evals and guardrails) · 2026-11-02 market (prod-infra agent guardrails: read-only, PR, approval, no secrets in prompts) · 2026-11-04 market (daily AI agents, platform that runs agents with guardrails and cost caps) · 2026-11-05 market (spec-driven development, secure AI tool limits, on-call agent supervision)

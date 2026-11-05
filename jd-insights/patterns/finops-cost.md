@@ -15,7 +15,7 @@ Lead cloud JDs (Azure and AWS) add "cost-effective" next to "secure and scalable
 - Service quotas: request increases before the release, not during it. Quota is platform capacity. Capacity planning is part of the release plan
 - AI / LLM workloads: treat tokens per request, cost per request and per tenant, plus latency and error rate of model calls, as first-class metrics. Set a spend budget and alert on it like an error budget
 - Cost as routine work, not a quarterly surprise: required tags, right-sizing, a billing export you can query, a monthly review, and a plan for commitments (reservations or savings plans)
-- Cost work includes non-hyperscaler hosting (Vercel, a dedicated or colocation host such as Rackspace). The bill still needs tags, a budget, and a review. The loop does not require Azure or AWS
+- Cost work includes non-hyperscaler hosting (Vercel, Netlify, Supabase, a dedicated or colocation host such as Rackspace). The bill still needs tags, a budget, and a review. The loop does not require Azure or AWS. Small SaaS teams still debug end to end: DNS → TLS → HTTP → IAM → Postgres. That path is Day-3, Day-18, and Day-27
 - Off-hours as a job, not a slogan: deallocate non-prod VMs, sweep orphaned disks, IPs, NICs, and snapshots, and retry when the run fails. A silent failed cleanup is not a saving
 
 ## Mental model
@@ -69,7 +69,7 @@ Reduce it  →  right-size, sleep idle, delete orphans
 Keep it    →  a budget and a monthly review
 ```
 
-Some JDs now name Vercel or a dedicated host next to Azure and AWS. That is still a bill. You still need to say who spends what. You still need a budget alert. Day-39 already teaches attribution on a hyperscaler export. Transfer the habit. Look up the vendor's usage export when a JD names it. Do not invent a Vercel lab.
+Some JDs now name Vercel, Netlify, Supabase, or a dedicated host next to Azure and AWS. That is still a bill. You still need to say who spends what. You still need a budget alert. Day-39 already teaches attribution on a hyperscaler export. Transfer the habit. Look up the vendor's usage export when a JD names it. Do not invent a Vercel or Supabase lab.
 
 > **Remember:** FinOps is the loop, not the logo on the invoice.
 
@@ -137,5 +137,4 @@ You do not need a FinOps certificate for these roles. Showing the loop above, pl
 
 ## Source tags
 
-EPAM Lead Azure Cloud ("cost-effective Azure solutions") · EPAM Lead Platform · EPAM Lead AWS DevOps (cost optimisation and billing) · 2026-10-13 market (GPU capacity reservations, quota lead time) · 2026-10-26 market (AI token cost) · 2026-10-27 market (cost as monthly routine) · 2026-11-04 market (non-hyperscaler hosting: Vercel, dedicated / colocation)
-EPAM Lead Azure Cloud ("cost-effective Azure solutions") · EPAM Lead Platform · EPAM Lead AWS DevOps (cost optimisation and billing) · 2026-10-13 market (GPU capacity reservations, quota lead time) · 2026-10-26 market (AI token cost) · 2026-10-27 market (cost as monthly routine) · 2026-11-03 market (Azure VM deallocate + orphan cleanup with retries)
+EPAM Lead Azure Cloud ("cost-effective Azure solutions") · EPAM Lead Platform · EPAM Lead AWS DevOps (cost optimisation and billing) · 2026-10-13 market (GPU capacity reservations, quota lead time) · 2026-10-26 market (AI token cost) · 2026-10-27 market (cost as monthly routine) · 2026-11-03 market (Azure VM deallocate + orphan cleanup with retries) · 2026-11-04 market (non-hyperscaler hosting: Vercel, dedicated / colocation) · 2026-11-05 market (Netlify / Supabase next to AWS, end-to-end debug path)
