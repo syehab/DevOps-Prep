@@ -251,3 +251,36 @@ Day-02 Linux ownership, Day-11 evidence piles, Day-16 paved road, Day-17 managed
 - The off-hours runner (Azure Automation, Logic App, pipeline cron) stays Look-up. Day-39 teaches the job, not a product.
 
 > **Remember:** Fresh themes update the card first. Touch a Day only when the card exposes a missing model or a name the interview will ask out loud.
+
+## JD coverage audit (2026-11-05)
+
+Date: 2026-11-05. Scope: market themes from the 2026-11-05 jd-insights pass (cards in a separate PR). This pass reads only the Days those cards map to. STE house style kept. No vacancy IDs. No new tools.
+
+### Theme coverage
+
+| Theme | Card | Days mapped | Status |
+|:--|:--|:--|:--|
+| DORA data sources | gitops-platform | 34 | Fixed on Day-34 Part 22. Definitions and speed-vs-stability already held. The interview now asks where each number comes from (pipeline vs incidents). |
+| k6 as a release gate | sre-slos-observability | 34 | Fixed on Day-34 Part 7. Health checks were already release controls. The missing model was a load-test threshold that can fail the pipeline before traffic moves. |
+| Deployment strategies by name | (skipped) | 7, 34 | Covered. Day-07 and Day-34 already name rolling, blue-green, and canary. No Day edit. |
+| Spec-driven + secure AI tools | agentic-devops | 4 | Card first. Day-4 already has fast-junior, secrets out of the prompt, and infra guardrails. Spec-first is a later Day PR if it remains thin. |
+| Build speed + Terragrunt | azure-iac-pipelines | 6, 9 | Covered. Day-06 already teaches jobs and one artifact. Day-09 already teaches modules. Terragrunt stays Look-up. |
+| PCI on AWS serverless | landing-zone-multi-account | 11, 12, 27 | Covered. Day-11 already has evidence piles. Day-12 is isolation. Day-27 names ECS / Lambda / API Gateway / SQS / EventBridge / KMS. PCI control IDs stay Look-up. |
+| Preview environments | gitops-platform | 5 | Covered. Day-05 already maps a change to an environment. |
+| Mobile / desktop / firmware CI | gitops-platform | 6, 19 | Covered. Day-06 keeps the artifact. Day-19 is sign-and-scan. |
+| L2 / L3 / VLAN / overlay | aws-eks-terraform | 3 | Covered. Day-03 already walks the request path. Extra names stay Look-up. |
+| OpenStack / OCI | self-managed-servers | 17 | Covered. Day-17 already draws managed vs self-managed. |
+| Snowflake / Netlify / Supabase | data-platform-sre, finops-cost | 20, 3 | Look-up names. Skip the Day. |
+
+### Already well covered (no Day edit)
+
+Day-07 and Day-34 deployment strategies, Day-03 request path, Day-05 change-to-environment, Day-06 one artifact, Day-09 modules, Day-11 evidence piles, Day-12 hub-spoke, Day-17 managed vs self-managed, Day-19 SAST / SCA and signing, Day-27 AWS serverless names.
+
+### Gap noted (left on the card)
+
+- k6 script syntax and SigNoz exporters stay Look-up. Do not invent a load-test lab.
+- Terragrunt stack layout stays Look-up. Day-09 already teaches the module.
+- PCI control IDs and Vanta collectors stay Look-up. Day-11 already teaches the evidence piles.
+- Spec-first AI loop stays on the agentic card until a later Day-4 PR, if needed.
+
+> **Remember:** Fresh themes update the card first. Touch a Day only when the card exposes a missing model or a name the interview will ask out loud.

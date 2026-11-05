@@ -281,6 +281,20 @@ Ask:
 
 **What does “healthy enough to receive traffic” actually mean for ShopSphere?**
 
+A health check decides whether one instance may receive traffic. A load test decides whether the new build may promote at all. Those are two release controls, not two dashboards. JDs now name k6 (or an equivalent tool) as a pipeline job that runs before traffic moves. You set a baseline from what Production already accepts, such as p95 latency and error rate. You set a threshold the candidate must not cross. If the threshold breaks, the job fails and the release stops.
+
+```text
+Baseline = current normal
+Threshold = the line the new build must not cross
+k6 (or equivalent) against the candidate
+    pass → promote
+    fail → stop
+```
+
+A report you read after go-live is not a gate. This is the same control idea as a readiness probe, applied to the whole release rather than one instance. Script syntax is Look-up. Do not invent a load-test lab today.
+
+**Remember:** A load test that cannot fail the pipeline is a report, not a gate.
+
 ---
 
 ## Part 8 — Graceful Shutdown
@@ -698,6 +712,12 @@ A short worked example shows how the four numbers move together. Imagine a ShopS
 
 **Remember:** DORA = two speed numbers (Deployment Frequency, Lead Time for Changes) and two stability numbers (Change Failure Rate, Time to Restore). In healthy teams you do not buy speed by sacrificing stability; small batches and automated verification improve all four at once.
 
+JDs now also ask where each number comes from. You do not need a fourth dashboard. Deployment Frequency and Lead Time for Changes come from the pipeline: how often it shipped to Production, and when a merged commit became the artifact that users hit. Change Failure Rate and Time to Restore come from incident tools: how many of those deploys needed a rollback or hotfix, and how long until users were OK again.
+
+Work the ShopSphere example once more. The monthly-batch team cannot read frequency from a chat log. They read it from the pipeline run history. They cannot read Time to Restore from a hope. They read it from the incident clock: when checkout broke, and when checkout worked again.
+
+**Remember:** Speed numbers come from the pipeline. Stability numbers come from incidents. Name the source, then the metric.
+
 For ShopSphere, also inspect:
 
 ```text
@@ -743,6 +763,8 @@ Complete Day 34 when you can demonstrate:
 [ ] Database compatibility exercise completed
 [ ] Rollback drill completed
 [ ] Deployment metrics identified
+[ ] DORA sources named (pipeline vs incidents)
+[ ] Load-test gate understood (baseline, threshold, fail the job)
 [ ] Deployment runbook written
 [ ] Architecture failure review completed
 ```

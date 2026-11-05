@@ -162,6 +162,7 @@ That is the intended break. Do not `--disable-eviction` unless you are exercisin
 
 - Write a Karpenter versus Cluster Autoscaler note (Day 17 / Day 37). HPA adds Pods. Node autoscaling adds nodes.
 - `kubectl -n shopsphere debug` and generate CPU load to watch HPA if metrics work.
+- Write two lines: DORA speed numbers come from the pipeline; stability numbers come from incidents. A k6 threshold that cannot fail the job is a report, not a gate.
 
 ---
 
