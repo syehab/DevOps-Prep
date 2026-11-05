@@ -10,6 +10,7 @@ Some Senior platform JDs still expect you to own leased or on-prem servers, and 
 - "Managed cloud alone is not enough" is a real interview line. You still own the box
 - On-prem cloud-like platform services: S3-compatible object storage (MinIO), Redis or Memcached as a shared cache
 - Self-hosted software factory: GitLab (source and CI), Artifactory or Nexus (packages), Harbor (container registry)
+- Private-cloud names next to Kubernetes: OpenStack (you run the IaaS) and OCI (another public cloud). Kubernetes security basics still apply on those clusters: RBAC, NetworkPolicies, secrets. Terragrunt for DRY Terraform lives on the [Azure IaC card](azure-iac-pipelines.md)
 
 ## Mental model
 
@@ -33,6 +34,8 @@ Day-02 already treats Linux as the environment the app runs in. Day-23 already s
 Work a small example first. A team rents dedicated servers. You put VMs (or LXC) on them with Puppet. You patch on a calendar, the same bake-and-replace habit as the [golden-images card](golden-images.md). Then you offer three platform services: MinIO for objects, Redis for a shared cache, and Harbor next to GitLab for images. Product teams consume those services. They do not SSH to the box.
 
 The Kubernetes card already covers CRI and CNI when you run the cluster yourself. This card is the layer under that cluster: the machines, the config tool, and the shared stores. Do not treat "we use AWS" as an answer when the JD also names leased servers.
+
+OpenStack is the IaaS you run yourself (compute, network, storage APIs). OCI is Oracle's public cloud. Both appear next to Kubernetes on private-cloud JDs. The ownership line does not change: you still patch the box, you still run the factory, and you still lock the cluster with RBAC, NetworkPolicies, and secrets. Day-17 draws what a managed cluster hides. Day-15 already teaches NetworkPolicy. Do not invent an OpenStack lab.
 
 > **Remember:** The cloud bill does not replace the server you still patch.
 
@@ -73,4 +76,4 @@ The course labs use cloud VMs and managed stores. There is no Puppet, LXC, MinIO
 
 ## Source tags
 
-Natoe AI (leased servers, hardening) · Group-IB (self-hosted GitLab / Artifactory / Nexus / Harbor) · Veltris (MinIO, Redis / Memcached) · 2026-11-03 market (self-managed ownership, on-prem platform services)
+Natoe AI (leased servers, hardening) · Group-IB (self-hosted GitLab / Artifactory / Nexus / Harbor) · Veltris (MinIO, Redis / Memcached) · 2026-11-03 market (self-managed ownership, on-prem platform services) · 2026-11-05 market (OpenStack / OCI private cloud, K8s security names)
