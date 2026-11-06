@@ -19,6 +19,7 @@ Nearly every Senior or Lead DevOps JD expects you to run Kubernetes day 2: deplo
 - OKD / OpenShift next to plain Kubernetes in enterprise SRE roles. Routes, Security Context Constraints, and projects are extra names on the same request path. Transfer Day-14 and Day-15. Look up the extra layer when a JD names it
 - Bare-metal and self-managed basics: CRI starts containers, CNI gives each Pod an IP. Know what AKS and EKS hide (control plane, etcd, default networking, control-plane upgrades)
 - GPU and ML hosting: a tainted GPU node pool, the NVIDIA device plugin, and a scheduler that only places Pods that request a GPU. Idle GPUs still cost money
+- Telco and hybrid EKS stretch names: EKS Hybrid Nodes (on-prem or edge hosts as workers), Cilium CNI with VXLAN, Karpenter (already on this card), Bottlerocket as the node OS, EMR-on-EKS next to GPU pools. Name them. Do not overclaim daily use
 
 ## Mental model
 
@@ -67,7 +68,7 @@ They do not hide node upgrades, a broken CNI, or a NetworkPolicy that the CNI do
 
 > **Remember:** Managed Kubernetes hides the control plane. It does not hide CRI, CNI, node upgrades, or your workloads.
 
-**Look-up:** the CNI your cluster actually runs (Azure CNI, AWS VPC CNI, Calico, Cilium). Do not memorise product knobs.
+**Look-up:** the CNI your cluster actually runs (Azure CNI, AWS VPC CNI, Calico, Cilium). Cilium with VXLAN is a common overlay when worker nodes sit off the cloud VPC (EKS Hybrid Nodes). Do not memorise product knobs.
 
 ## GPU and ML workloads
 
@@ -150,6 +151,28 @@ OKD is the community build of OpenShift. The request path you walk in Day-15 doe
 
 **Look-up:** Route versus Ingress, SCC versus Pod Security. Do not invent an OpenShift lab.
 
+## Hybrid EKS is still Kubernetes, with extra names
+
+```text
+EKS control plane (AWS)
+        ↓
+Workers
+  ├── AWS nodes (managed group or Karpenter)
+  └── Hybrid Nodes (your on-prem or edge hosts)
+        ↓
+Cilium + VXLAN overlay (VPC CNI does not extend the same way off AWS)
+```
+
+Telco and hybrid JDs now name EKS Hybrid Nodes. AWS still runs the control plane. Your on-prem or edge hosts join as workers. Cilium with VXLAN is a usual overlay on those hosts, because AWS VPC CNI does not follow the node off the VPC.
+
+Karpenter is the same Pending-Pod story Day-37 already taught. Bottlerocket is an AWS container OS. You bake it and replace it, the same immutable loop as the [golden-images card](golden-images.md). EMR-on-EKS runs Spark-style jobs on the cluster, often next to a GPU pool. Day-17 already places GPU work.
+
+This is stretch. Transfer the ownership line (Day-17), the CNI hop (Day-15), Karpenter (Day-37), and bake-do-not-patch (Day-27). Do not claim a hybrid telco cluster you have not run.
+
+> **Remember:** Hybrid Nodes change where the worker lives. They do not change the request path you walk with evidence.
+
+**Look-up:** EKS Hybrid Nodes, Cilium VXLAN, Bottlerocket, EMR-on-EKS. Do not invent those labs.
+
 ## Study these days first
 
 1. [Day-13/01-concepts.md](../../Day-13/01-concepts.md) - containers first
@@ -219,10 +242,18 @@ Outline:
 2. Walk the same request path with evidence. The platform did not replace Kubernetes.
 3. Honest: say if you have not run OpenShift. Transfer Day-14 and Day-15. Do not invent `oc` flags.
 
+**Q: A telco JD names EKS Hybrid Nodes, Cilium, Karpenter, and Bottlerocket. What do you actually own?**
+
+Outline:
+1. AWS still runs the API server. Hybrid Nodes are your on-prem or edge workers.
+2. Cilium with VXLAN is a usual overlay off the VPC. Karpenter still creates a node for a Pending Pod (Day-37).
+3. Bottlerocket is an immutable node OS. Rebuild and replace. Do not patch in place.
+4. Honest: say if you have not run Hybrid Nodes or Cilium. Transfer Day-15, Day-17, and Day-27. Do not invent VXLAN flags.
+
 ## Honest gap note
 
-JDs name many add-ons (service mesh, specific CNIs, cluster autoscalers, database operators, OpenShift). You do not need daily experience with each. Know the core path and failure drill cold, then say honestly which add-ons you have used and which you would learn on the job. The course does not run a SaaS operator, a database operator, a bare-metal control plane, the NVIDIA device plugin, or OpenShift. Transfer Day-14, Day-15, Day-17, Day-27, and Day-39. Look up the operator, CNI, plugin, MIG, Route, and SCC when a JD names them.
+JDs name many add-ons (service mesh, specific CNIs, cluster autoscalers, database operators, OpenShift, EKS Hybrid Nodes, Cilium, Bottlerocket, EMR-on-EKS). You do not need daily experience with each. Know the core path and failure drill cold, then say honestly which add-ons you have used and which you would learn on the job. The course does not run a SaaS operator, a database operator, a bare-metal control plane, the NVIDIA device plugin, OpenShift, Hybrid Nodes, Cilium, Bottlerocket, or EMR-on-EKS. Transfer Day-14, Day-15, Day-17, Day-27, and Day-39. Look up the operator, CNI, plugin, MIG, Route, SCC, Hybrid Nodes, and Bottlerocket when a JD names them.
 
 ## Source tags
 
-EPAM Azure Lead · EPAM Senior Azure DevOps · EPAM AWS DevOps · EPAM Lead Cloud (AKS add-ons) · EPAM Senior Azure Cloud (KZ, AKS ops) · Sezzle SRE · Fundraise Up DevOps · 2026-10-13 market (Karpenter vs Cluster Autoscaler) · 2026-10-27 market (non-root containers) · 2026-10-28 market (CRI / CNI, what AKS/EKS hide, GPU hosting) · 2026-10-29 market (operators, CRDs, SaaS instance lifecycle) · 2026-11-02 market (stateful DB operators, PITR cutover, Karpenter consolidation / Spot) · 2026-11-04 market (Kafka / Redis / RabbitMQ on or next to the cluster, OpenShift / OKD vs plain Kubernetes)
+EPAM Azure Lead · EPAM Senior Azure DevOps · EPAM AWS DevOps · EPAM Lead Cloud (AKS add-ons) · EPAM Senior Azure Cloud (KZ, AKS ops) · Sezzle SRE · Fundraise Up DevOps · 2026-10-13 market (Karpenter vs Cluster Autoscaler) · 2026-10-27 market (non-root containers) · 2026-10-28 market (CRI / CNI, what AKS/EKS hide, GPU hosting) · 2026-10-29 market (operators, CRDs, SaaS instance lifecycle) · 2026-11-02 market (stateful DB operators, PITR cutover, Karpenter consolidation / Spot) · 2026-11-04 market (Kafka / Redis / RabbitMQ on or next to the cluster, OpenShift / OKD vs plain Kubernetes) · 2026-11-06 market (EKS Hybrid Nodes, Cilium VXLAN, Bottlerocket, EMR-on-EKS stretch)

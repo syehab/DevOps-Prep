@@ -22,6 +22,8 @@ Platform and Lead roles want Git to be the source of truth for deployments (GitO
 - Self-hosted factory names: GitLab (source and CI), Artifactory or Nexus (packages), Harbor (container registry). Same jobs as GitHub, a package feed, and ACR or ECR. You operate them. See the [self-managed card](self-managed-servers.md)
 - The same factory also builds mobile apps, desktop software, and device firmware. You still sign the artifact, version it, keep it, and roll it out in stages. The artifact type changes. The loop does not
 - Ephemeral preview environments: a pipeline (often GitLab CI) creates a short-lived environment per change, then destroys it. The portal still maps the paved road. The preview is a temporary stop, not a second production
+- Enablement of the first team: sit beside app owners, land Dev / UAT / Prod, then hand over so they self-serve. That engagement is the [env-acceleration card](env-acceleration.md). The paved road is what they inherit
+- Staff and product-platform roles raise the bar further: you write the platform in Go or Rust and you write RFCs. See the [Lead vs Senior card](lead-vs-senior-signals.md)
 
 ## Mental model
 
@@ -212,4 +214,4 @@ Backstage appears in EPAM platform JDs, and newer ones also name Crossplane, Pul
 
 ## Source tags
 
-EPAM Lead Platform / Unified Automation (Backstage) · EPAM Lead Cloud (IDP) · EPAM Senior DevOps Azure · RedCloud Platform · EPAM Senior/Lead Platform Engineer · Turkey banking platform (Terraform account vending) · 2026-10-13 market (catalog links dashboards, Argo CD, owners, IaC docs) · 2026-10-27 market (policy-as-code, platform as product) · 2026-11-02 market (ApplicationSets vs Fleet, air-gapped / sovereign shipping) · 2026-11-03 market (self-hosted GitLab / Artifactory / Nexus / Harbor) · 2026-11-04 market (Argo CD plus Artifactory / ACR / ECR for promotion) · 2026-11-05 market (DORA data sources, preview environments, mobile / desktop / firmware artifacts)
+EPAM Lead Platform / Unified Automation (Backstage) · EPAM Lead Cloud (IDP) · EPAM Senior DevOps Azure · RedCloud Platform · EPAM Senior/Lead Platform Engineer · Turkey banking platform (Terraform account vending) · 2026-10-13 market (catalog links dashboards, Argo CD, owners, IaC docs) · 2026-10-27 market (policy-as-code, platform as product) · 2026-11-02 market (ApplicationSets vs Fleet, air-gapped / sovereign shipping) · 2026-11-03 market (self-hosted GitLab / Artifactory / Nexus / Harbor) · 2026-11-04 market (Argo CD plus Artifactory / ACR / ECR for promotion) · 2026-11-05 market (DORA data sources, preview environments, mobile / desktop / firmware artifacts) · 2026-11-06 market (first-team enablement pointer, Staff Go / Rust / RFC pointer)
