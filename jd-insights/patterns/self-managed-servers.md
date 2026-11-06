@@ -51,12 +51,12 @@ OpenStack is the IaaS you run yourself (compute, network, storage APIs). OCI is 
 
 ## Study these days first
 
-1. [Day-02/01-concepts.md](../../Day-02/01-concepts.md) - Linux, the process, and the box
-2. [Day-23/01-concepts.md](../../Day-23/01-concepts.md) - VM operations: patch, harden, replace
-3. [Day-17/01-concepts.md](../../Day-17/01-concepts.md) - what managed Kubernetes hides
-4. [Day-27/01-concepts.md](../../Day-27/01-concepts.md) - S3 and ElastiCache, the cloud names for MinIO and Redis
-5. [Day-19/01-concepts.md](../../Day-19/01-concepts.md) - registry, air-gap mirror, self-hosted agents
-6. [Day-13/01-concepts.md](../../Day-13/01-concepts.md) - containers versus the host
+1. [Day-02-Linux-and-Application-Runtime/01-concepts.md](../../Day-02-Linux-and-Application-Runtime/01-concepts.md) - Linux, the process, and the box
+2. [Day-23-Azure-Compute-and-PaaS/01-concepts.md](../../Day-23-Azure-Compute-and-PaaS/01-concepts.md) - VM operations: patch, harden, replace
+3. [Day-17-AKS-and-EKS/01-concepts.md](../../Day-17-AKS-and-EKS/01-concepts.md) - what managed Kubernetes hides
+4. [Day-27-AWS-Compute/01-concepts.md](../../Day-27-AWS-Compute/01-concepts.md) - S3 and ElastiCache, the cloud names for MinIO and Redis
+5. [Day-19-Secure-CI-CD-and-Supply-Chain/01-concepts.md](../../Day-19-Secure-CI-CD-and-Supply-Chain/01-concepts.md) - registry, air-gap mirror, self-hosted agents
+6. [Day-13-Docker-and-Container-Fundamentals/01-concepts.md](../../Day-13-Docker-and-Container-Fundamentals/01-concepts.md) - containers versus the host
 
 Also: the [Kubernetes card](kubernetes-production.md) for CRI and CNI on bare metal, and the [GitOps card](gitops-platform.md) for the factory those self-hosted tools sit in.
 

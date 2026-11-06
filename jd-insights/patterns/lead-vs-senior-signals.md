@@ -72,12 +72,12 @@ Small team of four
 
 ## Study these days first
 
-1. [Day-21/01-concepts.md](../../Day-21/01-concepts.md) - the capstone, senior-to-lead thinking
-2. [Day-30/01-concepts.md](../../Day-30/01-concepts.md) - design under assessment
-3. [Day-40/01-concepts.md](../../Day-40/01-concepts.md) - running an architecture review
-4. [Day-34/01-concepts.md](../../Day-34/01-concepts.md) - the release you own even when someone else clicks deploy
-5. [Day-41/01-concepts.md](../../Day-41/01-concepts.md) - on-call, incident, and the RCA you write after
-6. [Day-20/01-concepts.md](../../Day-20/01-concepts.md) - SLOs and the pager Staff still holds
+1. [Day-21-Senior-Lead-DevOps-Capstone/01-concepts.md](../../Day-21-Senior-Lead-DevOps-Capstone/01-concepts.md) - the capstone, senior-to-lead thinking
+2. [Day-30-Final-Assessment-and-Architecture-Challenge/01-concepts.md](../../Day-30-Final-Assessment-and-Architecture-Challenge/01-concepts.md) - design under assessment
+3. [Day-40-Lead-DevOps-Architecture-Review/01-concepts.md](../../Day-40-Lead-DevOps-Architecture-Review/01-concepts.md) - running an architecture review
+4. [Day-34-Reliability-and-Safe-Deployments/01-concepts.md](../../Day-34-Reliability-and-Safe-Deployments/01-concepts.md) - the release you own even when someone else clicks deploy
+5. [Day-41-Production-Deployment-Incident/01-concepts.md](../../Day-41-Production-Deployment-Incident/01-concepts.md) - on-call, incident, and the RCA you write after
+6. [Day-20-Observability-and-Production-Incident/01-concepts.md](../../Day-20-Observability-and-Production-Incident/01-concepts.md) - SLOs and the pager Staff still holds
 
 ## Common interview question
 

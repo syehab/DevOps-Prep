@@ -104,13 +104,13 @@ Deallocate (Azure) stops the VM and stops compute charges. The disk can still bi
 
 ## Study these days first
 
-1. [Day-39/01-concepts.md](../../Day-39/01-concepts.md) - cost engineering project
-2. [Day-11/01-concepts.md](../../Day-11/01-concepts.md) - structure enables attribution
-3. [Day-17/01-concepts.md](../../Day-17/01-concepts.md) - GPU and other special node pools
-4. [Day-22/01-concepts.md](../../Day-22/01-concepts.md) - quota is platform capacity
-5. [Day-23/01-concepts.md](../../Day-23/01-concepts.md) - VMs you deallocate and replace
-6. [Day-30/01-concepts.md](../../Day-30/01-concepts.md) - cost shows up in design reviews
-7. [Day-20/01-concepts.md](../../Day-20/01-concepts.md) - token usage and model cost as metrics
+1. [Day-39-Disaster-Recovery-and-Cost-Engineering/01-concepts.md](../../Day-39-Disaster-Recovery-and-Cost-Engineering/01-concepts.md) - cost engineering project
+2. [Day-11-Cloud-Architecture-and-Enterprise-Structure/01-concepts.md](../../Day-11-Cloud-Architecture-and-Enterprise-Structure/01-concepts.md) - structure enables attribution
+3. [Day-17-AKS-and-EKS/01-concepts.md](../../Day-17-AKS-and-EKS/01-concepts.md) - GPU and other special node pools
+4. [Day-22-Azure-Platform-Architecture/01-concepts.md](../../Day-22-Azure-Platform-Architecture/01-concepts.md) - quota is platform capacity
+5. [Day-23-Azure-Compute-and-PaaS/01-concepts.md](../../Day-23-Azure-Compute-and-PaaS/01-concepts.md) - VMs you deallocate and replace
+6. [Day-30-Final-Assessment-and-Architecture-Challenge/01-concepts.md](../../Day-30-Final-Assessment-and-Architecture-Challenge/01-concepts.md) - cost shows up in design reviews
+7. [Day-20-Observability-and-Production-Incident/01-concepts.md](../../Day-20-Observability-and-Production-Incident/01-concepts.md) - token usage and model cost as metrics
 
 Also note: every hands-on Day lesson ends with a cost check and cleanup section. That habit is FinOps in miniature.
 

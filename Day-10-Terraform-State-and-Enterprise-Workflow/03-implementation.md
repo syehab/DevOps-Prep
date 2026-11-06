@@ -4,7 +4,7 @@ This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [
 
 Day 10 teaches Terraform State as the record of what Terraform manages, and why a team does not keep that record on a laptop. Day 8 and Day 9 still used local state. This Day adds a **remote backend**: Azure Storage, a private blob container, and a lock. Day 36 is the harder sibling. It adds `tflint`, Checkov, and more `terraform test` after this backend exists.
 
-Work in **your ShopSphere repository**. You need the Day 8 `modules/rg` layout. If it is missing, create it from [Day-08/03-implementation.md](../Day-08/03-implementation.md) first.
+Work in **your ShopSphere repository**. You need the Day 8 `modules/rg` layout. If it is missing, create it from [Day-08-Infrastructure-as-Code/03-implementation.md](../Day-08-Infrastructure-as-Code/03-implementation.md) first.
 
 ---
 

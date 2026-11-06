@@ -54,7 +54,7 @@ Agentic AI in DevOps, the newest JD theme, had no home in any Day at all; the pa
 
 Duplicate files were the biggest remaining source of doubt. Day 8, 9, and 10 each exist twice (a lesson version and an Interview-Ready v2 version) and Day 24 exists twice (plain and Expanded), so a new learner could not tell which file to open first. The second pass added a one-line "which file to open" note to the README pointing at the INDEX-canonical files, which removes the doubt without any rename. Actually renaming or merging the duplicate files is still deferred, because that is a destructive decision the repo owner should make.
 
-Canonical lessons now live in `Day-NN/01-concepts.md`. INDEX and pattern cards link to those paths. The Interview-Ready v2 copies for Days 8, 9, and 10, and the non-Expanded Day 24 file, stay at the repo root for reference.
+Canonical lessons now live in `Day-NN-<Topic>/01-concepts.md`. INDEX and pattern cards link to those paths. The Interview-Ready v2 copies for Days 8, 9, and 10, and the non-Expanded Day 24 file, stay at the repo root for reference.
 
 The two smaller items from the first pass are now closed: Day-19 received the same goal-line and model-first treatment Day-20 got, and Day-32 and Day-35 received explicit recall sections, so retrieval practice is now universal across the project Days.
 
@@ -190,7 +190,7 @@ Day-4 AI-in-the-loop note, Day-8 IaC desired-state model, Day-16 paved road, Day
 
 ## Hands-on lab rebuild (2026-10-13)
 
-Date: 2026-10-13. Scope: `Day-NN/03-implementation.md` labs versus Senior/Lead interview depth. Concepts files were already strong (JD and STE passes). The bottleneck was the labs: paper sketches, `/tmp` throwaways, `local_file` stand-ins, and "cost stays at ₹0 / INR 0" on paths that can bill.
+Date: 2026-10-13. Scope: `Day-NN-<Topic>/03-implementation.md` labs versus Senior/Lead interview depth. Concepts files were already strong (JD and STE passes). The bottleneck was the labs: paper sketches, `/tmp` throwaways, `local_file` stand-ins, and "cost stays at ₹0 / INR 0" on paths that can bill.
 
 The rebuild uses one product repository (ShopSphere capstone), real Terraform modules with `terraform test` on **1.16.5 / azurerm 5.9.0**, pinned Docker/Helm/Argo/Trivy commands, USD estimates under USD 5 per session, budget-first, teardown, **no NAT Gateways**, and a local fallback (`kind`, Docker, `mock_provider`). Format is fixed: Goal, Capstone stage, Steps, Verify, Break and fix (≥2), Stretch, Clean up, STAR, Self-score.
 

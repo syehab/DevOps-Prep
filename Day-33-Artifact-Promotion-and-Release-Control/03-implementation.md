@@ -4,7 +4,7 @@ This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [
 
 Day 33 teaches a delivery pipeline as a supply chain. One Git commit produces one artifact. Dev, UAT, and Production run **those same bytes**. The old lab tagged a local image in `/tmp`. Day 29 added the AWS backend and GitHub OIDC so CI can plan. This Day is the **harder sibling of Day 29**: you promote the **same image digest** from Dev to Prod **through GitOps**. You do not rebuild for Production.
 
-Work in **your ShopSphere repository**. You need the Day 16 chart and app-of-apps. If they are missing, create them from [Day-16/03-implementation.md](../Day-16/03-implementation.md) first.
+Work in **your ShopSphere repository**. You need the Day 16 chart and app-of-apps. If they are missing, create them from [Day-16-Helm-and-GitOps-Mental-Model/03-implementation.md](../Day-16-Helm-and-GitOps-Mental-Model/03-implementation.md) first.
 
 ---
 

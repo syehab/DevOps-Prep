@@ -51,14 +51,14 @@ Work a small example. A .NET API needs a private store, a managed identity, and 
 
 ## Study these days first
 
-1. [Day-05/01-concepts.md](../../Day-05/01-concepts.md) - why Dev, UAT, and Prod exist
-2. [Day-09/01-concepts.md](../../Day-09/01-concepts.md) - one module, different values per environment
-3. [Day-06/01-concepts.md](../../Day-06/01-concepts.md) - the first application pipeline
-4. [Day-08/01-concepts.md](../../Day-08/01-concepts.md) - why IaC exists
-5. [Day-10/01-concepts.md](../../Day-10/01-concepts.md) - separate state per environment
-6. [Day-22/01-concepts.md](../../Day-22/01-concepts.md) - the Azure platform picture
-7. [Day-16/01-concepts.md](../../Day-16/01-concepts.md) - the paved road the team inherits
-8. [Day-21/01-concepts.md](../../Day-21/01-concepts.md) - start from the app, then choose Azure
+1. [Day-05-Branches-Environments-and-Deployment-Flow/01-concepts.md](../../Day-05-Branches-Environments-and-Deployment-Flow/01-concepts.md) - why Dev, UAT, and Prod exist
+2. [Day-09-IaC-Modules-and-Environments/01-concepts.md](../../Day-09-IaC-Modules-and-Environments/01-concepts.md) - one module, different values per environment
+3. [Day-06-Azure-DevOps-Pipeline-in-Practice/01-concepts.md](../../Day-06-Azure-DevOps-Pipeline-in-Practice/01-concepts.md) - the first application pipeline
+4. [Day-08-Infrastructure-as-Code/01-concepts.md](../../Day-08-Infrastructure-as-Code/01-concepts.md) - why IaC exists
+5. [Day-10-Terraform-State-and-Enterprise-Workflow/01-concepts.md](../../Day-10-Terraform-State-and-Enterprise-Workflow/01-concepts.md) - separate state per environment
+6. [Day-22-Azure-Platform-Architecture/01-concepts.md](../../Day-22-Azure-Platform-Architecture/01-concepts.md) - the Azure platform picture
+7. [Day-16-Helm-and-GitOps-Mental-Model/01-concepts.md](../../Day-16-Helm-and-GitOps-Mental-Model/01-concepts.md) - the paved road the team inherits
+8. [Day-21-Senior-Lead-DevOps-Capstone/01-concepts.md](../../Day-21-Senior-Lead-DevOps-Capstone/01-concepts.md) - start from the app, then choose Azure
 
 ## Common interview question
 

@@ -4,7 +4,7 @@ This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [
 
 Day 23 teaches Azure compute as a management-responsibility choice. Day 13 already built a multi-stage non-root catalog image. This Day is the **harder sibling**: you **bake** that image (Packer) or you **publish** the same digest to **Azure Container Apps**. You do not patch a running VM with SSH. You do not rebuild the image "for Production."
 
-Work in **your ShopSphere repository**. Finish [Day-13/03-implementation.md](../Day-13/03-implementation.md) first if `app/Dockerfile` is still one stage.
+Work in **your ShopSphere repository**. Finish [Day-13-Docker-and-Container-Fundamentals/03-implementation.md](../Day-13-Docker-and-Container-Fundamentals/03-implementation.md) first if `app/Dockerfile` is still one stage.
 
 ---
 

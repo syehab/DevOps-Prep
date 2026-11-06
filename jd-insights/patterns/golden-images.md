@@ -47,10 +47,10 @@ Bottlerocket is AWS's container OS for worker nodes. It is small and you do not 
 
 ## Study these days first
 
-1. [Day-27/01-concepts.md](../../Day-27/01-concepts.md) - Part 3: machine images and the immutable loop (build image, test, launch new, replace old)
-2. [Day-23/01-concepts.md](../../Day-23/01-concepts.md) - Part 3: VM Scale Sets, where an image or model update rolls across instances
-3. [Day-13/01-concepts.md](../../Day-13/01-concepts.md) - how container images are built from layers
-4. [Day-19/01-concepts.md](../../Day-19/01-concepts.md) - image scanning, digests, and provenance (the "scan and publish" steps)
+1. [Day-27-AWS-Compute/01-concepts.md](../../Day-27-AWS-Compute/01-concepts.md) - Part 3: machine images and the immutable loop (build image, test, launch new, replace old)
+2. [Day-23-Azure-Compute-and-PaaS/01-concepts.md](../../Day-23-Azure-Compute-and-PaaS/01-concepts.md) - Part 3: VM Scale Sets, where an image or model update rolls across instances
+3. [Day-13-Docker-and-Container-Fundamentals/01-concepts.md](../../Day-13-Docker-and-Container-Fundamentals/01-concepts.md) - how container images are built from layers
+4. [Day-19-Secure-CI-CD-and-Supply-Chain/01-concepts.md](../../Day-19-Secure-CI-CD-and-Supply-Chain/01-concepts.md) - image scanning, digests, and provenance (the "scan and publish" steps)
 
 ## Common interview question
 

@@ -53,12 +53,12 @@ Before ML, walk the ORR from Day-20. SEE: a dashboard that shows query success, 
 
 ## Study these days first
 
-1. [Day-20/01-concepts.md](../../Day-20/01-concepts.md) - SLIs, dashboards, ORR (read this first)
-2. [Day-17/01-concepts.md](../../Day-17/01-concepts.md) - Kubernetes plus GPU and ML hosting
-3. [Day-27/01-concepts.md](../../Day-27/01-concepts.md) - data stores stay private
-4. [Day-16/01-concepts.md](../../Day-16/01-concepts.md) - GitOps for Airflow or MLflow
-5. [Day-39/01-concepts.md](../../Day-39/01-concepts.md) - restore drills, RTO and RPO
-6. [Day-35/01-concepts.md](../../Day-35/01-concepts.md) - observability project
+1. [Day-20-Observability-and-Production-Incident/01-concepts.md](../../Day-20-Observability-and-Production-Incident/01-concepts.md) - SLIs, dashboards, ORR (read this first)
+2. [Day-17-AKS-and-EKS/01-concepts.md](../../Day-17-AKS-and-EKS/01-concepts.md) - Kubernetes plus GPU and ML hosting
+3. [Day-27-AWS-Compute/01-concepts.md](../../Day-27-AWS-Compute/01-concepts.md) - data stores stay private
+4. [Day-16-Helm-and-GitOps-Mental-Model/01-concepts.md](../../Day-16-Helm-and-GitOps-Mental-Model/01-concepts.md) - GitOps for Airflow or MLflow
+5. [Day-39-Disaster-Recovery-and-Cost-Engineering/01-concepts.md](../../Day-39-Disaster-Recovery-and-Cost-Engineering/01-concepts.md) - restore drills, RTO and RPO
+6. [Day-35-Observability-and-Incident-Response/01-concepts.md](../../Day-35-Observability-and-Incident-Response/01-concepts.md) - observability project
 
 Also: the [SRE card](sre-slos-observability.md) for the parent SLI and ORR model, and the [GitOps card](gitops-platform.md) for the paved road those ML tools sit on.
 

@@ -175,15 +175,15 @@ This is stretch. Transfer the ownership line (Day-17), the CNI hop (Day-15), Kar
 
 ## Study these days first
 
-1. [Day-13/01-concepts.md](../../Day-13/01-concepts.md) - containers first
-2. [Day-14/01-concepts.md](../../Day-14/01-concepts.md) - the core model and operators
-3. [Day-15/01-concepts.md](../../Day-15/01-concepts.md) - debugging the path
-4. [Day-17/01-concepts.md](../../Day-17/01-concepts.md) - managed clusters, name maps, OpenShift layer
-5. [Day-27/01-concepts.md](../../Day-27/01-concepts.md) - RDS, Redis, Kafka, and operator-run state
-6. [Day-37/01-concepts.md](../../Day-37/01-concepts.md) - Karpenter versus Cluster Autoscaler
-7. [Day-34/01-concepts.md](../../Day-34/01-concepts.md) - safe deployments
-8. [Day-39/01-concepts.md](../../Day-39/01-concepts.md) - PITR, restore drills, RTO and RPO
-9. [Day-19/01-concepts.md](../../Day-19/01-concepts.md) - non-root image, scan, and digest
+1. [Day-13-Docker-and-Container-Fundamentals/01-concepts.md](../../Day-13-Docker-and-Container-Fundamentals/01-concepts.md) - containers first
+2. [Day-14-Kubernetes-Mental-Model/01-concepts.md](../../Day-14-Kubernetes-Mental-Model/01-concepts.md) - the core model and operators
+3. [Day-15-Kubernetes-Networking-and-Troubleshooting/01-concepts.md](../../Day-15-Kubernetes-Networking-and-Troubleshooting/01-concepts.md) - debugging the path
+4. [Day-17-AKS-and-EKS/01-concepts.md](../../Day-17-AKS-and-EKS/01-concepts.md) - managed clusters, name maps, OpenShift layer
+5. [Day-27-AWS-Compute/01-concepts.md](../../Day-27-AWS-Compute/01-concepts.md) - RDS, Redis, Kafka, and operator-run state
+6. [Day-37-Kubernetes-Migration/01-concepts.md](../../Day-37-Kubernetes-Migration/01-concepts.md) - Karpenter versus Cluster Autoscaler
+7. [Day-34-Reliability-and-Safe-Deployments/01-concepts.md](../../Day-34-Reliability-and-Safe-Deployments/01-concepts.md) - safe deployments
+8. [Day-39-Disaster-Recovery-and-Cost-Engineering/01-concepts.md](../../Day-39-Disaster-Recovery-and-Cost-Engineering/01-concepts.md) - PITR, restore drills, RTO and RPO
+9. [Day-19-Secure-CI-CD-and-Supply-Chain/01-concepts.md](../../Day-19-Secure-CI-CD-and-Supply-Chain/01-concepts.md) - non-root image, scan, and digest
 
 ## Common interview question
 
