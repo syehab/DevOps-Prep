@@ -25,6 +25,7 @@ SRE titles (and most Lead roles) want you to define what "healthy" means with nu
 - Three different jobs around AKS: Microsoft Sentinel is a SIEM (security detections on logs). Dynatrace (or any APM) watches user experience. Istio is a service mesh (mTLS between Pods, traffic shifting for a canary). Do not treat them as one product
 - Load testing as a release gate: k6 (or the tool the JD names) runs a baseline and a threshold before promotion. A failed threshold stops the release. It is not a dashboard you glance at after go-live
 - Open-source tracing (SigNoz) appears next to Grafana and CloudWatch. Same three signals. Different listener
+- Fixed US-morning SRE shifts from Turkey or India (for example 6:00 AM to 2:00 PM EST), not a rotating follow-the-sun pager. Fit question. See the [hunt-filters card](hunt-filters.md)
 
 ## Mental model
 
@@ -64,6 +65,8 @@ Postmortem findings become new checklist items
 The error-budget policy is the written next step when the budget is gone: pause risky releases, shift time to reliability work, and resume feature work only when the budget recovers. In an interview, tell one story where that data changed a release decision.
 
 Follow-the-sun on-call means the next region takes the pager when this one sleeps. Ship the same artifact to every production region. The handoff is a ritual with a runbook, not a chat at 3 AM. Day-34 covers the release. Day-39 covers the second region.
+
+Some remote SRE JDs from Turkey or India want a fixed US-morning window instead, for example 6:00 AM to 2:00 PM EST every workday. That is overlap with the US day, not a rotating handoff. The SLO and the runbook do not change. The calendar does. Answer yes or no as a real fit. Some of those roles publish a high USD monthly band. Process and forms sit on the [hunt-filters card](hunt-filters.md).
 
 A roadmap is the order you grow this, not a second policy. Pick one SLI users feel. Set an SLO. Write what happens when the budget burns. Only then add more SLIs. A slide with twelve SLOs and no policy is not mature.
 
@@ -216,8 +219,10 @@ Outline:
 
 Sezzle-style JDs name Prometheus or Datadog daily use, sometimes Golang. If your base is Azure Monitor, map the concepts (metrics, queries, alert rules are the same shape) and say which tools you have used hands-on. Concepts transfer, invented tool years do not.
 
+Staff platform roles at Postgres / BaaS product companies still want this pager and these SLOs, then they add production Go or Rust and RFC writing. That higher bar sits on the [Lead vs Senior card](lead-vs-senior-signals.md). Do not drop operations because the JD also names a compiler.
+
 E-commerce SRE JDs sometimes name Java application-server operations (Tomcat, JBoss, JVM). Transfer the request path and the SLO. Look up heap and GC when a JD names them. Do not invent an app-server lab.
 
 ## Source tags
 
-Sezzle SRE · EPAM Senior SRE · EPAM Senior SRE (Grafana + EKS) · Fundraise Up DevOps · EPAM Senior AI DevOps/SRE · Turkey / Central Asia Senior SRE (edge, CDN, Zero Trust) · 2026-10-13 market (observability as code, token cost) · 2026-10-23 market (ORR, error budget policy) · 2026-10-26 market (cardinality, health vs business) · 2026-10-27 market (incident-to-done, follow-the-sun, origin lock) · 2026-10-29 market (OpenTelemetry on AKS/ACA, Datadog + Azure Monitor, alert noise, blameless RCA) · 2026-11-02 market (Sentinel SIEM vs Dynatrace APM vs Istio mesh) · 2026-11-04 market (SLO / error-budget roadmaps, alert de-duplication, PagerDuty) · 2026-11-05 market (k6 as a release gate, SigNoz next to Grafana / CloudWatch)
+Sezzle SRE · EPAM Senior SRE · EPAM Senior SRE (Grafana + EKS) · Fundraise Up DevOps · EPAM Senior AI DevOps/SRE · Turkey / Central Asia Senior SRE (edge, CDN, Zero Trust) · 2026-10-13 market (observability as code, token cost) · 2026-10-23 market (ORR, error budget policy) · 2026-10-26 market (cardinality, health vs business) · 2026-10-27 market (incident-to-done, follow-the-sun, origin lock) · 2026-10-29 market (OpenTelemetry on AKS/ACA, Datadog + Azure Monitor, alert noise, blameless RCA) · 2026-11-02 market (Sentinel SIEM vs Dynatrace APM vs Istio mesh) · 2026-11-04 market (SLO / error-budget roadmaps, alert de-duplication, PagerDuty) · 2026-11-05 market (k6 as a release gate, SigNoz next to Grafana / CloudWatch) · 2026-11-06 market (fixed US-morning SRE window vs follow-the-sun, Staff Go / RFC pointer)

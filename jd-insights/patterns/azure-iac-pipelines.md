@@ -19,6 +19,7 @@ Most Azure senior roles want one person who can describe infrastructure as code 
 - Build speed as engineering: cache what does not change, run independent jobs in parallel, and split a long build into modules. TeamCity appears next to Jenkins and GitHub Actions. The loop stays. The CI product is Look-up
 - Terragrunt (or a similar wrapper) keeps Terraform layouts DRY across many stacks. The module idea is Day-09. The wrapper is Look-up
 - DevSecOps scanners such as SonarQube and Cycode appear in Azure SRE roles. They are SAST / SCA product names. Day-19 already teaches the gate, not the logo
+- Application-environment acceleration: sit with app owners, stamp Dev / UAT / Prod, land the first pipeline, then hand over so the team self-serves. The interview grades that walkthrough and the coaching, not only Terraform syntax. See the [env-acceleration card](env-acceleration.md)
 
 ## Mental model
 
@@ -187,4 +188,4 @@ Logic Apps has no Day lesson. Transfer Functions, Bicep, managed identity, and A
 
 ## Source tags
 
-EPAM Azure Lead (TR, KZ) · EPAM Senior Azure DevOps · EPAM Senior Azure DevOps (KZ, migration) · EPAM Senior Azure Engineer (KZ) · EPAM Lead Azure Cloud · EPAM Senior Azure Cloud (KZ) · EPAM Lead DevOps (KZ) · 2026-10-27 market (policy-as-code on IaC) · 2026-10-28 market (Functions / Logic Apps with Bicep, App Insights, managed identity) · 2026-11-02 market (on-prem ADO agents, Terraform Cloud vs remote backend) · 2026-11-04 market (on-prem and cloud-to-cloud migration, Terraform as the common layer) · 2026-11-05 market (build-speed engineering, Terragrunt, SonarQube / Cycode)
+EPAM Azure Lead (TR, KZ) · EPAM Senior Azure DevOps · EPAM Senior Azure DevOps (KZ, migration) · EPAM Senior Azure Engineer (KZ) · EPAM Lead Azure Cloud · EPAM Senior Azure Cloud (KZ) · EPAM Lead DevOps (KZ) · 2026-10-27 market (policy-as-code on IaC) · 2026-10-28 market (Functions / Logic Apps with Bicep, App Insights, managed identity) · 2026-11-02 market (on-prem ADO agents, Terraform Cloud vs remote backend) · 2026-11-04 market (on-prem and cloud-to-cloud migration, Terraform as the common layer) · 2026-11-05 market (build-speed engineering, Terragrunt, SonarQube / Cycode) · 2026-11-06 market (env-acceleration pointer: first pipeline then hand over)
