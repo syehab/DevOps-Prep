@@ -84,15 +84,15 @@ Access follows the same private path. Do not open SSH on a public IP. Session Ma
 
 ## Study these days first
 
-1. [Day-26/01-concepts.md](../../Day-26/01-concepts.md) - AWS big picture
-2. [Day-27/01-concepts.md](../../Day-27/01-concepts.md) - compute choices
-3. [Day-28/01-concepts.md](../../Day-28/01-concepts.md) - VPC and routing
-4. [Day-29/01-concepts.md](../../Day-29/01-concepts.md) - AWS delivery
-5. [Day-17/01-concepts.md](../../Day-17/01-concepts.md) - AKS vs EKS side by side
-6. [Day-14/01-concepts.md](../../Day-14/01-concepts.md) and [Day-15/01-concepts.md](../../Day-15/01-concepts.md) - the Kubernetes core
-7. [Day-03/01-concepts.md](../../Day-03/01-concepts.md) - the OSI basics that still show up in senior platform interviews
-8. [Day-39/01-concepts.md](../../Day-39/01-concepts.md) - RTO, RPO, backup, replication, and failover
-9. [Day-34/01-concepts.md](../../Day-34/01-concepts.md) - expand-and-contract so a schema change does not lock a large table
+1. [Day-26-AWS-Enterprise-Architecture/01-concepts.md](../../Day-26-AWS-Enterprise-Architecture/01-concepts.md) - AWS big picture
+2. [Day-27-AWS-Compute/01-concepts.md](../../Day-27-AWS-Compute/01-concepts.md) - compute choices
+3. [Day-28-AWS-Networking/01-concepts.md](../../Day-28-AWS-Networking/01-concepts.md) - VPC and routing
+4. [Day-29-AWS-DevOps-Architecture/01-concepts.md](../../Day-29-AWS-DevOps-Architecture/01-concepts.md) - AWS delivery
+5. [Day-17-AKS-and-EKS/01-concepts.md](../../Day-17-AKS-and-EKS/01-concepts.md) - AKS vs EKS side by side
+6. [Day-14-Kubernetes-Mental-Model/01-concepts.md](../../Day-14-Kubernetes-Mental-Model/01-concepts.md) and [Day-15-Kubernetes-Networking-and-Troubleshooting/01-concepts.md](../../Day-15-Kubernetes-Networking-and-Troubleshooting/01-concepts.md) - the Kubernetes core
+7. [Day-03-Networking-Fundamentals/01-concepts.md](../../Day-03-Networking-Fundamentals/01-concepts.md) - the OSI basics that still show up in senior platform interviews
+8. [Day-39-Disaster-Recovery-and-Cost-Engineering/01-concepts.md](../../Day-39-Disaster-Recovery-and-Cost-Engineering/01-concepts.md) - RTO, RPO, backup, replication, and failover
+9. [Day-34-Reliability-and-Safe-Deployments/01-concepts.md](../../Day-34-Reliability-and-Safe-Deployments/01-concepts.md) - expand-and-contract so a schema change does not lock a large table
 
 ## Common interview question
 

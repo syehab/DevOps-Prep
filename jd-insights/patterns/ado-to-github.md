@@ -41,13 +41,13 @@ Day-06 already teaches a Production approval. GitHub Environments hold that appr
 
 ## Study these days first
 
-1. [Day-04/01-concepts.md](../../Day-04/01-concepts.md) - the delivery loop (Azure Pipelines and GitHub are names on the same flow)
-2. [Day-05/01-concepts.md](../../Day-05/01-concepts.md) - branches and environments
-3. [Day-06/01-concepts.md](../../Day-06/01-concepts.md) - Azure DevOps pipeline and production approval
-4. [Day-19/01-concepts.md](../../Day-19/01-concepts.md) - branch protection and the supply chain
-5. [Day-25/01-concepts.md](../../Day-25/01-concepts.md) - YAML templates; the lab already uses GitHub Actions and a GitHub Environment
+1. [Day-04-CI-CD-Mental-Model/01-concepts.md](../../Day-04-CI-CD-Mental-Model/01-concepts.md) - the delivery loop (Azure Pipelines and GitHub are names on the same flow)
+2. [Day-05-Branches-Environments-and-Deployment-Flow/01-concepts.md](../../Day-05-Branches-Environments-and-Deployment-Flow/01-concepts.md) - branches and environments
+3. [Day-06-Azure-DevOps-Pipeline-in-Practice/01-concepts.md](../../Day-06-Azure-DevOps-Pipeline-in-Practice/01-concepts.md) - Azure DevOps pipeline and production approval
+4. [Day-19-Secure-CI-CD-and-Supply-Chain/01-concepts.md](../../Day-19-Secure-CI-CD-and-Supply-Chain/01-concepts.md) - branch protection and the supply chain
+5. [Day-25-Azure-DevOps-and-IaC/01-concepts.md](../../Day-25-Azure-DevOps-and-IaC/01-concepts.md) - YAML templates; the lab already uses GitHub Actions and a GitHub Environment
 
-Also: [Day-25/03-implementation.md](../../Day-25/03-implementation.md) for the GitHub Actions plus Environment path, and [Day-06/03-implementation.md](../../Day-06/03-implementation.md) for the same artifact on both GitHub Actions and Azure Pipelines.
+Also: [Day-25-Azure-DevOps-and-IaC/03-implementation.md](../../Day-25-Azure-DevOps-and-IaC/03-implementation.md) for the GitHub Actions plus Environment path, and [Day-06-Azure-DevOps-Pipeline-in-Practice/03-implementation.md](../../Day-06-Azure-DevOps-Pipeline-in-Practice/03-implementation.md) for the same artifact on both GitHub Actions and Azure Pipelines.
 
 ## Common interview question
 

@@ -4,7 +4,7 @@ This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [
 
 Day 9 teaches modules and environments. Day 8 created one module and one Dev root. This Day **reuses that module** from Dev and from Prod. Each environment has its own folder, its own `.tfvars`, and its own state. You do not copy `azurerm_resource_group` into a second file.
 
-Work in **your ShopSphere repository**. If Day 8 is not done, create `infra/azure/modules/rg` from [Day-08/03-implementation.md](../Day-08/03-implementation.md) first. Then continue here.
+Work in **your ShopSphere repository**. If Day 8 is not done, create `infra/azure/modules/rg` from [Day-08-Infrastructure-as-Code/03-implementation.md](../Day-08-Infrastructure-as-Code/03-implementation.md) first. Then continue here.
 
 ---
 

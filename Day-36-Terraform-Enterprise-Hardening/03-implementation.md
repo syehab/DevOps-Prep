@@ -37,7 +37,7 @@ tflint --version
 checkov --version
 ```
 
-Use Terraform 1.16.5, tflint 0.55.1, Checkov 3.2.447. Install notes are in [Day-25/03-implementation.md](../Day-25/03-implementation.md). Azure is optional.
+Use Terraform 1.16.5, tflint 0.55.1, Checkov 3.2.447. Install notes are in [Day-25-Azure-DevOps-and-IaC/03-implementation.md](../Day-25-Azure-DevOps-and-IaC/03-implementation.md). Azure is optional.
 
 ---
 

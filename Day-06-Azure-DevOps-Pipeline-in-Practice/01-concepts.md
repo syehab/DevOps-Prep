@@ -22,7 +22,7 @@ This Day uses three files. Read them in this order.
 
 > *The lab is designed to use existing/free resources where possible. Azure DevOps usage and hosted-agent availability can depend on your account and organization.*
 
-> **JD note:** Azure senior JDs ask for two pipelines that look alike. This Day teaches the **application** pipeline: build, test, artifact, then DEV → UAT → PROD. The same card also asks for an **IaC** pipeline: plan, review, approve, apply. Study that loop on Day 8, Day 10, and Day 25. See the [Azure IaC + pipelines pattern card](jd-insights/patterns/azure-iac-pipelines.md).
+> **JD note:** Azure senior JDs ask for two pipelines that look alike. This Day teaches the **application** pipeline: build, test, artifact, then DEV → UAT → PROD. The same card also asks for an **IaC** pipeline: plan, review, approve, apply. Study that loop on Day 8, Day 10, and Day 25. See the [Azure IaC + pipelines pattern card](../jd-insights/patterns/azure-iac-pipelines.md).
 
 ---
 

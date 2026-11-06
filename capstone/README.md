@@ -4,7 +4,7 @@ This folder is the map for the hands-on track. You build **one Git repository of
 
 Day 31 in the lesson describes ShopSphere as a full e-commerce product (Angular, Spring Boot, PostgreSQL). This track uses a **thin catalog API** so every lab stays inside 90 minutes and still trains the same platform skills. You may later replace the API with Spring Boot. Do not add that work on Day 1.
 
-Copy [shopsphere-starter/](shopsphere-starter/) into a new Git repository that you own. Then follow [STAGE-MAP.md](STAGE-MAP.md). Each Day file lives in `Day-NN/03-implementation.md`. This folder does not replace those labs. It tells you where each lab lands.
+Copy [shopsphere-starter/](shopsphere-starter/) into a new Git repository that you own. Then follow [STAGE-MAP.md](STAGE-MAP.md). Each Day file lives in `Day-NN-<Topic>/03-implementation.md`. This folder does not replace those labs. It tells you where each lab lands.
 
 ---
 
@@ -157,9 +157,9 @@ make destroy-aws      # terraform destroy in infra/aws
 
 ## How to use a Day lab
 
-1. Read `Day-NN/01-concepts.md`. Learn the model first.
-2. Answer `Day-NN/02-questions-and-answers.md`.
-3. Open `Day-NN/03-implementation.md`. The **Capstone stage** section tells you which folder to add in ShopSphere.
+1. Read `Day-NN-<Topic>/01-concepts.md`. Learn the model first.
+2. Answer `Day-NN-<Topic>/02-questions-and-answers.md`.
+3. Open `Day-NN-<Topic>/03-implementation.md`. The **Capstone stage** section tells you which folder to add in ShopSphere.
 4. Work in `~/src/shopsphere` (or your clone). Do not use `/tmp` as the home of the product.
 5. Commit the stage when Verify passes. Destroy paid resources before you stop.
 

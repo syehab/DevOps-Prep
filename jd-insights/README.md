@@ -46,4 +46,4 @@ If you learn the pattern, the tool names stop being scary.
 
 Open [INDEX.md](INDEX.md) and pick one card.
 
-If you are brand new, read [../Day-01/01-concepts.md](../Day-01/01-concepts.md) first. Everything here builds on that map.
+If you are brand new, read [../Day-01-Senior-DevOps-Mental-Model/01-concepts.md](../Day-01-Senior-DevOps-Mental-Model/01-concepts.md) first. Everything here builds on that map.

@@ -74,7 +74,7 @@ ls observability/rules/shopsphere-slo.yaml
 kubectl -n monitoring get prometheusrules shopsphere-slo
 ```
 
-If the YAML is missing, copy the two-window rule from [Day-20/03-implementation.md](../Day-20/03-implementation.md) into ShopSphere now. Fast window: 5m burn > `14.4 * 0.001`. Slow window: 1h burn > `6 * 0.001`. Symptom is 5xx ratio, not CPU.
+If the YAML is missing, copy the two-window rule from [Day-20-Observability-and-Production-Incident/03-implementation.md](../Day-20-Observability-and-Production-Incident/03-implementation.md) into ShopSphere now. Fast window: 5m burn > `14.4 * 0.001`. Slow window: 1h burn > `6 * 0.001`. Symptom is 5xx ratio, not CPU.
 
 If Prometheus is missing, you will compute the same ratio with `curl` counts. Write `prometheus not running — curl SLI used`.
 

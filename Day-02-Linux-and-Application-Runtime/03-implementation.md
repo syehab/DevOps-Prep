@@ -54,7 +54,7 @@ mkdir -p docs
 python3 app/day01_server.py
 ```
 
-If that file is missing, copy it from [Day-01/03-implementation.md](../Day-01/03-implementation.md) first.
+If that file is missing, copy it from [Day-01-Senior-DevOps-Mental-Model/03-implementation.md](../Day-01-Senior-DevOps-Mental-Model/03-implementation.md) first.
 
 2. In a second shell, collect host evidence into `docs/runtime.md`.
 

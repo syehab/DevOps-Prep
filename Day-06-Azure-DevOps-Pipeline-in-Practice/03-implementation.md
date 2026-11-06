@@ -61,7 +61,7 @@ Do not push to ACR/ECR in this lab.
 mkdir -p app dist docs .github/workflows
 ```
 
-2. Test (Day 4 file, or the stub in [Day-04/03-implementation.md](../Day-04/03-implementation.md)).
+2. Test (Day 4 file, or the stub in [Day-04-CI-CD-Mental-Model/03-implementation.md](../Day-04-CI-CD-Mental-Model/03-implementation.md)).
 
 ```bash
 python3 -m unittest app.test_health

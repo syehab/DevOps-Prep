@@ -124,18 +124,18 @@ Terragrunt sits on top of Terraform so many stacks share one module layout witho
 
 ## Study these days first
 
-1. [Day-08/01-concepts.md](../../Day-08/01-concepts.md) - why IaC exists
-2. [Day-09/01-concepts.md](../../Day-09/01-concepts.md) - modules and environments
-3. [Day-10/01-concepts.md](../../Day-10/01-concepts.md) - state and team workflow
-4. [Day-06/01-concepts.md](../../Day-06/01-concepts.md) - the pipeline itself
-5. [Day-22/01-concepts.md](../../Day-22/01-concepts.md) - the Azure platform picture
-6. [Day-25/01-concepts.md](../../Day-25/01-concepts.md) - putting it together
-7. [Day-37/01-concepts.md](../../Day-37/01-concepts.md) - incremental migration with a rollback boundary (Parts 26 and 36)
-8. [Day-23/01-concepts.md](../../Day-23/01-concepts.md) - Functions as event-driven compute
-9. [Day-18/01-concepts.md](../../Day-18/01-concepts.md) - managed identity
-10. [Day-20/01-concepts.md](../../Day-20/01-concepts.md) - Application Insights and Azure Monitor
-11. [Day-36/01-concepts.md](../../Day-36/01-concepts.md) - policy evaluation before plan (Checkov is in the Day-25 and Day-36 labs)
-12. [Day-19/01-concepts.md](../../Day-19/01-concepts.md) - self-hosted agents as a security boundary
+1. [Day-08-Infrastructure-as-Code/01-concepts.md](../../Day-08-Infrastructure-as-Code/01-concepts.md) - why IaC exists
+2. [Day-09-IaC-Modules-and-Environments/01-concepts.md](../../Day-09-IaC-Modules-and-Environments/01-concepts.md) - modules and environments
+3. [Day-10-Terraform-State-and-Enterprise-Workflow/01-concepts.md](../../Day-10-Terraform-State-and-Enterprise-Workflow/01-concepts.md) - state and team workflow
+4. [Day-06-Azure-DevOps-Pipeline-in-Practice/01-concepts.md](../../Day-06-Azure-DevOps-Pipeline-in-Practice/01-concepts.md) - the pipeline itself
+5. [Day-22-Azure-Platform-Architecture/01-concepts.md](../../Day-22-Azure-Platform-Architecture/01-concepts.md) - the Azure platform picture
+6. [Day-25-Azure-DevOps-and-IaC/01-concepts.md](../../Day-25-Azure-DevOps-and-IaC/01-concepts.md) - putting it together
+7. [Day-37-Kubernetes-Migration/01-concepts.md](../../Day-37-Kubernetes-Migration/01-concepts.md) - incremental migration with a rollback boundary (Parts 26 and 36)
+8. [Day-23-Azure-Compute-and-PaaS/01-concepts.md](../../Day-23-Azure-Compute-and-PaaS/01-concepts.md) - Functions as event-driven compute
+9. [Day-18-Identity-Secrets-and-Cloud-Security/01-concepts.md](../../Day-18-Identity-Secrets-and-Cloud-Security/01-concepts.md) - managed identity
+10. [Day-20-Observability-and-Production-Incident/01-concepts.md](../../Day-20-Observability-and-Production-Incident/01-concepts.md) - Application Insights and Azure Monitor
+11. [Day-36-Terraform-Enterprise-Hardening/01-concepts.md](../../Day-36-Terraform-Enterprise-Hardening/01-concepts.md) - policy evaluation before plan (Checkov is in the Day-25 and Day-36 labs)
+12. [Day-19-Secure-CI-CD-and-Supply-Chain/01-concepts.md](../../Day-19-Secure-CI-CD-and-Supply-Chain/01-concepts.md) - self-hosted agents as a security boundary
 
 Interview-ready deep dives: [Day-08 v2](../../Day-08-IaC-Terraform-Bicep-Interview-Ready-Clean-v2.md), [Day-09 v2](../../Day-09-IaC-Modules-Environments-Interview-Ready-Clean-v2.md), [Day-10 v2](../../Day-10-Terraform-State-Enterprise-Interview-Ready-Clean-v2.md).
 

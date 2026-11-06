@@ -41,9 +41,9 @@ Work authorization is a legal fact. Answer the Turkey question honestly. A guess
 
 ## Study these days first
 
-1. [Day-21/01-concepts.md](../../Day-21/01-concepts.md) - do not inflate what you cannot defend
-2. [Day-41/01-concepts.md](../../Day-41/01-concepts.md) - on-call is a named window, not a slogan
-3. [Day-20/01-concepts.md](../../Day-20/01-concepts.md) - the pager and the SLO still apply if you take the US-morning SRE seat
+1. [Day-21-Senior-Lead-DevOps-Capstone/01-concepts.md](../../Day-21-Senior-Lead-DevOps-Capstone/01-concepts.md) - do not inflate what you cannot defend
+2. [Day-41-Production-Deployment-Incident/01-concepts.md](../../Day-41-Production-Deployment-Incident/01-concepts.md) - on-call is a named window, not a slogan
+3. [Day-20-Observability-and-Production-Incident/01-concepts.md](../../Day-20-Observability-and-Production-Incident/01-concepts.md) - the pager and the SLO still apply if you take the US-morning SRE seat
 
 ## Common interview question
 

@@ -129,7 +129,7 @@ Platform JDs now ask you to measure the paved road, not just build it. The four 
 - Change failure rate: what share of deploys cause a problem
 - Time to restore: how fast users are OK again after a bad deploy
 
-A good paved road pushes the first two up and the last two down. [Day-34/01-concepts.md](../../Day-34/01-concepts.md) walks through these four (it also calls them release metrics).
+A good paved road pushes the first two up and the last two down. [Day-34-Reliability-and-Safe-Deployments/01-concepts.md](../../Day-34-Reliability-and-Safe-Deployments/01-concepts.md) walks through these four (it also calls them release metrics).
 
 JDs now ask where each number comes from. Deployment frequency and lead time come from the pipeline (how often it shipped, when the commit became a production artifact). Change failure rate and time to restore come from incident tools (how many deploys needed a rollback or hotfix, how long until users were OK). Do not invent a fourth dashboard. Read the tools you already run.
 
@@ -161,13 +161,13 @@ The factory also signs and stores artifacts that are not web images: a mobile bu
 
 ## Study these days first
 
-1. [Day-16/01-concepts.md](../../Day-16/01-concepts.md) - Helm and GitOps core
-2. [Day-05/01-concepts.md](../../Day-05/01-concepts.md) - branches and environments
-3. [Day-06/01-concepts.md](../../Day-06/01-concepts.md) - one artifact, kept and promoted
-4. [Day-33/01-concepts.md](../../Day-33/01-concepts.md) - artifact promotion
-5. [Day-19/01-concepts.md](../../Day-19/01-concepts.md) - securing the chain, registry, and the air-gap mirror
-6. [Day-34/01-concepts.md](../../Day-34/01-concepts.md) - DORA numbers and where they come from
-7. [Day-36/01-concepts.md](../../Day-36/01-concepts.md) - policy evaluation before plan (Part 14)
+1. [Day-16-Helm-and-GitOps-Mental-Model/01-concepts.md](../../Day-16-Helm-and-GitOps-Mental-Model/01-concepts.md) - Helm and GitOps core
+2. [Day-05-Branches-Environments-and-Deployment-Flow/01-concepts.md](../../Day-05-Branches-Environments-and-Deployment-Flow/01-concepts.md) - branches and environments
+3. [Day-06-Azure-DevOps-Pipeline-in-Practice/01-concepts.md](../../Day-06-Azure-DevOps-Pipeline-in-Practice/01-concepts.md) - one artifact, kept and promoted
+4. [Day-33-Artifact-Promotion-and-Release-Control/01-concepts.md](../../Day-33-Artifact-Promotion-and-Release-Control/01-concepts.md) - artifact promotion
+5. [Day-19-Secure-CI-CD-and-Supply-Chain/01-concepts.md](../../Day-19-Secure-CI-CD-and-Supply-Chain/01-concepts.md) - securing the chain, registry, and the air-gap mirror
+6. [Day-34-Reliability-and-Safe-Deployments/01-concepts.md](../../Day-34-Reliability-and-Safe-Deployments/01-concepts.md) - DORA numbers and where they come from
+7. [Day-36-Terraform-Enterprise-Hardening/01-concepts.md](../../Day-36-Terraform-Enterprise-Hardening/01-concepts.md) - policy evaluation before plan (Part 14)
 
 ## Common interview question
 

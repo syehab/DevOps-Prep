@@ -110,16 +110,16 @@ PCI DSS is another evidence framework, next to ISO 27001, SOC 2, and HIPAA. The 
 
 ## Study these days first
 
-1. [Day-11/01-concepts.md](../../Day-11/01-concepts.md) - enterprise structure
-2. [Day-12/01-concepts.md](../../Day-12/01-concepts.md) - hub-spoke networking
-3. [Day-18/01-concepts.md](../../Day-18/01-concepts.md) - identity and secrets
-4. [Day-22/01-concepts.md](../../Day-22/01-concepts.md) - Azure platform view
-5. [Day-38/01-concepts.md](../../Day-38/01-concepts.md) - hands-on project
-6. [Day-36/01-concepts.md](../../Day-36/01-concepts.md) - the plan, apply, and validate pipeline that stamps the factory
-7. [Day-24/01-concepts.md](../../Day-24/01-concepts.md) - hub-and-spoke first, Virtual WAN when the mesh grows
-8. [Day-08/01-concepts.md](../../Day-08/01-concepts.md) - Bicep `what-if`; Pester and PSRule are the usual Bicep test names
-9. [Day-39/01-concepts.md](../../Day-39/01-concepts.md) - restore drills that an auditor can see
-10. [Day-27/01-concepts.md](../../Day-27/01-concepts.md) - ECS, Lambda, API Gateway, SQS, EventBridge, KMS names
+1. [Day-11-Cloud-Architecture-and-Enterprise-Structure/01-concepts.md](../../Day-11-Cloud-Architecture-and-Enterprise-Structure/01-concepts.md) - enterprise structure
+2. [Day-12-Cloud-Networking-Azure-and-AWS/01-concepts.md](../../Day-12-Cloud-Networking-Azure-and-AWS/01-concepts.md) - hub-spoke networking
+3. [Day-18-Identity-Secrets-and-Cloud-Security/01-concepts.md](../../Day-18-Identity-Secrets-and-Cloud-Security/01-concepts.md) - identity and secrets
+4. [Day-22-Azure-Platform-Architecture/01-concepts.md](../../Day-22-Azure-Platform-Architecture/01-concepts.md) - Azure platform view
+5. [Day-38-Multi-Environment-Multi-Account-Architecture/01-concepts.md](../../Day-38-Multi-Environment-Multi-Account-Architecture/01-concepts.md) - hands-on project
+6. [Day-36-Terraform-Enterprise-Hardening/01-concepts.md](../../Day-36-Terraform-Enterprise-Hardening/01-concepts.md) - the plan, apply, and validate pipeline that stamps the factory
+7. [Day-24-Azure-Advanced-Networking/01-concepts.md](../../Day-24-Azure-Advanced-Networking/01-concepts.md) - hub-and-spoke first, Virtual WAN when the mesh grows
+8. [Day-08-Infrastructure-as-Code/01-concepts.md](../../Day-08-Infrastructure-as-Code/01-concepts.md) - Bicep `what-if`; Pester and PSRule are the usual Bicep test names
+9. [Day-39-Disaster-Recovery-and-Cost-Engineering/01-concepts.md](../../Day-39-Disaster-Recovery-and-Cost-Engineering/01-concepts.md) - restore drills that an auditor can see
+10. [Day-27-AWS-Compute/01-concepts.md](../../Day-27-AWS-Compute/01-concepts.md) - ECS, Lambda, API Gateway, SQS, EventBridge, KMS names
 
 ## Common interview question
 

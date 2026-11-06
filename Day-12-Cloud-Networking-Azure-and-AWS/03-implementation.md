@@ -4,7 +4,7 @@ This Day uses three files. Read [01-concepts.md](01-concepts.md) first. Answer [
 
 Day 12 teaches one cloud networking model: name, IP, route, security, then destination. The old lab planned `10.20.0.0/16` on paper and pinged two Docker containers. This lab writes a **real `azurerm` VNet module** with three `/24` subnets and NSG rules. You run `terraform test`. You apply the VNet only after a budget alert exists, and you never create a NAT Gateway. Day 24 adds peering and Private DNS on top of this module. Day 32 adds a Private Endpoint.
 
-Work in **your ShopSphere repository**, not in `/tmp`, and not inside this course clone. You need the Day 8 `modules/rg` layout if you will apply. If it is missing, create it from [Day-08/03-implementation.md](../Day-08/03-implementation.md) first.
+Work in **your ShopSphere repository**, not in `/tmp`, and not inside this course clone. You need the Day 8 `modules/rg` layout if you will apply. If it is missing, create it from [Day-08-Infrastructure-as-Code/03-implementation.md](../Day-08-Infrastructure-as-Code/03-implementation.md) first.
 
 ---
 

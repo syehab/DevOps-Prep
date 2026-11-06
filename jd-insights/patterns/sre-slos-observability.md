@@ -186,15 +186,15 @@ SigNoz is an open-source backend for traces, metrics, and logs. Grafana and Clou
 
 ## Study these days first
 
-1. [Day-20/01-concepts.md](../../Day-20/01-concepts.md) - the core lesson, read this first
-2. [Day-08/01-concepts.md](../../Day-08/01-concepts.md) - IaC is how dashboards and alerts become reviewable
-3. [Day-03/01-concepts.md](../../Day-03/01-concepts.md) - the request path; the edge is the first hop
-4. [Day-18/01-concepts.md](../../Day-18/01-concepts.md) - verify the caller by identity, not by network location
-5. [Day-35/01-concepts.md](../../Day-35/01-concepts.md) - hands-on project, including high-cardinality cost
-6. [Day-34/01-concepts.md](../../Day-34/01-concepts.md) - safe deployments, canary with health signals, rollback
-7. [Day-41/01-concepts.md](../../Day-41/01-concepts.md) - full incident simulation
-8. [Day-17/01-concepts.md](../../Day-17/01-concepts.md) - AKS vs EKS, including the monitoring map
-9. [Day-23/01-concepts.md](../../Day-23/01-concepts.md) - Azure Container Apps; same three signals, platform logs you do not scrape yourself
+1. [Day-20-Observability-and-Production-Incident/01-concepts.md](../../Day-20-Observability-and-Production-Incident/01-concepts.md) - the core lesson, read this first
+2. [Day-08-Infrastructure-as-Code/01-concepts.md](../../Day-08-Infrastructure-as-Code/01-concepts.md) - IaC is how dashboards and alerts become reviewable
+3. [Day-03-Networking-Fundamentals/01-concepts.md](../../Day-03-Networking-Fundamentals/01-concepts.md) - the request path; the edge is the first hop
+4. [Day-18-Identity-Secrets-and-Cloud-Security/01-concepts.md](../../Day-18-Identity-Secrets-and-Cloud-Security/01-concepts.md) - verify the caller by identity, not by network location
+5. [Day-35-Observability-and-Incident-Response/01-concepts.md](../../Day-35-Observability-and-Incident-Response/01-concepts.md) - hands-on project, including high-cardinality cost
+6. [Day-34-Reliability-and-Safe-Deployments/01-concepts.md](../../Day-34-Reliability-and-Safe-Deployments/01-concepts.md) - safe deployments, canary with health signals, rollback
+7. [Day-41-Production-Deployment-Incident/01-concepts.md](../../Day-41-Production-Deployment-Incident/01-concepts.md) - full incident simulation
+8. [Day-17-AKS-and-EKS/01-concepts.md](../../Day-17-AKS-and-EKS/01-concepts.md) - AKS vs EKS, including the monitoring map
+9. [Day-23-Azure-Compute-and-PaaS/01-concepts.md](../../Day-23-Azure-Compute-and-PaaS/01-concepts.md) - Azure Container Apps; same three signals, platform logs you do not scrape yourself
 
 ## Common interview question
 

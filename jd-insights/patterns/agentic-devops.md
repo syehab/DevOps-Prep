@@ -158,11 +158,11 @@ If you have not run one of these gateways, say so. Describe it as gateway skills
 
 AI assists existing loops, so study the loops:
 
-1. [Day-04/01-concepts.md](../../Day-04/01-concepts.md) - the delivery loop AI plugs into
-2. [Day-19/01-concepts.md](../../Day-19/01-concepts.md) - the gates that stay human-owned
-3. [Day-20/01-concepts.md](../../Day-20/01-concepts.md) - the ops loop AI can summarise
-4. [Day-33/01-concepts.md](../../Day-33/01-concepts.md) - build once, promote the same artifact
-5. [Day-34/01-concepts.md](../../Day-34/01-concepts.md) - health gates and a tested rollback
+1. [Day-04-CI-CD-Mental-Model/01-concepts.md](../../Day-04-CI-CD-Mental-Model/01-concepts.md) - the delivery loop AI plugs into
+2. [Day-19-Secure-CI-CD-and-Supply-Chain/01-concepts.md](../../Day-19-Secure-CI-CD-and-Supply-Chain/01-concepts.md) - the gates that stay human-owned
+3. [Day-20-Observability-and-Production-Incident/01-concepts.md](../../Day-20-Observability-and-Production-Incident/01-concepts.md) - the ops loop AI can summarise
+4. [Day-33-Artifact-Promotion-and-Release-Control/01-concepts.md](../../Day-33-Artifact-Promotion-and-Release-Control/01-concepts.md) - build once, promote the same artifact
+5. [Day-34-Reliability-and-Safe-Deployments/01-concepts.md](../../Day-34-Reliability-and-Safe-Deployments/01-concepts.md) - health gates and a tested rollback
 
 ## Common interview question
 
