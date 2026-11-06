@@ -55,7 +55,30 @@ jobs:
         continue-on-error: true
 
       - name: kubeconform
-        uses: vhs/kubeconform-action@v1
         continue-on-error: true
-        with:
-          args: -strict -ignore-missing-schemas k8s/ drills/kubernetes-broken-cluster/
+        run: |
+          set -euo pipefail
+          version="v0.8.0"
+          archive="kubeconform-linux-amd64.tar.gz"
+          sha256="9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883"
+          tmp="${RUNNER_TEMP:-/tmp}/kubeconform"
+          mkdir -p "$tmp"
+          curl -fsSL -o "$tmp/$archive" \
+            "https://github.com/yannh/kubeconform/releases/download/${version}/${archive}"
+          echo "${sha256}  $tmp/$archive" | sha256sum -c -
+          tar -xzf "$tmp/$archive" -C "$tmp" kubeconform
+          chmod +x "$tmp/kubeconform"
+
+          paths=()
+          for dir in k8s/ drills/kubernetes-broken-cluster/; do
+            if [[ -d "$dir" ]]; then
+              paths+=("$dir")
+            else
+              echo "skipping missing directory: $dir"
+            fi
+          done
+          if [[ ${#paths[@]} -eq 0 ]]; then
+            echo "no Kubernetes directories to validate"
+            exit 0
+          fi
+          "$tmp/kubeconform" -strict -ignore-missing-schemas "${paths[@]}"
